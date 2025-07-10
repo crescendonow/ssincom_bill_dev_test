@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html><body>
+  <img src="../static/ss_logo.png" alt="Logo" width="120"><br>
+  <h2>Tax Invoice</h2>
+  <p>No: {{ invoice.invoice_number }} | Date: {{ invoice.invoice_date }}</p>
+  <p>Name: {{ invoice.customer_name }} | Tax ID: {{ invoice.customer_taxid }}</p>
+  <p>Address: {{ invoice.customer_address }}</p>
+  <table border="1" cellspacing="0" cellpadding="4">
+    <tr><th>Code</th><th>Description</th><th>Qty</th><th>Unit Price</th><th>Amount</th></tr>
+    {% set total = 0 %}
+    {% for item in invoice.items %}
+      {% set amount = item.quantity * item.unit_price %}
+      {% set total = total + amount %}
+      <tr>
+        <td>{{ item.product_code }}</td>
+        <td>{{ item.description }}</td>
+        <td>{{ item.quantity }}</td>
+        <td>{{ "%.2f"|format(item.unit_price) }}</td>
+        <td>{{ "%.2f"|format(amount) }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+  <p>Subtotal: {{ "%.2f"|format(total) }}</p>
+  <p>VAT 7%: {{ "%.2f"|format(total * 0.07) }}</p>
+  <h3>Total: {{ "%.2f"|format(total * 1.07) }}</h3>
+</body></html>
