@@ -1,38 +1,121 @@
 <!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
   <style>
     body {
-  font-family: "TH Sarabun New", "TH Sarabun", "Noto Sans Thai", sans-serif;
-  font-size: 16pt;
-}
-    table { width: 100%; border-collapse: collapse; }
-    th, td { border: 1px solid black; padding: 4px; }
+      font-family: "TH Sarabun New", "Tahoma", sans-serif;
+      font-size: 16pt;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid black;
+      padding: 4px;
+      vertical-align: top;
+    }
+    .no-border {
+      border: none !important;
+    }
+    .right { text-align: right; }
+    .center { text-align: center; }
   </style>
 </head>
 <body>
-  <h2>ใบกำกับภาษี</h2>
-  <p>เลขที่: {{ invoice.invoice_number }} วันที่: {{ invoice.invoice_date }}</p>
-  <p>ชื่อลูกค้า: {{ invoice.customer_name }} | เลขประจำตัวผู้เสียภาษี: {{ invoice.customer_taxid }}</p>
-  <p>ที่อยู่: {{ invoice.customer_address }}</p>
-  <table>
-    <tr><th>รหัส</th><th>รายการ</th><th>จำนวน</th><th>ราคา/หน่วย</th><th>รวม</th></tr>
-    {% set total = 0 %}
-    {% for item in invoice.items %}
-      {% set amount = item.quantity * item.unit_price %}
-      {% set total = total + amount %}
-      <tr>
-        <td>{{ item.product_code }}</td>
-        <td>{{ item.description }}</td>
-        <td>{{ item.quantity }}</td>
-        <td>{{ "%.2f"|format(item.unit_price) }}</td>
-        <td>{{ "%.2f"|format(amount) }}</td>
-      </tr>
-    {% endfor %}
+
+  <!-- Header -->
+  <table class="no-border">
+    <tr>
+      <td class="no-border" style="width: 25%;">
+        <img src="{{ url_for('static', path='ss_logo.png') }}" width="100">
+      </td>
+      <td class="no-border center" style="width: 50%;">
+        <h2>บริษัท เอส แอนด์ เอส อินคอม จำกัด</h2>
+        <div>S & S INCOM CO., LTD.</div>
+        <div>69 หมู่ 10 ต.พงตึก อ.เมือง จ.นครปฐม 71140</div>
+        <div>โทร. (035) 589 274, (081) 880 8840</div>
+      </td>
+      <td class="no-border right" style="width: 25%;">
+        <div><strong>ต้นฉบับใบกำกับภาษี</strong></div>
+        <div>เลขประจำตัวผู้เสียภาษี:</div>
+        <div>{{ invoice.company_tax_id }}</div>
+      </td>
+    </tr>
   </table>
-  <p>รวมก่อนภาษี: {{ "%.2f"|format(total) }}</p>
-  <p>VAT 7%: {{ "%.2f"|format(total * 0.07) }}</p>
-  <h3>ยอดรวม: {{ "%.2f"|format(total * 1.07) }}</h3>
+
+  <!-- Info Tables -->
+  <table style="margin-top: 10px;">
+    <tr>
+      <td style="width: 65%;">
+        <strong>รหัสลูกค้า:</strong> {{ invoice.customer_code }}<br>
+        <strong>ชื่อลูกค้า:</strong> {{ invoice.customer_name }}<br>
+        <strong>เลขประจำตัวผู้เสียภาษี:</strong> {{ invoice.customer_taxid }}<br>
+        <strong>ที่อยู่:</strong> {{ invoice.customer_address }}
+      </td>
+      <td style="width: 35%;">
+        <strong>เลขที่:</strong> {{ invoice.invoice_number }}<br>
+        <strong>วันที่:</strong> {{ invoice.invoice_date }}<br>
+        <strong>ใบสั่งซื้อ:</strong> {{ invoice.purchase_order }}<br>
+        <strong>เงื่อนไข:</strong> {{ invoice.payment_terms }}
+      </td>
+    </tr>
+  </table>
+
+  <!-- Product Table -->
+  <table style="margin-top: 15px;">
+    <thead>
+      <tr>
+        <th class="center" style="width:5%;">ลำดับ</th>
+        <th class="center" style="width:15%;">รหัสสินค้า</th>
+        <th class="center">รายละเอียด</th>
+        <th class="center" style="width:10%;">จำนวน</th>
+        <th class="center" style="width:15%;">ราคาต่อหน่วย</th>
+        <th class="center" style="width:15%;">จำนวนเงิน</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% set total = 0 %}
+      {% for item in invoice.items %}
+        {% set amount = item.quantity * item.unit_price %}
+        {% set total = total + amount %}
+        <tr>
+          <td class="center">{{ loop.index }}</td>
+          <td class="center">{{ item.product_code }}</td>
+          <td>{{ item.description }}</td>
+          <td class="right">{{ item.quantity }}</td>
+          <td class="right">{{ '%.2f' % item.unit_price }}</td>
+          <td class="right">{{ '%.2f' % amount }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Summary -->
+  <table style="margin-top: 10px;">
+    <tr>
+      <td class="no-border" style="width: 60%;"></td>
+      <td>
+        <table>
+          <tr><td>รวมเป็นเงิน</td><td class="right">{{ '%.2f' % total }}</td></tr>
+          <tr><td>ส่วนลด</td><td class="right">0.00</td></tr>
+          <tr><td>ยอดก่อน VAT</td><td class="right">{{ '%.2f' % total }}</td></tr>
+          <tr><td>VAT 7%</td><td class="right">{{ '%.2f' % (total * 0.07) }}</td></tr>
+          <tr><td><strong>ยอดรวม</strong></td><td class="right"><strong>{{ '%.2f' % (total * 1.07) }}</strong></td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <!-- Footer -->
+  <table style="margin-top: 30px; text-align: center;">
+    <tr>
+      <td>ผู้รับสินค้า / วันที่<br><br><br>......................</td>
+      <td>ผู้ตรวจสินค้า<br><br><br>......................</td>
+      <td>ผู้มีอำนาจลงนาม<br><br><br>......................</td>
+    </tr>
+  </table>
+
 </body>
 </html>
