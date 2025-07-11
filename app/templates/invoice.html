@@ -1,25 +1,22 @@
 <!DOCTYPE html>
-<html><body>
-  <h2>Tax Invoice</h2>
-  <p>No: {{ invoice.invoice_number }} | Date: {{ invoice.invoice_date }}</p>
-  <p>Name: {{ invoice.customer_name }} | Tax ID: {{ invoice.customer_taxid }}</p>
-  <p>Address: {{ invoice.customer_address }}</p>
-  <table border="1" cellspacing="0" cellpadding="4">
-    <tr><th>Code</th><th>Description</th><th>Qty</th><th>Unit Price</th><th>Amount</th></tr>
-    {% set total = 0 %}
-    {% for item in invoice.items %}
-      {% set amount = item.quantity * item.unit_price %}
-      {% set total = total + amount %}
-      <tr>
-        <td>{{ item.product_code }}</td>
-        <td>{{ item.description }}</td>
-        <td>{{ item.quantity }}</td>
-        <td>{{ "%.2f"|format(item.unit_price) }}</td>
-        <td>{{ "%.2f"|format(amount) }}</td>
-      </tr>
-    {% endfor %}
+<html>
+<head><meta charset="utf-8"><style>body { font-family: "TH Sarabun New"; }</style></head>
+<body>
+  <h2>ใบกำกับภาษี</h2>
+  <p>เลขที่: {{ invoice.invoice_number }} วันที่: {{ invoice.invoice_date }}</p>
+  <p>ชื่อลูกค้า: {{ invoice.customer_name }}</p>
+  <p>ที่อยู่: {{ invoice.customer_address }}</p>
+  <table border="1">
+    <tr><th>รหัส</th><th>รายละเอียด</th><th>จำนวน</th><th>ราคา/หน่วย</th><th>จำนวนเงิน</th></tr>
+    <tr>
+      <td>{{ invoice.product_code }}</td>
+      <td>{{ invoice.description }}</td>
+      <td>{{ invoice.quantity }}</td>
+      <td>{{ invoice.unit_price }}</td>
+      <td>{{ invoice.amount }}</td>
+    </tr>
   </table>
-  <p>Subtotal: {{ "%.2f"|format(total) }}</p>
-  <p>VAT 7%: {{ "%.2f"|format(total * 0.07) }}</p>
-  <h3>Total: {{ "%.2f"|format(total * 1.07) }}</h3>
-</body></html>
+  <p>VAT 7%: {{ invoice.vat }} บาท</p>
+  <h4>รวมทั้งหมด: {{ invoice.total }} บาท</h4>
+</body>
+</html>
