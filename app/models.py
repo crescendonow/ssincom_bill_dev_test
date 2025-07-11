@@ -30,4 +30,4 @@ class CustomerList(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     fname = Column(String)
-    address = Column(String)
+   
