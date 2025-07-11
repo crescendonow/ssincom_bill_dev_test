@@ -28,6 +28,6 @@ class CustomerList(Base):
     __tablename__ = "customer_list"
     __table_args__ = {"schema": "products"}
 
-    id = Column(Integer, primary_key=True, index=True)
+    idx = Column(Integer, primary_key=True, index=True)
     fname = Column(String)
    
