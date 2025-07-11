@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     libglib2.0-0 \
     fonts-liberation \
     fonts-dejavu-core \
+    fonts-thai-tlwg \
     curl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
