@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Form, Request
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from . import models, database, crud, pdf_generator
 from datetime import date
@@ -15,6 +15,13 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 @app.get("/", response_class=HTMLResponse)
 async def form(request: Request):
     return templates.TemplateResponse("form.html", {"request": request})
+
+@app.get("/api/customers")
+def get_customers():
+    db = SessionLocal()
+    customers = db.query(CustomerList).all()
+    db.close()
+    return JSONResponse(content=[{"id": c.id, "fname": c.fname, "address": c.address} for c in customers])
 
 @app.post("/submit")
 async def submit(
