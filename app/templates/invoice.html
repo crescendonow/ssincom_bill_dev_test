@@ -1,22 +1,42 @@
 <!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><style>body { font-family: "TH Sarabun New"; }</style></head>
+<head>
+  <meta charset="utf-8">
+  <style>
+    @font-face {
+      font-family: 'THSarabun';
+      src: url("../static/fonts/THSarabunNew.ttf") format("truetype");
+    }
+    body {
+      font-family: 'THSarabun', sans-serif;
+      font-size: 16pt;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid black; padding: 4px; }
+  </style>
+</head>
 <body>
   <h2>ใบกำกับภาษี</h2>
   <p>เลขที่: {{ invoice.invoice_number }} วันที่: {{ invoice.invoice_date }}</p>
-  <p>ชื่อลูกค้า: {{ invoice.customer_name }}</p>
+  <p>ชื่อลูกค้า: {{ invoice.customer_name }} | เลขประจำตัวผู้เสียภาษี: {{ invoice.customer_taxid }}</p>
   <p>ที่อยู่: {{ invoice.customer_address }}</p>
-  <table border="1">
-    <tr><th>รหัส</th><th>รายละเอียด</th><th>จำนวน</th><th>ราคา/หน่วย</th><th>จำนวนเงิน</th></tr>
-    <tr>
-      <td>{{ invoice.product_code }}</td>
-      <td>{{ invoice.description }}</td>
-      <td>{{ invoice.quantity }}</td>
-      <td>{{ invoice.unit_price }}</td>
-      <td>{{ invoice.amount }}</td>
-    </tr>
+  <table>
+    <tr><th>รหัส</th><th>รายการ</th><th>จำนวน</th><th>ราคา/หน่วย</th><th>รวม</th></tr>
+    {% set total = 0 %}
+    {% for item in invoice.items %}
+      {% set amount = item.quantity * item.unit_price %}
+      {% set total = total + amount %}
+      <tr>
+        <td>{{ item.product_code }}</td>
+        <td>{{ item.description }}</td>
+        <td>{{ item.quantity }}</td>
+        <td>{{ "%.2f"|format(item.unit_price) }}</td>
+        <td>{{ "%.2f"|format(amount) }}</td>
+      </tr>
+    {% endfor %}
   </table>
-  <p>VAT 7%: {{ invoice.vat }} บาท</p>
-  <h4>รวมทั้งหมด: {{ invoice.total }} บาท</h4>
+  <p>รวมก่อนภาษี: {{ "%.2f"|format(total) }}</p>
+  <p>VAT 7%: {{ "%.2f"|format(total * 0.07) }}</p>
+  <h3>ยอดรวม: {{ "%.2f"|format(total * 1.07) }}</h3>
 </body>
 </html>
