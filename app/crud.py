@@ -1,5 +1,6 @@
 from .models import Invoice, InvoiceItem
 from .database import SessionLocal
+from sqlalchemy.orm import joinedload
 
 def create_invoice(data, items_data):
     db = SessionLocal()
@@ -16,6 +17,9 @@ def create_invoice(data, items_data):
 
 def get_invoice(invoice_id):
     db = SessionLocal()
-    invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
+    invoice = db.query(Invoice)\
+    .options(joinedload(Invoice.items))\
+    .filter(Invoice.id == invoice_id)\
+    .first()
     db.close()
     return invoice
