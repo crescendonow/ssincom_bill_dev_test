@@ -29,4 +29,6 @@ class CustomerList(Base):
 
     idx = Column(Integer, primary_key=True, index=True)
     fname = Column(String)
+    cf_personaddress = Column(String)
+    cf_taxid = Column(String)
    

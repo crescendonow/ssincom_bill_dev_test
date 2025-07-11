@@ -20,6 +20,7 @@ function selectCustomer() {
   const match = customers.find(c => normalize(c.fname) === name);
   if (match) {
     document.getElementById("customer_address").value = match.address;
+    document.getElementById("customer_taxid").value = match.taxid;
   }
 }
 

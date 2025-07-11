@@ -25,7 +25,7 @@ def get_customers():
     db = SessionLocal()
     customers = db.query(CustomerList).all()
     db.close()
-    return JSONResponse(content=[{"id": c.idx, "fname": c.fname} for c in customers])
+    return JSONResponse(content=[{"id": c.idx, "fname": c.fname, "address": c.cf_personaddress, "taxid": c.cf_taxid} for c in customers])
 
 @app.post("/submit")
 async def submit(
