@@ -2,6 +2,7 @@ from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from . import models, database, crud, pdf_generator
+from .models import CustomerList 
 from .database import SessionLocal
 from datetime import date
 from typing import List
