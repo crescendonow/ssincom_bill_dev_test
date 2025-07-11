@@ -25,10 +25,19 @@ function selectCustomer() {
 
 function addItem() {
   const div = document.createElement('div');
-  div.className = "item-row";
-  div.innerHTML = `<input name="product_code" placeholder="Product Code">
-                   <input name="description" placeholder="Description">
-                   <input name="quantity" type="number" step="0.01" placeholder="Qty">
-                   <input name="unit_price" type="number" step="0.01" placeholder="Unit Price">`;
+  div.className = "flex flex-wrap gap-4 item-row";
+  div.innerHTML = `
+    <input name="product_code" placeholder="Product Code"
+      class="flex-1 min-w-[120px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
+    <input name="description" placeholder="Description"
+      class="flex-1 min-w-[120px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
+    <input name="quantity" type="number" step="0.01" placeholder="Qty"
+      class="w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
+    <input name="unit_price" type="number" step="0.01" placeholder="Unit Price"
+      class="w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
+  `;
   document.getElementById('items').appendChild(div);
 }
+
+
+
