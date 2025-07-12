@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
   <meta charset="UTF-8">
   <style>
@@ -7,22 +8,33 @@
       font-family: "TH Sarabun New", "Tahoma", sans-serif;
       font-size: 16pt;
     }
+
     table {
       width: 100%;
       border-collapse: collapse;
     }
-    th, td {
+
+    th,
+    td {
       border: 1px solid black;
       padding: 4px;
       vertical-align: top;
     }
+
     .no-border {
       border: none !important;
     }
-    .right { text-align: right; }
-    .center { text-align: center; }
+
+    .right {
+      text-align: right;
+    }
+
+    .center {
+      text-align: center;
+    }
   </style>
 </head>
+
 <body>
 
   <!-- Header -->
@@ -77,17 +89,17 @@
     </thead>
     <tbody>
       {% set total = 0 %}
-      {% for item in invoice.items %}
-        {% set amount = item.quantity * item.unit_price %}
-        {% set total = total + amount %}
-        <tr>
-          <td class="center">{{ loop.index }}</td>
-          <td class="center">{{ item.product_code }}</td>
-          <td>{{ item.description }}</td>
-          <td class="right">{{ item.quantity }}</td>
-          <td class="right">{{ '%.2f' % item.unit_price }}</td>
-          <td class="right">{{ '%.2f' % amount }}</td>
-        </tr>
+      {% for item in invoice["items"] %}
+      {% set amount = item["quantity"] * item["unit_price"] %}
+      {% set total = total + amount %}
+      <tr>
+        <td class="center">{{ loop.index }}</td>
+        <td class="center">{{ item["product_code"] }}</td>
+        <td>{{ item["description"] }}</td>
+        <td class="right">{{ item["quantity"] }}</td>
+        <td class="right">{{ '%.2f' % item["unit_price"] }}</td>
+        <td class="right">{{ '%.2f' % amount }}</td>
+      </tr>
       {% endfor %}
     </tbody>
   </table>
@@ -98,11 +110,26 @@
       <td class="no-border" style="width: 60%;"></td>
       <td>
         <table>
-          <tr><td>รวมเป็นเงิน</td><td class="right">{{ '%.2f' % total }}</td></tr>
-          <tr><td>ส่วนลด</td><td class="right">0.00</td></tr>
-          <tr><td>ยอดก่อน VAT</td><td class="right">{{ '%.2f' % total }}</td></tr>
-          <tr><td>VAT 7%</td><td class="right">{{ '%.2f' % (total * 0.07) }}</td></tr>
-          <tr><td><strong>ยอดรวม</strong></td><td class="right"><strong>{{ '%.2f' % (total * 1.07) }}</strong></td></tr>
+          <tr>
+            <td>รวมเป็นเงิน</td>
+            <td class="right">{{ '%.2f' % total }}</td>
+          </tr>
+          <tr>
+            <td>ส่วนลด</td>
+            <td class="right">0.00</td>
+          </tr>
+          <tr>
+            <td>ยอดก่อน VAT</td>
+            <td class="right">{{ '%.2f' % total }}</td>
+          </tr>
+          <tr>
+            <td>VAT 7%</td>
+            <td class="right">{{ '%.2f' % (total * 0.07) }}</td>
+          </tr>
+          <tr>
+            <td><strong>ยอดรวม</strong></td>
+            <td class="right"><strong>{{ '%.2f' % (total * 1.07) }}</strong></td>
+          </tr>
         </table>
       </td>
     </tr>
@@ -116,8 +143,10 @@
       <td>ผู้มีอำนาจลงนาม<br><br><br>......................</td>
     </tr>
   </table>
-  <button onclick="window.print()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">🖨️ Export to PDF</button>
+  <button onclick="window.print()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">🖨️ Export to
+    PDF</button>
 
 
 </body>
+
 </html>
