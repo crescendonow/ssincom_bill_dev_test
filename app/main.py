@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from . import models, database, crud, pdf_generator
-from .models import CustomerList 
+from .models import CustomerList, ProductList 
 from .database import SessionLocal
 from datetime import date
 from typing import List
@@ -26,6 +26,22 @@ def get_customers():
     customers = db.query(CustomerList).all()
     db.close()
     return JSONResponse(content=[{"id": c.idx, "fname": c.fname, "address": c.cf_personaddress, "taxid": c.cf_taxid} for c in customers])
+
+#get data from productlist 
+@app.get("/api/products")
+def get_products():
+    db = SessionLocal()
+    products = db.query(ProductList).all()
+    db.close()
+    return JSONResponse(content=[
+        {
+            "code": p.cf_itemid,
+            "name": p.cf_itemname,
+            "price": p.cf_itempricelevel_price
+        }
+        for p in products
+    ])
+
 
 @app.post("/submit")
 async def submit(

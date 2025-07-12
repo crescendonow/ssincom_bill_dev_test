@@ -23,6 +23,7 @@ class InvoiceItem(Base):
     amount = Column(Float)
     invoice = relationship("Invoice", back_populates="items")
     
+#get data from customer_list
 class CustomerList(Base):
     __tablename__ = "customer_list"
     __table_args__ = {"schema": "products"}
@@ -31,4 +32,15 @@ class CustomerList(Base):
     fname = Column(String)
     cf_personaddress = Column(String)
     cf_taxid = Column(String)
+ 
+#get data from product_list   
+class ProductList(Base):
+    __tablename__ = "product_list"
+    __table_args__ = {"schema": "products"}
+
+    id = Column(Integer, primary_key=True, index=True)
+    cf_itemid = Column(String)
+    cf_itemname = Column(String)
+    cf_itempricelevel_price = Column(Float)
+
    

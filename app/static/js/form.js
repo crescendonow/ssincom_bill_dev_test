@@ -29,10 +29,10 @@ function addItem() {
   div.className = "flex flex-wrap gap-4 item-row items-end";
 
   div.innerHTML = `
-    <input name="product_code" placeholder="Product Code"
-      class="flex-1 min-w-[120px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
-    <input name="description" placeholder="Description"
-      class="flex-1 min-w-[120px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
+    <input name="product_code" placeholder="Product Code" list="productCodes" oninput="fillProduct(this)"
+      class="flex-1 min-w-[120px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5 product_code">
+    <input name="description" placeholder="Description" list="productNames" oninput="fillProduct(this)"
+      class="flex-1 min-w-[120px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5 description">
     <input name="quantity" type="number" step="0.01" placeholder="Qty" oninput="updateTotal()"
       class="w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5 quantity">
     <input name="unit_price" type="number" step="0.01" placeholder="Unit Price" oninput="updateTotal()"
@@ -43,6 +43,40 @@ function addItem() {
 
   document.getElementById('items').appendChild(div);
   updateTotal();
+}
+
+function updateProductDatalists() {
+  const codeList = document.getElementById("productCodes");
+  const nameList = document.getElementById("productNames");
+
+  codeList.innerHTML = products.map(p => `<option value="${p.code}">`).join("");
+  nameList.innerHTML = products.map(p => `<option value="${p.name}">`).join("");
+}
+
+fetch('/api/products')
+  .then(res => res.json())
+  .then(data => {
+    products = data;
+    updateProductDatalists();
+  });
+
+function fillProduct(input) {
+  const row = input.closest('.item-row');
+  const codeInput = row.querySelector('.product_code');
+  const nameInput = row.querySelector('.description');
+  const priceInput = row.querySelector('.unit_price');
+
+  const keyword = input.value.trim();
+  const match = products.find(p =>
+    p.code === keyword || p.name === keyword
+  );
+
+  if (match) {
+    codeInput.value = match.code;
+    nameInput.value = match.name;
+    priceInput.value = match.price;
+    updateTotal();
+  }
 }
 
 function removeItem(btn) {
@@ -93,13 +127,13 @@ function previewInvoice(event) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(invoice),
   })
-  .then(res => res.text())
-  .then(html => {
-    const previewWin = window.open("", "_blank");
-    previewWin.document.open();
-    previewWin.document.write(html);
-    previewWin.document.close();
-  });
+    .then(res => res.text())
+    .then(html => {
+      const previewWin = window.open("", "_blank");
+      previewWin.document.open();
+      previewWin.document.write(html);
+      previewWin.document.close();
+    });
 
   return false;
 }
