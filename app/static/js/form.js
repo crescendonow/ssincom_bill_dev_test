@@ -29,20 +29,69 @@ function addItem() {
   div.className = "flex flex-wrap gap-4 item-row items-end";
 
   div.innerHTML = `
-    <input name="product_code" placeholder="Product Code" list="productCodes" oninput="fillProduct(this)"
-      class="flex-1 min-w-[120px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5 product_code">
-    <input name="description" placeholder="Description" list="productNames" oninput="fillProduct(this)"
-      class="flex-1 min-w-[120px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5 description">
-    <input name="quantity" type="number" step="0.01" placeholder="Qty" oninput="updateTotal()"
-      class="w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5 quantity">
-    <input name="unit_price" type="number" step="0.01" placeholder="Unit Price" oninput="updateTotal()"
-      class="w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5 unit_price">
-    <button type="button" onclick="removeItem(this)"
-      class="text-red-600 hover:text-red-800 font-semibold px-2">🗑️</button>
-  `;
-
+  <input name="product_code" readonly placeholder="Product Code"
+    class="product_code flex-1 min-w-[120px] bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5">
+  <input name="description" readonly placeholder="Description"
+    class="description flex-1 min-w-[120px] bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5">
+  <input name="quantity" type="number" step="0.01" placeholder="Qty" oninput="updateTotal()"
+    class="quantity w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
+  <input name="unit_price" type="number" step="0.01" placeholder="Unit Price"
+    class="unit_price w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
+  <button type="button" onclick="openProductModal(this)"
+    class="text-sm text-blue-600 hover:text-blue-800 px-2">🔍 ค้นหา</button>
+  <button type="button" onclick="removeItem(this)"
+    class="text-red-600 hover:text-red-800 font-semibold px-2">🗑️</button>
+`;
   document.getElementById('items').appendChild(div);
   updateTotal();
+}
+
+let selectedRow = null;
+
+function openProductModal(btn) {
+  selectedRow = btn.closest('.item-row');
+  filterProducts(); // load all products initially
+  document.getElementById("productModal").classList.remove("hidden");
+}
+
+function closeProductModal() {
+  document.getElementById("productModal").classList.add("hidden");
+  selectedRow = null;
+}
+
+function filterProducts() {
+  const keyword = document.getElementById("productSearch").value.toLowerCase().trim();
+  const listDiv = document.getElementById("productList");
+  listDiv.innerHTML = "";
+
+  const filtered = products.filter(p =>
+    p.code?.toLowerCase().startsWith(keyword) ||
+    p.name?.toLowerCase().startsWith(keyword) ||
+    p.name?.includes(keyword) ||
+    p.code?.includes(keyword)
+  );
+
+  if (filtered.length === 0) {
+    listDiv.innerHTML = `<div class="p-2 text-gray-500">ไม่พบสินค้า</div>`;
+    return;
+  }
+
+  filtered.forEach(p => {
+    const div = document.createElement("div");
+    div.className = "p-2 hover:bg-blue-50 cursor-pointer";
+    div.innerHTML = `<strong>${p.code}</strong> - ${p.name} <span class="float-right text-gray-600">฿${p.price}</span>`;
+    div.onclick = () => selectProduct(p);
+    listDiv.appendChild(div);
+  });
+}
+
+function selectProduct(p) {
+  if (!selectedRow) return;
+  selectedRow.querySelector('.product_code').value = p.code;
+  selectedRow.querySelector('.description').value = p.name;
+  selectedRow.querySelector('.unit_price').value = p.price;
+  updateTotal();
+  closeProductModal();
 }
 
 function updateProductDatalists() {
