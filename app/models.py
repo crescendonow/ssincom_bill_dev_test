@@ -38,7 +38,7 @@ class ProductList(Base):
     __tablename__ = "product_list"
     __table_args__ = {"schema": "products"}
 
-    id = Column(Integer, primary_key=True, index=True)
+    idx = Column(Integer, primary_key=True, index=True)
     cf_itemid = Column(String)
     cf_itemname = Column(String)
     cf_itempricelevel_price = Column(Float)
