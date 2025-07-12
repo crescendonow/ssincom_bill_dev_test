@@ -55,15 +55,17 @@
       <!-- Items -->
       <hr class="my-4">
       <div id="items" class="space-y-4">
-        <div class="flex flex-wrap gap-4 item-row">
-          <input name="product_code" placeholder="Product Code"
-            class="flex-1 min-w-[120px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
-          <input name="description" placeholder="Description"
-            class="flex-1 min-w-[120px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
-          <input name="quantity" type="number" step="0.01" placeholder="Qty"
-            class="w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
+        <div class="flex flex-wrap gap-4 item-row items-end">
+          <input name="product_code" readonly placeholder="Product Code"
+            class="product_code flex-1 min-w-[120px] bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5">
+          <input name="description" readonly placeholder="Description"
+            class="description flex-1 min-w-[120px] bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5">
+          <input name="quantity" type="number" step="0.01" placeholder="Qty" oninput="updateTotal()"
+            class="quantity w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
           <input name="unit_price" type="number" step="0.01" placeholder="Unit Price"
-            class="w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
+            class="unit_price w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
+          <button type="button" onclick="openProductModal(this)"
+            class="text-sm text-blue-600 hover:text-blue-800 px-2">🔍 ค้นหา</button>
         </div>
         <div class="pt-4">
           <label class="block mb-1 text-sm font-medium text-gray-700">Total Amount</label>
@@ -80,6 +82,22 @@
         </button>
       </div>
     </form>
+  </div>
+
+  <!-- Product Selection Modal -->
+  <div id="productModal" tabindex="-1" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 overflow-y-auto">
+    <div class="relative w-full max-w-2xl mx-auto mt-20 bg-white rounded-lg shadow p-6">
+      <h3 class="text-xl font-bold mb-4">เลือกสินค้า</h3>
+      <input type="text" id="productSearch" placeholder="ค้นหาด้วยชื่อหรือรหัส..." oninput="filterProducts()"
+        class="w-full mb-4 p-2 border border-gray-300 rounded">
+
+      <div id="productList" class="max-h-72 overflow-y-auto divide-y"></div>
+
+      <div class="mt-4 text-right">
+        <button type="button" onclick="closeProductModal()"
+          class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">ปิด</button>
+      </div>
+    </div>
   </div>
 
   <script src="/static/js/form.js"></script>
