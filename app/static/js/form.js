@@ -59,3 +59,48 @@ function updateTotal() {
   });
   document.getElementById("total_amount").innerText = `฿ ${total.toFixed(2)}`;
 }
+
+function previewInvoice(event) {
+  event.preventDefault(); // cancel old submit
+
+  const form = document.getElementById("invoice_form");
+  const formData = new FormData(form);
+
+  const invoice = {
+    invoice_number: formData.get("invoice_number"),
+    invoice_date: formData.get("invoice_date"),
+    customer_name: formData.get("customer_name"),
+    customer_taxid: formData.get("customer_taxid"),
+    customer_address: formData.get("customer_address"),
+    items: [],
+  };
+
+  // get produt value
+  document.querySelectorAll("#items .item-row").forEach(row => {
+    const product_code = row.querySelector('[name="product_code"]').value;
+    const description = row.querySelector('[name="description"]').value;
+    const quantity = parseFloat(row.querySelector('[name="quantity"]').value || 0);
+    const unit_price = parseFloat(row.querySelector('[name="unit_price"]').value || 0);
+
+    if (product_code || description) {
+      invoice.items.push({ product_code, description, quantity, unit_price });
+    }
+  });
+
+  // send to preview
+  fetch("/preview", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(invoice),
+  })
+  .then(res => res.text())
+  .then(html => {
+    const previewWin = window.open("", "_blank");
+    previewWin.document.open();
+    previewWin.document.write(html);
+    previewWin.document.close();
+  });
+
+  return false;
+}
+

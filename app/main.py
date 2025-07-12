@@ -57,6 +57,11 @@ async def submit(
     invoice = crud.create_invoice(data, items)
     return {"message": "saved", "invoice_id": invoice.id}
 
+@app.post("/preview", response_class=HTMLResponse)
+async def preview_invoice(request: Request):
+    invoice_data = await request.json()
+    return templates.TemplateResponse("invoice.html", {"request": request, "invoice": invoice_data})
+
 @app.get("/export-pdf/{invoice_id}")
 async def export_pdf(invoice_id: int):
     invoice = crud.get_invoice(invoice_id)
