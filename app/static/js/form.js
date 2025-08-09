@@ -1,5 +1,6 @@
 let customers = [];
 
+// Load customers (for autofill)
 fetch('/api/customers/all')
   .then(res => res.json())
   .then(data => {
@@ -17,46 +18,53 @@ function selectCustomer() {
   const match = customers.find(c => normalize(c.fname) === name);
   if (!match) return;
 
-  // present columm 
+  // Basic fields
   document.getElementById("customer_address").value = match.cf_personaddress || '';
   document.getElementById("customer_taxid").value   = match.cf_taxid || '';
 
-  // new column 
-  document.getElementById("personid").value            = match.personid || '';
-  document.getElementById("tel").value                 = (match.cf_personaddress_tel || match.tel || '');
-  document.getElementById("mobile").value              = (match.cf_personaddress_mobile || match.mobile || '');
-  document.getElementById("cf_personzipcode").value    = match.cf_personzipcode || '';
-  document.getElementById("cf_provincename").value     = match.cf_provincename || '';
-  document.getElementById("fmlpaymentcreditday").value = match.fmlpaymentcreditday ?? '';
+  // Extra customer details (if your form.html has these inputs)
+  const fill = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
+  fill("personid", match.personid);
+  fill("tel", match.cf_personaddress_tel || match.tel);
+  fill("mobile", match.cf_personaddress_mobile || match.mobile);
+  fill("cf_personzipcode", match.cf_personzipcode);
+  fill("cf_provincename", match.cf_provincename);
+  fill("fmlpaymentcreditday", match.fmlpaymentcreditday);
 }
+
+// ------- Items / Products -------
+let selectedRow = null;
+let products = [];
 
 function addItem() {
   const div = document.createElement('div');
   div.className = "flex flex-wrap gap-4 item-row items-end";
-
   div.innerHTML = `
-  <input name="product_code" readonly placeholder="Product Code"
-    class="product_code flex-1 min-w-[120px] bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5">
-  <input name="description" readonly placeholder="Description"
-    class="description flex-1 min-w-[120px] bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5">
-  <input name="quantity" type="number" step="0.01" placeholder="Qty" oninput="updateTotal()"
-    class="quantity w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
-  <input name="unit_price" type="number" step="0.01" placeholder="Unit Price"
-    class="unit_price w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
-  <button type="button" onclick="openProductModal(this)"
-    class="text-sm text-blue-600 hover:text-blue-800 px-2">🔍 ค้นหา</button>
-  <button type="button" onclick="removeItem(this)"
-    class="text-red-600 hover:text-red-800 font-semibold px-2">🗑️</button>
-`;
+    <input name="product_code" readonly placeholder="Product Code"
+      class="product_code flex-1 min-w-[120px] bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5">
+    <input name="description" readonly placeholder="Description"
+      class="description flex-1 min-w-[120px] bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5">
+    <input name="quantity" type="number" step="0.01" placeholder="Qty" oninput="updateTotal()"
+      class="quantity w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
+    <input name="unit_price" type="number" step="0.01" placeholder="Unit Price"
+      class="unit_price w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
+    <button type="button" onclick="openProductModal(this)"
+      class="text-sm text-blue-600 hover:text-blue-800 px-2">🔍 ค้นหา</button>
+    <button type="button" onclick="removeItem(this)"
+      class="text-red-600 hover:text-red-800 font-semibold px-2">🗑️</button>
+  `;
   document.getElementById('items').appendChild(div);
   updateTotal();
 }
 
-let selectedRow = null;
+function removeItem(btn) {
+  btn.parentElement.remove();
+  updateTotal();
+}
 
 function openProductModal(btn) {
   selectedRow = btn.closest('.item-row');
-  filterProducts(); // load all products initially
+  filterProducts();
   document.getElementById("productModal").classList.remove("hidden");
 }
 
@@ -66,15 +74,15 @@ function closeProductModal() {
 }
 
 function filterProducts() {
-  const keyword = document.getElementById("productSearch").value.toLowerCase().trim();
+  const keyword = (document.getElementById("productSearch").value || "").toLowerCase().trim();
   const listDiv = document.getElementById("productList");
   listDiv.innerHTML = "";
 
   const filtered = products.filter(p =>
     p.code?.toLowerCase().startsWith(keyword) ||
     p.name?.toLowerCase().startsWith(keyword) ||
-    p.name?.includes(keyword) ||
-    p.code?.includes(keyword)
+    p.name?.toLowerCase().includes(keyword) ||
+    p.code?.toLowerCase().includes(keyword)
   );
 
   if (filtered.length === 0) {
@@ -100,45 +108,6 @@ function selectProduct(p) {
   closeProductModal();
 }
 
-function updateProductDatalists() {
-  const codeList = document.getElementById("productCodes");
-  const nameList = document.getElementById("productNames");
-
-  codeList.innerHTML = products.map(p => `<option value="${p.code}">`).join("");
-  nameList.innerHTML = products.map(p => `<option value="${p.name}">`).join("");
-}
-
-fetch('/api/products')
-  .then(res => res.json())
-  .then(data => {
-    products = data;
-    updateProductDatalists();
-  });
-
-function fillProduct(input) {
-  const row = input.closest('.item-row');
-  const codeInput = row.querySelector('.product_code');
-  const nameInput = row.querySelector('.description');
-  const priceInput = row.querySelector('.unit_price');
-
-  const keyword = input.value.trim();
-  const match = products.find(p =>
-    p.code === keyword || p.name === keyword
-  );
-
-  if (match) {
-    codeInput.value = match.code;
-    nameInput.value = match.name;
-    priceInput.value = match.price;
-    updateTotal();
-  }
-}
-
-function removeItem(btn) {
-  btn.parentElement.remove();
-  updateTotal();
-}
-
 function updateTotal() {
   let total = 0;
   document.querySelectorAll("#items .item-row").forEach(row => {
@@ -149,45 +118,60 @@ function updateTotal() {
   document.getElementById("total_amount").innerText = `฿ ${total.toFixed(2)}`;
 }
 
-  // debounce helper
-  function debounce(fn, ms=400){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); } }
+// preload products
+fetch('/api/products')
+  .then(res => res.json())
+  .then(data => { products = data; });
 
-  const invInput = document.getElementById('invoice_number');
-  const help = document.getElementById('invNoHelp');
-  const form = document.getElementById('invoice_form');
-  let invDup = false;
+// ------- Duplicate check: invoice number -------
+function debounce(fn, ms = 400) {
+  let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+}
 
-  async function checkDup(num){
-    if(!num) { invDup=false; help.classList.add('hidden'); return; }
-    const res = await fetch(`/api/invoices/check-number?number=${encodeURIComponent(num)}`);
-    const data = await res.json();
-    invDup = !!data.exists;
-    if(invDup){
+const invInput = document.getElementById('invoice_number');
+const help = document.getElementById('invNoHelp'); // <p id="invNoHelp" ...> in form.html
+const form = document.getElementById('invoice_form');
+let invDup = false;
+
+async function checkDup(num) {
+  if (!num) {
+    invDup = false;
+    if (help) help.classList.add('hidden');
+    invInput?.classList?.remove('border-red-500');
+    return;
+  }
+  const res = await fetch(`/api/invoices/check-number?number=${encodeURIComponent(num)}`);
+  const data = await res.json();
+  invDup = !!data.exists;
+  if (help) {
+    if (invDup) {
       help.classList.remove('hidden');
-      invInput.classList.add('border-red-500');
-    }else{
+      invInput?.classList?.add('border-red-500');
+    } else {
       help.classList.add('hidden');
-      invInput.classList.remove('border-red-500');
+      invInput?.classList?.remove('border-red-500');
     }
   }
+}
 
-  invInput.addEventListener('input', debounce(()=>checkDup(invInput.value.trim()), 400));
+if (invInput) {
+  invInput.addEventListener('input', debounce(() => checkDup(invInput.value.trim()), 400));
+}
 
-  // if submit duplicate 
-  form.addEventListener('submit', (e)=>{
-    if(invDup){
+if (form) {
+  form.addEventListener('submit', (e) => {
+    if (invDup) {
       e.preventDefault();
-      invInput.focus();
+      invInput?.focus();
     }
-  })
+  });
+}
 
+// ------- Preview & Save (with GRN/DN included in preview) -------
 async function saveInvoice() {
-  const form = document.getElementById("invoice_form");
-  const fd = new FormData(form);
+  const formEl = document.getElementById("invoice_form");
+  const fd = new FormData(formEl);
 
-  
-  const rows = document.querySelectorAll("#items .item-row");
-  
   const res = await fetch("/submit", { method: "POST", body: fd });
   if (!res.ok) {
     const t = await res.text();
@@ -199,14 +183,14 @@ async function saveInvoice() {
 }
 
 function previewInvoice() {
-  const form = document.getElementById("invoice_form");
-  const fd = new FormData(form);
+  const formEl = document.getElementById("invoice_form");
+  const fd = new FormData(formEl);
 
   const invoice = {
     invoice_number: fd.get("invoice_number"),
     invoice_date: fd.get("invoice_date"),
-    grn_number: fd.get("grn_number"),      // << add form
-    dn_number: fd.get("dn_number"),        // << add form
+    grn_number: fd.get("grn_number"), // ✅ included
+    dn_number: fd.get("dn_number"),   // ✅ included
     customer_name: fd.get("customer_name"),
     customer_taxid: fd.get("customer_taxid"),
     customer_address: fd.get("customer_address"),
@@ -235,3 +219,13 @@ function previewInvoice() {
   });
 }
 
+// expose for inline handlers in HTML
+window.addItem = addItem;
+window.openProductModal = openProductModal;
+window.closeProductModal = closeProductModal;
+window.removeItem = removeItem;
+window.updateTotal = updateTotal;
+window.selectCustomer = selectCustomer;
+window.previewInvoice = previewInvoice;
+window.saveInvoice = saveInvoice;
+window.filterProducts = filterProducts;
