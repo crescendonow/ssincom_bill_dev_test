@@ -70,8 +70,41 @@
           <input type="text" name="customer_address" id="customer_address"
             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5">
         </div>
+        
+        <!-- More customer details (auto-fill) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label for="personid" class="block mb-2 text-sm font-medium text-gray-900">รหัสลูกค้า (personid)</label>
+            <input type="text" name="personid" id="personid"
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5">
+          </div>
+          <div>
+            <label for="tel" class="block mb-2 text-sm font-medium text-gray-900">โทรศัพท์</label>
+            <input type="text" name="tel" id="tel"
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5">
+          </div>
+          <div>
+            <label for="mobile" class="block mb-2 text-sm font-medium text-gray-900">มือถือ</label>
+            <input type="text" name="mobile" id="mobile"
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5">
+          </div>
+          <div>
+            <label for="cf_personzipcode" class="block mb-2 text-sm font-medium text-gray-900">รหัสไปรษณีย์</label>
+            <input type="text" name="cf_personzipcode" id="cf_personzipcode"
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5">
+          </div>
+          <div>
+            <label for="cf_provincename" class="block mb-2 text-sm font-medium text-gray-900">จังหวัด</label>
+            <input type="text" name="cf_provincename" id="cf_provincename"
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5">
+          </div>
+          <div>
+            <label for="fmlpaymentcreditday" class="block mb-2 text-sm font-medium text-gray-900">เครดิต (วัน)</label>
+            <input type="number" name="fmlpaymentcreditday" id="fmlpaymentcreditday"
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5">
+          </div>
+        </div>
 
-        <!-- Items -->
         <!-- Items Section -->
         <hr class="my-4">
         <div id="items" class="space-y-4">

@@ -41,17 +41,29 @@ def check_invoice_number(number: str = Query(..., min_length=1)):
 @app.post("/submit")
 async def submit(
     invoice_number: str = Form(...),
-    invoice_date: str = Form(None),   # รับเป็น string
+    invoice_date: str = Form(None),
     grn_number: str = Form(None),
     dn_number: str = Form(None),
+
+    # from form
     customer_name: str = Form(None),
     customer_taxid: str = Form(None),
     customer_address: str = Form(None),
+
+    # new column add
+    personid: str = Form(None),
+    tel: str = Form(None),
+    mobile: str = Form(None),
+    cf_personzipcode: str = Form(None),
+    cf_provincename: str = Form(None),
+    fmlpaymentcreditday: int = Form(None),
+
     product_code: List[str] = Form(...),
     description: List[str] = Form(...),
     quantity: List[float] = Form(...),
     unit_price: List[float] = Form(...)
 ):
+    from datetime import datetime
     db = SessionLocal()
     try:
         # parse date 
@@ -64,41 +76,41 @@ async def submit(
                 except:
                     pass
 
-        # check duplicate number
+        # check duplicate number 
         if db.query(models.Invoice).filter(models.Invoice.invoice_number == invoice_number).first():
             return JSONResponse(status_code=409, content={"detail": "Duplicate invoice_number"})
 
-        # create title 
         inv = models.Invoice(
             invoice_number=invoice_number,
             invoice_date=d,
             grn_number=grn_number,
             dn_number=dn_number,
             fname=customer_name,
-            personid=None,
-            tel=None, mobile=None,
+            personid=personid,
+            tel=tel,
+            mobile=mobile,
             cf_personaddress=customer_address,
-            cf_personzipcode=None, cf_provincename=None,
+            cf_personzipcode=cf_personzipcode,
+            cf_provincename=cf_provincename,
             cf_taxid=customer_taxid,
-            fmlpaymentcreditday=None
+            fmlpaymentcreditday=fmlpaymentcreditday
         )
         db.add(inv)
-        db.flush()  # get inv.idx
+        db.flush()
 
-        # save list 
         for i in range(len(product_code)):
             qty   = float(quantity[i] or 0)
             price = float(unit_price[i] or 0)
             db.add(models.InvoiceItem(
                 invoice_number=inv.idx,
-                personid=None,
+                personid=personid,
                 cf_itemid=product_code[i],
                 cf_itemname=description[i],
                 cf_unitname=None,
                 cf_itempricelevel_price=price,
                 cf_items_ordinary=i+1,
                 quantity=qty,
-                amount=qty * price
+                amount=qty*price
             ))
 
         db.commit()

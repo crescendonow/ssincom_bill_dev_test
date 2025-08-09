@@ -1,27 +1,33 @@
 let customers = [];
 
-fetch('/api/customers')
+fetch('/api/customers/all')
   .then(res => res.json())
   .then(data => {
     customers = data;
-    let html = "";
-    data.forEach(c => {
-      html += `<option value="${c.fname}">`;
-    });
+    const html = data.map(c => `<option value="${c.fname}">`).join('');
     document.getElementById("customerList").innerHTML = html;
   });
 
 function normalize(str) {
-  return str.normalize("NFC").trim();
+  return (str || '').normalize("NFC").trim();
 }
 
 function selectCustomer() {
   const name = normalize(document.getElementById("customer_name").value);
   const match = customers.find(c => normalize(c.fname) === name);
-  if (match) {
-    document.getElementById("customer_address").value = match.address;
-    document.getElementById("customer_taxid").value = match.taxid;
-  }
+  if (!match) return;
+
+  // present columm 
+  document.getElementById("customer_address").value = match.cf_personaddress || '';
+  document.getElementById("customer_taxid").value   = match.cf_taxid || '';
+
+  // new column 
+  document.getElementById("personid").value            = match.personid || '';
+  document.getElementById("tel").value                 = (match.cf_personaddress_tel || match.tel || '');
+  document.getElementById("mobile").value              = (match.cf_personaddress_mobile || match.mobile || '');
+  document.getElementById("cf_personzipcode").value    = match.cf_personzipcode || '';
+  document.getElementById("cf_provincename").value     = match.cf_provincename || '';
+  document.getElementById("fmlpaymentcreditday").value = match.fmlpaymentcreditday ?? '';
 }
 
 function addItem() {
