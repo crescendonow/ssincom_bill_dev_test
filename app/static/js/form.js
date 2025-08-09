@@ -167,11 +167,84 @@ if (form) {
   });
 }
 
+// เรียกเมื่อแก้จำนวน/ราคาแต่ละแถว
+function updateTotal() {
+  let sum = 0;
+  document.querySelectorAll('#items .item-row').forEach(row => {
+    const q = parseFloat(row.querySelector('.quantity').value || 0);
+    const p = parseFloat(row.querySelector('.unit_price').value || 0);
+    sum += q * p;
+  });
+  const totalEl = document.getElementById('total_amount');
+  totalEl.textContent = '฿ ' + sum.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+  totalEl.dataset.value = String(sum);  // <-- เก็บค่าเลขดิบไว้ที่นี่
+}
+
+function collectItems() {
+  const items = [];
+  document.querySelectorAll('#items .item-row').forEach(row => {
+    items.push({
+      product_code: row.querySelector('.product_code').value || '',
+      description:  row.querySelector('.description').value || '',
+      quantity:     parseFloat(row.querySelector('.quantity').value || 0),
+      unit_price:   parseFloat(row.querySelector('.unit_price').value || 0),
+    });
+  });
+  return items;
+}
+
+function collectFormData() {
+  const v = id => document.getElementById(id)?.value ?? '';
+  const totalRaw = parseFloat(document.getElementById('total_amount')?.dataset.value || 0);
+
+  return {
+    // หัวเอกสาร
+    invoice_number: v('invoice_number'),
+    invoice_date: v('invoice_date'),
+    grn_number: v('grn_number'),
+    dn_number: v('dn_number'),
+    po_number: v('po_number'),
+
+    // ลูกค้า
+    customer_name: v('customer_name'),
+    customer_taxid: v('customer_taxid'),
+    customer_address: v('customer_address'),
+    personid: v('personid'),                        
+    tel: v('tel'),
+    mobile: v('mobile'),
+    cf_personzipcode: v('cf_personzipcode'),
+    cf_provincename: v('cf_provincename'),
+    fmlpaymentcreditday: v('fmlpaymentcreditday'), 
+
+    // ยอดรวมจากฟอร์ม (optional, ที่ template ก็คำนวณได้เองอยู่แล้ว)
+    total_amount: totalRaw,                          
+
+    // สินค้า
+    items: collectItems(),
+
+    // เผื่ออนาคต
+    // discount: 0,
+    // vat_rate: 7
+  };
+}
+
+async function previewInvoice(evt) {
+  if (evt) evt.preventDefault();
+  const payload = collectFormData();
+
+  const res = await fetch('/preview', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  });
+  // …จัดการเปิดหน้า preview ตามเดิม…
+}
+
 // ------- Preview & Save (with GRN/DN included in preview) -------
 async function saveInvoice() {
   const formEl = document.getElementById("invoice_form");
   const fd = new FormData(formEl);
-  
+
   const res = await fetch("/submit", { method: "POST", body: fd });
   if (!res.ok) {
     const t = await res.text();
