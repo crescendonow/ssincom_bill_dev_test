@@ -461,10 +461,7 @@ def api_check_invoice_number(number: str = Query(..., min_length=1)):
         
 @app.post("/preview", response_class=HTMLResponse)
 async def preview(request: Request, payload: dict):
-    return templates.TemplateResponse(
-        "invoice.html",
-        {"request": request, "invoice": payload}  
-    )
+    return render_template("invoice.html", invoice=payload)
 
 @app.get("/export-pdf/{invoice_id}")
 async def export_pdf(invoice_id: int):
