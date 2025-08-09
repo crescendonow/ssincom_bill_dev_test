@@ -102,7 +102,7 @@ async def submit(
             qty   = float(quantity[i] or 0)
             price = float(unit_price[i] or 0)
             db.add(models.InvoiceItem(
-                invoice_number=inv.idx,
+                invoice_number=inv.invoice_number,
                 personid=personid,
                 cf_itemid=product_code[i],
                 cf_itemname=description[i],
