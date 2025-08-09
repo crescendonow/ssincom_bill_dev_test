@@ -52,8 +52,9 @@ class ProductList(Base):
     __table_args__ = {"schema": "products"}
 
     idx = Column(Integer, primary_key=True, index=True)
-    cf_itemid = Column(String)
-    cf_itemname = Column(String)
-    cf_itempricelevel_price = Column(Float)
-
+    cf_itemid = Column(String(6))           # product id
+    cf_itemname = Column(String(1000))      # product name
+    cf_unitname = Column(String(20))        # unit
+    cf_itempricelevel_price = Column(Float) # price
+    cf_items_ordinary = Column(Integer)     # order/status
    
