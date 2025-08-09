@@ -44,6 +44,7 @@ class InvoiceItem(Base):
 
     invoice = relationship("Invoice", back_populates="items")
     
+
 #get data from customer_list
 class CustomerList(Base):
     __tablename__ = "customer_list"

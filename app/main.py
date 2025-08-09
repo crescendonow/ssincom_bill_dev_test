@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Form, Request, HTTPException
+from fastapi import FastAPI, Form, Request, HTTPException, Query
 from sqlalchemy import or_, and_
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -26,6 +26,17 @@ async def dashboard(request: Request):
 async def form_page(request: Request):
     return templates.TemplateResponse("form.html", {"request": request})
 
+#function duplicate check invoice_number 
+def check_invoice_number(number: str = Query(..., min_length=1)):
+    db = SessionLocal()
+    try:
+        exists = db.query(models.Invoice)\
+                   .filter(models.Invoice.invoice_number == number)\
+                   .first() is not None
+        return {"exists": bool(exists)}
+    finally:
+        db.close()
+        
 #api for submit invoice from form.html 
 @app.post("/submit")
 async def submit(
@@ -47,6 +58,15 @@ async def submit(
 ):
     db = SessionLocal()
     try:
+        # duplicate check 
+        dup = db.query(models.Invoice)\
+                .filter(models.Invoice.invoice_number == invoice_number)\
+                .first()
+        if dup:
+            return JSONResponse(
+                status_code=409,
+                content={"detail": "Duplicate invoice_number"}
+            )
         # create invoice (head document)
         inv = models.Invoice(
             invoice_number=invoice_number,

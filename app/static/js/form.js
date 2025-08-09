@@ -143,6 +143,38 @@ function updateTotal() {
   document.getElementById("total_amount").innerText = `฿ ${total.toFixed(2)}`;
 }
 
+  // debounce helper
+  function debounce(fn, ms=400){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); } }
+
+  const invInput = document.getElementById('invoice_number');
+  const help = document.getElementById('invNoHelp');
+  const form = document.getElementById('invoice_form');
+  let invDup = false;
+
+  async function checkDup(num){
+    if(!num) { invDup=false; help.classList.add('hidden'); return; }
+    const res = await fetch(`/api/invoices/check-number?number=${encodeURIComponent(num)}`);
+    const data = await res.json();
+    invDup = !!data.exists;
+    if(invDup){
+      help.classList.remove('hidden');
+      invInput.classList.add('border-red-500');
+    }else{
+      help.classList.add('hidden');
+      invInput.classList.remove('border-red-500');
+    }
+  }
+
+  invInput.addEventListener('input', debounce(()=>checkDup(invInput.value.trim()), 400));
+
+  // if submit duplicate 
+  form.addEventListener('submit', (e)=>{
+    if(invDup){
+      e.preventDefault();
+      invInput.focus();
+    }
+  })
+
 function previewInvoice(event) {
   event.preventDefault(); // cancel old submit
 
