@@ -82,7 +82,7 @@
 
         <div class="flex gap-3">
           <button type="submit" class="px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">💾 บันทึก</button>
-          <button type="button" id="btnNew" class="px-5 py-2 border rounded hover:bg-gray-50">➕ เพิ่มใหม่</button>
+          <button type="button" id="btnReset" class="px-5 py-2 border rounded hover:bg-gray-50">♻️ รีเซ็ต</button>
           <button type="button" id="btnDelete" class="px-5 py-2 bg-red-600 text-white rounded hover:bg-red-700 hidden">🗑️ ลบ</button>
         </div>
       </form>
@@ -242,7 +242,7 @@
     }
 
     document.getElementById('customerForm').addEventListener('submit', save);
-    document.getElementById('btnNew').addEventListener('click', resetForm);
+    document.getElementById('btnReset').addEventListener('click', resetForm);
     document.getElementById('btnDelete').addEventListener('click', del);
     document.getElementById('search').addEventListener('input', searchBox);
 
