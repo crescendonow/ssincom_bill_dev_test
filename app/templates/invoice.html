@@ -147,9 +147,9 @@
       <div class="col right" style="flex:0 0 260px;">
         <div class="box">
           <div class="title" style="font-size:18pt;">ต้นฉบับใบกำกับภาษี/ใบส่งของ/ใบแจ้งหนี้</div>
-          <div class="mt6">เลขประจำตัวผู้เสียภาษี: <b>{{ company_tax_id }}</b></div>
-          <div class="mt6">สาขา: <b>{{ company_branch or 'สำนักงานใหญ่' }}</b></div>
-          <div class="mt6">เลขที่ผู้เสียภาษีอากร: <b>{{ company_tax_reg or '' }}</b></div>
+          <div class="mt6">เลขประจำตัวผู้เสียภาษี: <b>{{ invoice.company_tax_id }}</b></div>
+          <div class="mt6">สาขา: <b>{{ invoice.company_branch or 'สำนักงานใหญ่' }}</b></div>
+          <div class="mt6">เลขที่ผู้เสียภาษีอากร: <b>{{ invoice.company_tax_reg or '' }}</b></div>
         </div>
       </div>
     </div>
@@ -157,20 +157,20 @@
     <!-- แถวข้อมูลลูกค้า + เลขที่เอกสาร -->
     <div class="row mt10">
       <div class="col box-light">
-        <div class="muted">รหัสลูกค้า: <b>{{ customer_code or personid }}</b></div>
-        <div class="mt6">ชื่อลูกค้า: <b>{{ customer_name }}</b></div>
-        <div class="mt6">เลขประจำตัวผู้เสียภาษี: <b>{{ customer_taxid }}</b> / {{ customer_branch or
+        <div class="muted">รหัสลูกค้า: <b>{{ invoice.customer_code or invoice.personid }}</b></div>
+        <div class="mt6">ชื่อลูกค้า: <b>{{ invoice.customer_name }}</b></div>
+        <div class="mt6">เลขประจำตัวผู้เสียภาษี: <b>{{ invoice.customer_taxid }}</b> / {{ invoice.customer_branch or
           'สำนักงานใหญ่' }}</div>
-        <div class="mt6">ที่อยู่: <b>{{ customer_address }}</b></div>
-        <div class="mt6">โทรศัพท์: <b>{{ tel or mobile or '' }}</b></div>
+        <div class="mt6">ที่อยู่: <b>{{ invoice.customer_address }}</b></div>
+        <div class="mt6">โทรศัพท์: <b>{{ invoice.tel or invoice.mobile or '' }}</b></div>
       </div>
       <div class="col box-light" style="flex:0 0 320px;">
-        <div>เลขที่: <b>{{ invoice_number }}</b></div>
-        <div class="mt6">วันที่: <b>{{ invoice_date }}</b></div>
-        <div class="mt6">เลขที่ใบสั่งซื้อ: <b>{{ po_number }}</b></div>
-        <div class="mt6">เงื่อนไขการชำระเงิน: <b>{{ fmlpaymentcreditday }}</b></div>
-        <div class="mt6">เลขที่ใบรับสินค้า: <b>{{ grn_number }}</b></div>
-        <div class="mt6">เลขที่ใบส่งสินค้า: <b>{{ dn_number }}</b></div>
+        <div>เลขที่: <b>{{ invoice.invoice_number }}</b></div>
+        <div class="mt6">วันที่: <b>{{ invoice.invoice_date }}</b></div>
+        <div class="mt6">เลขที่ใบสั่งซื้อ: <b>{{ invoice.po_number }}</b></div>
+        <div class="mt6">เงื่อนไขการชำระเงิน: <b>{{ invoice.fmlpaymentcreditday }}</b></div>
+        <div class="mt6">เลขที่ใบรับสินค้า: <b>{{ invoice.grn_number }}</b></div>
+        <div class="mt6">เลขที่ใบส่งสินค้า: <b>{{ invoice.dn_number }}</b></div>
       </div>
     </div>
 
