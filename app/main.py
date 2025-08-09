@@ -434,36 +434,15 @@ def get_products():
     ])
 
 
-@app.post("/submit")
-async def submit(
-    invoice_number: str = Form(...),
-    invoice_date: date = Form(...),
-    customer_name: str = Form(...),
-    customer_taxid: str = Form(...),
-    customer_address: str = Form(...),
-    product_code: List[str] = Form(...),
-    description: List[str] = Form(...),
-    quantity: List[float] = Form(...),
-    unit_price: List[float] = Form(...)
-):
-    data = {
-        "invoice_number": invoice_number,
-        "invoice_date": invoice_date,
-        "customer_name": customer_name,
-        "customer_taxid": customer_taxid,
-        "customer_address": customer_address
-    }
-    items = []
-    for i in range(len(product_code)):
-        items.append({
-            "product_code": product_code[i],
-            "description": description[i],
-            "quantity": quantity[i],
-            "unit_price": unit_price[i]
-        })
-    invoice = crud.create_invoice(data, items)
-    return {"message": "saved", "invoice_id": invoice.id}
-
+@app.get("/api/invoices/check-number")
+def api_check_invoice_number(number: str = Query(..., min_length=1)):
+    db = SessionLocal()
+    try:
+        exists = db.query(models.Invoice).filter(models.Invoice.invoice_number == number).first() is not None
+        return {"exists": bool(exists)}
+    finally:
+        db.close()
+        
 @app.post("/preview", response_class=HTMLResponse)
 async def preview_invoice(request: Request):
     invoice_data = await request.json()

@@ -20,114 +20,110 @@
     <div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow">
       <h2 class="text-2xl font-bold mb-6">แบบฟอร์มใบกำกับภาษี</h2>
       <form id="invoice_form" onsubmit="return previewInvoice(event)">
+        <!-- Invoice Number -->
+        <div>
+          <label for="invoice_number" class="block mb-2 text-sm font-medium text-gray-900">เลขที่ใบกำกับภาษี</label>
+          <input type="text" id="invoice_number" name="invoice_number" placeholder="Invoice No"
+            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5" required>
+          <p id="invNoHelp" class="mt-1 text-sm text-red-600 hidden">เลขที่ใบกำกับนี้ถูกใช้แล้ว</p>
+        </div>
+
+        <!-- Date -->
+        <div>
+          <label for="invoice_date" class="block mb-2 text-sm font-medium text-gray-900">วันที่</label>
+          <input datepicker datepicker-autohide type="text" id="invoice_date" name="invoice_date"
+            class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" placeholder="Select date">
+        </div>
+        <!-- GRN DN-->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="grn_number" class="block mb-2 text-sm font-medium text-gray-900">เลขที่ใบรับสินค้า (GRN)</label>
+            <input type="text" id="grn_number" name="grn_number"
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" placeholder="เช่น GRN-0001">
+          </div>
+          <div>
+            <label for="dn_number" class="block mb-2 text-sm font-medium text-gray-900">เลขที่ใบส่งสินค้า (DN)</label>
+            <input type="text" id="dn_number" name="dn_number"
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" placeholder="เช่น DN-0001">
+          </div>
+        </div>
+
+        <!-- Customer Name -->
+        <div>
+          <label for="customer_name" class="block mb-2 text-sm font-medium text-gray-900">ชื่อลูกค้า</label>
+          <input type="text" name="customer_name" id="customer_name" list="customerList" oninput="selectCustomer()"
+            autocomplete="off" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5">
+          <datalist id="customerList"></datalist>
+        </div>
+
+        <!-- Customer Tax ID -->
+        <div>
+          <label for="customer_taxid"
+            class="block mb-2 text-sm font-medium text-gray-900">เลขประจำตัวผู้เสียภาษี</label>
+          <input type="text" name="customer_taxid" id="customer_taxid"
+            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5">
+        </div>
+
+        <!-- Customer Address -->
+        <div>
+          <label for="customer_address" class="block mb-2 text-sm font-medium text-gray-900">ที่อยู่</label>
+          <input type="text" name="customer_address" id="customer_address"
+            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5">
+        </div>
+
+        <!-- Items -->
+        <!-- Items Section -->
+        <hr class="my-4">
+        <div id="items" class="space-y-4">
+          <div class="flex flex-wrap gap-4 item-row items-end">
+            <input name="product_code" readonly placeholder="รหัสสินค้า"
+              class="product_code flex-1 min-w-[120px] bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5">
+            <input name="description" readonly placeholder="รายละเอียด"
+              class="description flex-1 min-w-[120px] bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5">
+            <input name="quantity" type="number" step="0.01" placeholder="จำนวน" oninput="updateTotal()"
+              class="quantity w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
+            <input name="unit_price" type="number" step="0.01" placeholder="ราคาต่อหน่วย"
+              class="unit_price w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
+            <button type="button" onclick="openProductModal(this)"
+              class="text-sm text-blue-600 hover:text-blue-800 px-2">🔍 ค้นหา</button>
+          </div>
+        </div>
+
+        <!-- 🔽 add item after box -->
+        <div class="mt-2">
+          <button type="button" onclick="addItem()" class="text-blue-600 hover:text-blue-800 font-semibold">➕ Add
+            Item</button>
+        </div>
+
+        <!-- 🔽 Total Amount at bottom page -->
+        <div class="pt-6">
+          <label class="block mb-1 text-sm font-medium text-gray-700">รวมเป็นเงิน</label>
+          <div class="text-right text-lg font-bold text-green-700" id="total_amount">฿ 0.00</div>
+        </div>
+
+        <!-- 🔽 Submit close page -->
         <div class="flex gap-3 pt-4">
           <button type="button" onclick="previewInvoice()" class="px-4 py-2 rounded bg-gray-600 text-white">🔍
             Preview</button>
           <button type="button" onclick="saveInvoice()" class="px-4 py-2 rounded bg-blue-600 text-white">✅ Save</button>
         </div>
-      </form>
-      <!-- Invoice Number -->
-      <div>
-        <label for="invoice_number" class="block mb-2 text-sm font-medium text-gray-900">เลขที่ใบกำกับภาษี</label>
-        <input type="text" id="invoice_number" name="invoice_number" placeholder="Invoice No"
-          class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5" required>
-        <p id="invNoHelp" class="mt-1 text-sm text-red-600 hidden">เลขที่ใบกำกับนี้ถูกใช้แล้ว</p>
-      </div>
+        <!-- Product Selection Modal -->
+        <div id="productModal" tabindex="-1" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 overflow-y-auto">
+          <div class="relative w-full max-w-2xl mx-auto mt-20 bg-white rounded-lg shadow p-6">
+            <h3 class="text-xl font-bold mb-4">เลือกสินค้า</h3>
+            <input type="text" id="productSearch" placeholder="ค้นหาด้วยชื่อหรือรหัส..." oninput="filterProducts()"
+              class="w-full mb-4 p-2 border border-gray-300 rounded">
 
-      <!-- Date -->
-      <div>
-        <label for="invoice_date" class="block mb-2 text-sm font-medium text-gray-900">วันที่</label>
-        <input datepicker datepicker-autohide type="text" id="invoice_date" name="invoice_date"
-          class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" placeholder="Select date">
-      </div>
-      <!-- GRN DN-->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label for="grn_number" class="block mb-2 text-sm font-medium text-gray-900">เลขที่ใบรับสินค้า (GRN)</label>
-          <input type="text" id="grn_number" name="grn_number"
-            class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" placeholder="เช่น GRN-0001">
-        </div>
-        <div>
-          <label for="dn_number" class="block mb-2 text-sm font-medium text-gray-900">เลขที่ใบส่งสินค้า (DN)</label>
-          <input type="text" id="dn_number" name="dn_number"
-            class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" placeholder="เช่น DN-0001">
-        </div>
-      </div>
+            <div id="productList" class="max-h-72 overflow-y-auto divide-y"></div>
 
-      <!-- Customer Name -->
-      <div>
-        <label for="customer_name" class="block mb-2 text-sm font-medium text-gray-900">ชื่อลูกค้า</label>
-        <input type="text" name="customer_name" id="customer_name" list="customerList" oninput="selectCustomer()"
-          autocomplete="off" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5">
-        <datalist id="customerList"></datalist>
-      </div>
-
-      <!-- Customer Tax ID -->
-      <div>
-        <label for="customer_taxid" class="block mb-2 text-sm font-medium text-gray-900">เลขประจำตัวผู้เสียภาษี</label>
-        <input type="text" name="customer_taxid" id="customer_taxid"
-          class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5">
-      </div>
-
-      <!-- Customer Address -->
-      <div>
-        <label for="customer_address" class="block mb-2 text-sm font-medium text-gray-900">ที่อยู่</label>
-        <input type="text" name="customer_address" id="customer_address"
-          class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5">
-      </div>
-
-      <!-- Items -->
-      <!-- Items Section -->
-      <hr class="my-4">
-      <div id="items" class="space-y-4">
-        <div class="flex flex-wrap gap-4 item-row items-end">
-          <input name="product_code" readonly placeholder="รหัสสินค้า"
-            class="product_code flex-1 min-w-[120px] bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5">
-          <input name="description" readonly placeholder="รายละเอียด"
-            class="description flex-1 min-w-[120px] bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5">
-          <input name="quantity" type="number" step="0.01" placeholder="จำนวน" oninput="updateTotal()"
-            class="quantity w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
-          <input name="unit_price" type="number" step="0.01" placeholder="ราคาต่อหน่วย"
-            class="unit_price w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
-          <button type="button" onclick="openProductModal(this)"
-            class="text-sm text-blue-600 hover:text-blue-800 px-2">🔍 ค้นหา</button>
-        </div>
-      </div>
-
-      <!-- 🔽 add item after box -->
-      <div class="mt-2">
-        <button type="button" onclick="addItem()" class="text-blue-600 hover:text-blue-800 font-semibold">➕ Add
-          Item</button>
-      </div>
-
-      <!-- 🔽 Total Amount at bottom page -->
-      <div class="pt-6">
-        <label class="block mb-1 text-sm font-medium text-gray-700">รวมเป็นเงิน</label>
-        <div class="text-right text-lg font-bold text-green-700" id="total_amount">฿ 0.00</div>
-      </div>
-
-      <!-- 🔽 Submit close page -->
-      <div class="pt-4">
-        <button type="submit"
-          class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 cursor-pointer w-full sm:w-auto">
-          ✅ Submit
-        </button>
-      </div>
-      <!-- Product Selection Modal -->
-      <div id="productModal" tabindex="-1" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 overflow-y-auto">
-        <div class="relative w-full max-w-2xl mx-auto mt-20 bg-white rounded-lg shadow p-6">
-          <h3 class="text-xl font-bold mb-4">เลือกสินค้า</h3>
-          <input type="text" id="productSearch" placeholder="ค้นหาด้วยชื่อหรือรหัส..." oninput="filterProducts()"
-            class="w-full mb-4 p-2 border border-gray-300 rounded">
-
-          <div id="productList" class="max-h-72 overflow-y-auto divide-y"></div>
-
-          <div class="mt-4 text-right">
-            <button type="button" onclick="closeProductModal()"
-              class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">ปิด</button>
+            <div class="mt-4 text-right">
+              <button type="button" onclick="closeProductModal()"
+                class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">ปิด</button>
+            </div>
           </div>
         </div>
-      </div>
+
+      </form>
 
       <script src="/static/js/form.js"></script>
 </body>
