@@ -12,6 +12,7 @@ class Invoice(Base):
     invoice_date = Column(Date)                          # วันที่
     grn_number = Column(String)                          # เลขที่ใบรับสินค้า
     dn_number = Column(String)                           # เลขที่ใบส่งสินค้า
+    po_number = Column(String)                           # เลขที่ใบสั่งซื้อ 
     fname = Column(String)                               # ชื่อลูกค้า
     personid = Column(String)                            # รหัสลูกค้า (ถ้ายังไม่มี ส่งค่าว่างได้)
     tel = Column(String)

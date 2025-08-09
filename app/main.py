@@ -44,6 +44,7 @@ async def submit(
     invoice_date: str = Form(None),
     grn_number: str = Form(None),
     dn_number: str = Form(None),
+    po_number: str = Form(None),
 
     # from form
     customer_name: str = Form(None),
@@ -85,6 +86,7 @@ async def submit(
             invoice_date=d,
             grn_number=grn_number,
             dn_number=dn_number,
+            po_number=data.po_number,  
             fname=customer_name,
             personid=personid,
             tel=tel,

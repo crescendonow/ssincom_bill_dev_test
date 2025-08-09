@@ -171,7 +171,7 @@ if (form) {
 async function saveInvoice() {
   const formEl = document.getElementById("invoice_form");
   const fd = new FormData(formEl);
-
+  
   const res = await fetch("/submit", { method: "POST", body: fd });
   if (!res.ok) {
     const t = await res.text();
@@ -191,6 +191,7 @@ function previewInvoice() {
     invoice_date: fd.get("invoice_date"),
     grn_number: fd.get("grn_number"), // ✅ included
     dn_number: fd.get("dn_number"),   // ✅ included
+    po_number: fd.get("po_number"),
     customer_name: fd.get("customer_name"),
     customer_taxid: fd.get("customer_taxid"),
     customer_address: fd.get("customer_address"),
