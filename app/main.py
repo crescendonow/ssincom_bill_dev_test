@@ -1,8 +1,6 @@
 from fastapi import FastAPI, Form, Request, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy import or_, and_
-from fastapi import FastAPI, Form, Request
-from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from . import models, database, crud, pdf_generator
@@ -101,7 +99,7 @@ async def api_create_customer(
     # duplicate check
     dup = db.query(CustomerList).filter(
         or_(
-            and_(CustomerList.fname == fname, CustomerList.personid == personid,
+            and_(CustomerList.fname == fname, CustomerList.personid == personid),
             CustomerList.cf_taxid == cf_taxid
         )
     ).first()
@@ -160,7 +158,7 @@ async def api_update_customer(
     dup = db.query(CustomerList).filter(
         CustomerList.idx != idx,
         or_(
-            and_(CustomerList.fname == fname, CustomerList.personid == personid,
+            and_(CustomerList.fname == fname, CustomerList.personid == personid),
             CustomerList.cf_taxid == cf_taxid
         )
     ).first()
