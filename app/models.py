@@ -30,8 +30,8 @@ class InvoiceItem(Base):
     __table_args__ = {"schema": "ss_invoices"}
 
     idx = Column(Integer, primary_key=True)  # PK
-    # FK -> ss_invoices.invoices(idx)
-    invoice_number = Column(Integer, ForeignKey("ss_invoices.invoices.idx"), index=True)
+    # FK -> ss_invoices.invoices(invoice_number)
+    invoice_number = Column(Integer, ForeignKey("ss_invoices.invoices.invoice_number"), index=True)
 
     personid = Column(String)                     # รหัสลูกค้า (ถ้ามี)
     cf_itemid = Column(String(6))                 # รหัสสินค้า
