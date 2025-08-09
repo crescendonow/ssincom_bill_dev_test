@@ -296,6 +296,55 @@ function previewInvoice() {
   });
 }
 
+(function () {
+  // mm -> px (อิง 96dpi)
+  const mmToPx = mm => (mm / 25.4) * 96;
+
+  function fitToA4Once() {
+    const doc = document.querySelector('.doc');
+    if (!doc) return;
+
+    // ต้องสอดคล้องกับ @page margin: 10mm (บน+ล่าง รวม 20mm)
+    const printableHeightPx = mmToPx(297 - 20); // 297mm คือความสูง A4
+
+    // วัดความสูงเนื้อหา
+    const actual = doc.getBoundingClientRect().height;
+
+    // ถ้าสูงเกินพื้นที่พิมพ์ ให้ scale ลง (ไม่เกิน 1)
+    const scale = Math.min(1, printableHeightPx / actual);
+    if (scale < 1) {
+      doc.style.transform = `scale(${scale})`;
+      // พอสเกลลง ความกว้างก็เล็กลง → อาจเหลือด้านขวา ให้ชดเชยด้วย margin-bottom
+      // เพื่อกันไม่ให้โดนตัดท้ายหน้า
+      const scaledHeight = actual * scale;
+      const spare = printableHeightPx - scaledHeight;
+      doc.style.marginBottom = spare > 0 ? `${spare}px` : '0';
+    } else {
+      doc.style.transform = '';
+      doc.style.marginBottom = '';
+    }
+  }
+
+  // ปรับสเกลเฉพาะก่อนพิมพ์และคืนค่าหลังพิมพ์
+  window.addEventListener('beforeprint', fitToA4Once);
+  window.addEventListener('afterprint', () => {
+    const doc = document.querySelector('.doc');
+    if (doc) {
+      doc.style.transform = '';
+      doc.style.marginBottom = '';
+    }
+  });
+
+  // เผื่อปุ่มพิมพ์ในหน้าเรียก window.print() ทันทีหลังเรนเดอร์
+  // ให้หน่วงเล็กน้อยเพื่อให้ layout คำนวณเสร็จก่อน
+  setTimeout(() => {
+    // ถ้าต้องการลองสเกลบนจอก่อนพิมพ์ ให้ uncomment บรรทัดนี้
+    // fitToA4Once();
+  }, 50);
+})();
+
+
+
 // expose for inline handlers in HTML
 window.addItem = addItem;
 window.openProductModal = openProductModal;
