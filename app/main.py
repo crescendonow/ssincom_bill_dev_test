@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from . import models, database, crud, pdf_generator
 from .models import CustomerList, ProductList 
 from .database import SessionLocal
-from datetime import date
+from datetime import date, datetime
 from typing import List
 from pathlib import Path
 
@@ -41,7 +41,7 @@ def check_invoice_number(number: str = Query(..., min_length=1)):
 @app.post("/submit")
 async def submit(
     invoice_number: str = Form(...),
-    invoice_date: date = Form(None),
+    invoice_date_str: str = Form(None),
     grn_number: str = Form(None),
     dn_number: str = Form(None),
 
@@ -63,9 +63,15 @@ async def submit(
             return JSONResponse(status_code=409, content={"detail": "Duplicate invoice_number"})
 
         # 1) create invoice head
+        d = None
+        if invoice_date_str:
+            try:
+                d = datetime.strptime(invoice_date_str, "%m/%d/%Y").date()
+            except:
+                d = None
         inv = models.Invoice(
             invoice_number=invoice_number,
-            invoice_date=invoice_date,
+            invoice_date_str=d,
             grn_number=grn_number,
             dn_number=dn_number,
             fname=customer_name,
