@@ -1,94 +1,194 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
   <meta charset="UTF-8" />
   <title>Tax Invoice</title>
   <style>
-    @page { size: A4; margin: 14mm; }
-    * { box-sizing: border-box; }
-    body { font-family: "TH Sarabun New","Tahoma",sans-serif; font-size: 15pt; color:#0F3F7F; }
-    .doc { border: 2px solid #0F3F7F; border-radius: 10px; padding: 12px; }
-    .row { display:flex; gap:12px; }
-    .col { flex:1; }
-    .box { border:2px solid #0F3F7F; border-radius:10px; padding:10px; }
-    .box-light { border:1.5px solid #0F3F7F; border-radius:10px; padding:8px; }
-    .title { font-weight:700; font-size: 20pt; }
-    .sub { font-size: 13pt; color:#1c5ca5; }
-    .right { text-align:right; }
-    .center { text-align:center; }
-    .muted { color:#1c5ca5; }
-    .mt6 { margin-top:6px; } .mt10 { margin-top:10px; } .mt14{ margin-top:14px; }
-    .logo { height:70px; }
-    table { width:100%; border-collapse:collapse; }
-    th, td { border:1.5px solid #0F3F7F; padding:6px 8px; vertical-align:top; }
-    th { background: #eef5ff; font-weight:700; }
-    .no-border { border:none !important; }
-    .sumtable td { border:none; padding:4px 0; }
-    .sumtable tr td:first-child { padding-right:14px; }
-    .big-amount { font-size:18pt; font-weight:700; }
+    @page {
+      size: A4;
+      margin: 14mm;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "TH Sarabun New", "Tahoma", sans-serif;
+      font-size: 15pt;
+      color: #0F3F7F;
+    }
+
+    .doc {
+      border: 2px solid #0F3F7F;
+      border-radius: 10px;
+      padding: 12px;
+    }
+
+    .row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .col {
+      flex: 1;
+    }
+
+    .box {
+      border: 2px solid #0F3F7F;
+      border-radius: 10px;
+      padding: 10px;
+    }
+
+    .box-light {
+      border: 1.5px solid #0F3F7F;
+      border-radius: 10px;
+      padding: 8px;
+    }
+
+    .title {
+      font-weight: 700;
+      font-size: 20pt;
+    }
+
+    .sub {
+      font-size: 13pt;
+      color: #1c5ca5;
+    }
+
+    .right {
+      text-align: right;
+    }
+
+    .center {
+      text-align: center;
+    }
+
+    .muted {
+      color: #1c5ca5;
+    }
+
+    .mt6 {
+      margin-top: 6px;
+    }
+
+    .mt10 {
+      margin-top: 10px;
+    }
+
+    .mt14 {
+      margin-top: 14px;
+    }
+
+    .logo {
+      height: 70px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      border: 1.5px solid #0F3F7F;
+      padding: 6px 8px;
+      vertical-align: top;
+    }
+
+    th {
+      background: #eef5ff;
+      font-weight: 700;
+    }
+
+    .no-border {
+      border: none !important;
+    }
+
+    .sumtable td {
+      border: none;
+      padding: 4px 0;
+    }
+
+    .sumtable tr td:first-child {
+      padding-right: 14px;
+    }
+
+    .big-amount {
+      font-size: 18pt;
+      font-weight: 700;
+    }
+
     /* ไม่พิมพ์ปุ่ม */
-    @media print { .noprint { display:none !important; } }
+    @media print {
+      .noprint {
+        display: none !important;
+      }
+    }
   </style>
 </head>
+
 <body>
 
-<div class="doc">
-  <!-- แถวหัว -->
-  <div class="row">
-    <div class="col" style="flex:0 0 120px;">
-      <img src="/static/ss_logo.png" class="logo" alt="logo" />
-    </div>
-    <div class="col center">
-      <div class="title">บริษัท เอส แอนด์ เอส อินคอม จำกัด</div>
-      <div class="sub">S &amp; S INCOM CO., LTD.</div>
-      <div class="muted">69 หมู่ 10 ตำบลพังตรุ อำเภอพนมทวน จังหวัดกาญจนบุรี 71140</div>
-      <div class="muted">โทร. (035) 589 274, (081) 880 8840, (092) 265 9156</div>
-      <div class="muted">website: www.ssincom.com   Email: mailtossincom@gmail.com</div>
-    </div>
-    <div class="col right" style="flex:0 0 260px;">
-      <div class="box">
-        <div class="title" style="font-size:18pt;">ต้นฉบับใบกำกับภาษี/ใบส่งของ/ใบแจ้งหนี้</div>
-        <div class="mt6">เลขประจำตัวผู้เสียภาษี: <b>{{ invoice.company_tax_id }}</b></div>
-        <div class="mt6">สาขา: <b>{{ invoice.company_branch or 'สำนักงานใหญ่' }}</b></div>
-        <div class="mt6">เลขที่ผู้เสียภาษีอากร: <b>{{ invoice.company_tax_reg or '' }}</b></div>
+  <div class="doc">
+    <!-- แถวหัว -->
+    <div class="row">
+      <div class="col" style="flex:0 0 120px;">
+        <img src="/static/ss_logo.png" class="logo" alt="logo" />
+      </div>
+      <div class="col center">
+        <div class="title">บริษัท เอส แอนด์ เอส อินคอม จำกัด</div>
+        <div class="sub">S &amp; S INCOM CO., LTD.</div>
+        <div class="muted">69 หมู่ 10 ตำบลพังตรุ อำเภอพนมทวน จังหวัดกาญจนบุรี 71140</div>
+        <div class="muted">โทร. (035) 589 274, (081) 880 8840, (092) 265 9156</div>
+        <div class="muted">website: www.ssincom.com Email: mailtossincom@gmail.com</div>
+      </div>
+      <div class="col right" style="flex:0 0 260px;">
+        <div class="box">
+          <div class="title" style="font-size:18pt;">ต้นฉบับใบกำกับภาษี/ใบส่งของ/ใบแจ้งหนี้</div>
+          <div class="mt6">เลขประจำตัวผู้เสียภาษี: <b>{{ company_tax_id }}</b></div>
+          <div class="mt6">สาขา: <b>{{ company_branch or 'สำนักงานใหญ่' }}</b></div>
+          <div class="mt6">เลขที่ผู้เสียภาษีอากร: <b>{{ company_tax_reg or '' }}</b></div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- แถวข้อมูลลูกค้า + เลขที่เอกสาร -->
-  <div class="row mt10">
-    <div class="col box-light">
-      <div class="muted">รหัสลูกค้า: <b>{{ invoice.customer_code or invoice.personid }}</b></div>
-      <div class="mt6">ชื่อลูกค้า: <b>{{ invoice.customer_name }}</b></div>
-      <div class="mt6">เลขประจำตัวผู้เสียภาษี: <b>{{ invoice.customer_taxid }}</b> / {{ invoice.customer_branch or 'สำนักงานใหญ่' }}</div>
-      <div class="mt6">ที่อยู่: <b>{{ invoice.customer_address }}</b></div>
-      <div class="mt6">โทรศัพท์: <b>{{ invoice.tel or invoice.mobile or '' }}</b></div>
+    <!-- แถวข้อมูลลูกค้า + เลขที่เอกสาร -->
+    <div class="row mt10">
+      <div class="col box-light">
+        <div class="muted">รหัสลูกค้า: <b>{{ customer_code or personid }}</b></div>
+        <div class="mt6">ชื่อลูกค้า: <b>{{ customer_name }}</b></div>
+        <div class="mt6">เลขประจำตัวผู้เสียภาษี: <b>{{ customer_taxid }}</b> / {{ customer_branch or
+          'สำนักงานใหญ่' }}</div>
+        <div class="mt6">ที่อยู่: <b>{{ customer_address }}</b></div>
+        <div class="mt6">โทรศัพท์: <b>{{ tel or mobile or '' }}</b></div>
+      </div>
+      <div class="col box-light" style="flex:0 0 320px;">
+        <div>เลขที่: <b>{{ invoice_number }}</b></div>
+        <div class="mt6">วันที่: <b>{{ invoice_date }}</b></div>
+        <div class="mt6">เลขที่ใบสั่งซื้อ: <b>{{ po_number }}</b></div>
+        <div class="mt6">เงื่อนไขการชำระเงิน: <b>{{ fmlpaymentcreditday }}</b></div>
+        <div class="mt6">เลขที่ใบรับสินค้า: <b>{{ grn_number }}</b></div>
+        <div class="mt6">เลขที่ใบส่งสินค้า: <b>{{ dn_number }}</b></div>
+      </div>
     </div>
-    <div class="col box-light" style="flex:0 0 320px;">
-      <div>เลขที่: <b>{{ invoice.invoice_number }}</b></div>
-      <div class="mt6">วันที่: <b>{{ invoice.invoice_date }}</b></div>
-      <div class="mt6">เลขที่ใบสั่งซื้อ: <b>{{ invoice.po_number }}</b></div>
-      <div class="mt6">เงื่อนไขการชำระเงิน: <b>{{ invoice.fmlpaymentcreditday }}</b></div>
-      <div class="mt6">เลขที่ใบรับสินค้า: <b>{{ invoice.grn_number }}</b></div>
-      <div class="mt6">เลขที่ใบส่งสินค้า: <b>{{ invoice.dn_number }}</b></div>
-    </div>
-  </div>
 
-  <!-- ตารางสินค้า -->
-  <table class="mt14">
-    <thead>
-      <tr>
-        <th class="center" style="width:6%;">ลำดับ</th>
-        <th class="center" style="width:16%;">รหัสสินค้า</th>
-        <th class="center">ชื่อสินค้า / รายละเอียด</th>
-        <th class="center" style="width:12%;">จำนวน</th>
-        <th class="center" style="width:14%;">ราคาต่อหน่วย</th>
-        <th class="center" style="width:16%;">จำนวนเงิน</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% set total = 0 %}
-      {% for item in invoice["items"] %}
+    <!-- ตารางสินค้า -->
+    <table class="mt14">
+      <thead>
+        <tr>
+          <th class="center" style="width:6%;">ลำดับ</th>
+          <th class="center" style="width:16%;">รหัสสินค้า</th>
+          <th class="center">ชื่อสินค้า / รายละเอียด</th>
+          <th class="center" style="width:12%;">จำนวน</th>
+          <th class="center" style="width:14%;">ราคาต่อหน่วย</th>
+          <th class="center" style="width:16%;">จำนวนเงิน</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% set total = 0 %}
+        {% for item in invoice["items"] %}
         {% set qty = item["quantity"]|float %}
         {% set price = item["unit_price"]|float %}
         {% set amount = qty * price %}
@@ -101,68 +201,91 @@
           <td class="right">{{ '{:,.2f}'.format(price) }}</td>
           <td class="right">{{ '{:,.2f}'.format(amount) }}</td>
         </tr>
-      {% endfor %}
-      {% for i in range(0, max(0, 8 - (invoice["items"]|length))) %}
+        {% endfor %}
+        {% set filler = 8 - (invoice["items"]|length) %}
+        {% for i in range(filler if filler > 0 else 0) %}
         <tr>
-          <td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td>
+          <td>&nbsp;</td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
         </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+        {% endfor %}
+      </tbody>
+    </table>
 
-  <!-- หมายเหตุ + สรุปยอด -->
-  <div class="row mt10">
-    <div class="col box-light">
-      <div class="muted"><b>หมายเหตุ</b></div>
-      <div class="mt6" style="line-height:1.25;">
-        โปรดสั่งจ่ายเช็คในนาม “บริษัท เอส แอนด์ เอส อินคอม จำกัด” เท่านั้น<br/>
-        เมื่อพ้นกำหนดการชำระเงิน บริษัทฯ ขอสงวนสิทธิ์คิดดอกเบี้ยอัตราร้อยละ 1.5 ต่อเดือน<br/>
-        สินค้าที่ยังมิได้ชำระเงินยังเป็นกรรมสิทธิ์ของบริษัท เอส แอนด์ เอส อินคอม จำกัด<br/>
-        จนกว่าผู้ซื้อจะชำระค่าสินค้าเรียบร้อยแล้ว<br/>
-        ได้รับสินค้าตามรายการข้างต้นไว้ในสภาพเรียบร้อยเป็นการถูกต้องแล้ว
+    <!-- หมายเหตุ + สรุปยอด -->
+    <div class="row mt10">
+      <div class="col box-light">
+        <div class="muted"><b>หมายเหตุ</b></div>
+        <div class="mt6" style="line-height:1.25;">
+          โปรดสั่งจ่ายเช็คในนาม “บริษัท เอส แอนด์ เอส อินคอม จำกัด” เท่านั้น<br />
+          เมื่อพ้นกำหนดการชำระเงิน บริษัทฯ ขอสงวนสิทธิ์คิดดอกเบี้ยอัตราร้อยละ 1.5 ต่อเดือน<br />
+          สินค้าที่ยังมิได้ชำระเงินยังเป็นกรรมสิทธิ์ของบริษัท เอส แอนด์ เอส อินคอม จำกัด<br />
+          จนกว่าผู้ซื้อจะชำระค่าสินค้าเรียบร้อยแล้ว<br />
+          ได้รับสินค้าตามรายการข้างต้นไว้ในสภาพเรียบร้อยเป็นการถูกต้องแล้ว
+        </div>
+      </div>
+
+      <div class="col" style="flex:0 0 380px;">
+        {% set discount = (discount|float) if discount is defined else 0.0 %}
+        {% set before_vat = total - discount %}
+        {% set vat = (vat_rate|float if vat_rate is defined else 7.0) %}
+        {% set vat_amt = before_vat * (vat/100.0) %}
+        {% set grand = before_vat + vat_amt %}
+        <div class="box">
+          <table class="sumtable" style="width:100%;">
+            <tr>
+              <td>รวมราคา / Amount</td>
+              <td class="right">{{ '{:,.2f}'.format(total) }}</td>
+            </tr>
+            <tr>
+              <td>ส่วนลด / Discount</td>
+              <td class="right">{{ '{:,.2f}'.format(discount) }}</td>
+            </tr>
+            <tr>
+              <td>รวมเป็นเงิน / Sub Total</td>
+              <td class="right">{{ '{:,.2f}'.format(before_vat) }}</td>
+            </tr>
+            <tr>
+              <td>ภาษีมูลค่าเพิ่ม / Vat {{ '{:.0f}%'.format(vat) }}</td>
+              <td class="right">{{ '{:,.2f}'.format(vat_amt) }}</td>
+            </tr>
+            <tr>
+              <td><b>จำนวนเงินรวมทั้งสิ้น / Net Total</b></td>
+              <td class="right big-amount"><b>{{ '{:,.2f}'.format(grand) }}</b></td>
+            </tr>
+          </table>
+        </div>
       </div>
     </div>
 
-    <div class="col" style="flex:0 0 380px;">
-      {% set discount = (invoice.discount|float) if invoice.discount is defined else 0.0 %}
-      {% set before_vat = total - discount %}
-      {% set vat = (invoice.vat_rate|float if invoice.vat_rate is defined else 7.0) %}
-      {% set vat_amt = before_vat * (vat/100.0) %}
-      {% set grand = before_vat + vat_amt %}
-      <div class="box">
-        <table class="sumtable" style="width:100%;">
-          <tr><td>รวมราคา / Amount</td><td class="right">{{ '{:,.2f}'.format(total) }}</td></tr>
-          <tr><td>ส่วนลด / Discount</td><td class="right">{{ '{:,.2f}'.format(discount) }}</td></tr>
-          <tr><td>รวมเป็นเงิน / Sub Total</td><td class="right">{{ '{:,.2f}'.format(before_vat) }}</td></tr>
-          <tr><td>ภาษีมูลค่าเพิ่ม / Vat {{ '{:.0f}%'.format(vat) }}</td><td class="right">{{ '{:,.2f}'.format(vat_amt) }}</td></tr>
-          <tr><td><b>จำนวนเงินรวมทั้งสิ้น / Net Total</b></td><td class="right big-amount"><b>{{ '{:,.2f}'.format(grand) }}</b></td></tr>
-        </table>
+    <!-- ลายเซ็น -->
+    <div class="row mt14">
+      <div class="col center box-light">
+        ผู้รับสินค้า / วันที่<br /><br /><br />..................................
+      </div>
+      <div class="col center box-light">
+        ผู้ตรวจสินค้า<br /><br /><br />..................................
+      </div>
+      <div class="col center box-light">
+        ผู้มีอำนาจลงนาม<br /><br /><br />..................................
+      </div>
+      <div class="col center box-light" style="flex:0 0 220px;">
+        ส่งสินค้าโดย:<br /><br />ทะเบียนรถขนส่ง: ..................................
+        <div class="mt6 muted">กา 83 - 6558 (ตัวอย่าง)</div>
       </div>
     </div>
   </div>
 
-  <!-- ลายเซ็น -->
-  <div class="row mt14">
-    <div class="col center box-light">
-      ผู้รับสินค้า / วันที่<br/><br/><br/>..................................
-    </div>
-    <div class="col center box-light">
-      ผู้ตรวจสินค้า<br/><br/><br/>..................................
-    </div>
-    <div class="col center box-light">
-      ผู้มีอำนาจลงนาม<br/><br/><br/>..................................
-    </div>
-    <div class="col center box-light" style="flex:0 0 220px;">
-      ส่งสินค้าโดย:<br/><br/>ทะเบียนรถขนส่ง: ..................................
-      <div class="mt6 muted">กา 83 - 6558 (ตัวอย่าง)</div>
-    </div>
+  <div class="noprint" style="margin-top:14px; text-align:right;">
+    <button onclick="window.print()"
+      style="padding:8px 14px; background:#0F3F7F; color:#fff; border:none; border-radius:8px; cursor:pointer;">
+      🖨️ พิมพ์ / บันทึก PDF
+    </button>
   </div>
-</div>
-
-<div class="noprint" style="margin-top:14px; text-align:right;">
-  <button onclick="window.print()" style="padding:8px 14px; background:#0F3F7F; color:#fff; border:none; border-radius:8px; cursor:pointer;">
-    🖨️ พิมพ์ / บันทึก PDF
-  </button>
-</div>
 </body>
+
 </html>
