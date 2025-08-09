@@ -262,12 +262,15 @@ function previewInvoice() {
   const invoice = {
     invoice_number: fd.get("invoice_number"),
     invoice_date: fd.get("invoice_date"),
+    personid: fd.get("personid"),
     grn_number: fd.get("grn_number"), // ✅ included
     dn_number: fd.get("dn_number"),   // ✅ included
     po_number: fd.get("po_number"),
     customer_name: fd.get("customer_name"),
     customer_taxid: fd.get("customer_taxid"),
     customer_address: fd.get("customer_address"),
+    fmlpaymentcreditday: fd.get("fmlpaymentcreditday"),
+    total_amount = fd.get("total_amount"),
     items: []
   };
 
