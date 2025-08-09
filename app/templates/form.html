@@ -18,18 +18,18 @@
       <span>&larr;</span> <a href="/" class="hover:underline">กลับหน้าหลัก</a>
     </div>
     <div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow">
-      <h2 class="text-2xl font-bold mb-6">Invoice Form</h2>
+      <h2 class="text-2xl font-bold mb-6">แบบฟอร์มใบกำกับภาษี</h2>
       <form id="invoice_form" onsubmit="return previewInvoice(event)">
         <!-- Invoice Number -->
         <div>
-          <label for="invoice_number" class="block mb-2 text-sm font-medium text-gray-900">Invoice Number</label>
+          <label for="invoice_number" class="block mb-2 text-sm font-medium text-gray-900">เลขที่ใบกำกับภาษี</label>
           <input type="text" id="invoice_number" name="invoice_number" placeholder="Invoice No"
             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5" required>
         </div>
 
         <!-- Date -->
         <div>
-          <label for="invoice_date" class="block mb-2 text-sm font-medium text-gray-900">Date</label>
+          <label for="invoice_date" class="block mb-2 text-sm font-medium text-gray-900">วันที่</label>
           <input datepicker datepicker-autohide type="text" id="invoice_date" name="invoice_date"
             class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" placeholder="Select date">
         </div>
@@ -49,7 +49,7 @@
 
         <!-- Customer Name -->
         <div>
-          <label for="customer_name" class="block mb-2 text-sm font-medium text-gray-900">Customer Name</label>
+          <label for="customer_name" class="block mb-2 text-sm font-medium text-gray-900">ชื่อลูกค้า</label>
           <input type="text" name="customer_name" id="customer_name" list="customerList" oninput="selectCustomer()"
             autocomplete="off" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5">
           <datalist id="customerList"></datalist>
@@ -57,14 +57,14 @@
 
         <!-- Customer Tax ID -->
         <div>
-          <label for="customer_taxid" class="block mb-2 text-sm font-medium text-gray-900">Customer Tax ID</label>
+          <label for="customer_taxid" class="block mb-2 text-sm font-medium text-gray-900">เลขประจำตัวผู้เสียภาษี</label>
           <input type="text" name="customer_taxid" id="customer_taxid"
             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5">
         </div>
 
         <!-- Customer Address -->
         <div>
-          <label for="customer_address" class="block mb-2 text-sm font-medium text-gray-900">Customer Address</label>
+          <label for="customer_address" class="block mb-2 text-sm font-medium text-gray-900">ที่อยู่</label>
           <input type="text" name="customer_address" id="customer_address"
             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5">
         </div>
@@ -74,13 +74,13 @@
         <hr class="my-4">
         <div id="items" class="space-y-4">
           <div class="flex flex-wrap gap-4 item-row items-end">
-            <input name="product_code" readonly placeholder="Product Code"
+            <input name="product_code" readonly placeholder="รหัสสินค้า"
               class="product_code flex-1 min-w-[120px] bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5">
-            <input name="description" readonly placeholder="Description"
+            <input name="description" readonly placeholder="รายละเอียด"
               class="description flex-1 min-w-[120px] bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5">
-            <input name="quantity" type="number" step="0.01" placeholder="Qty" oninput="updateTotal()"
+            <input name="quantity" type="number" step="0.01" placeholder="จำนวน" oninput="updateTotal()"
               class="quantity w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
-            <input name="unit_price" type="number" step="0.01" placeholder="Unit Price"
+            <input name="unit_price" type="number" step="0.01" placeholder="ราคาต่อหน่วย"
               class="unit_price w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
             <button type="button" onclick="openProductModal(this)"
               class="text-sm text-blue-600 hover:text-blue-800 px-2">🔍 ค้นหา</button>
@@ -95,7 +95,7 @@
 
         <!-- 🔽 Total Amount at bottom page -->
         <div class="pt-6">
-          <label class="block mb-1 text-sm font-medium text-gray-700">Total Amount</label>
+          <label class="block mb-1 text-sm font-medium text-gray-700">รวมเป็นเงิน</label>
           <div class="text-right text-lg font-bold text-green-700" id="total_amount">฿ 0.00</div>
         </div>
 
