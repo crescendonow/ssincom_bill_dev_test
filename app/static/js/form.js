@@ -270,7 +270,7 @@ function previewInvoice() {
     customer_taxid: fd.get("customer_taxid"),
     customer_address: fd.get("customer_address"),
     fmlpaymentcreditday: fd.get("fmlpaymentcreditday"),
-    total_amount = fd.get("total_amount"),
+    total_amount: fd.get("total_amount"),
     items: []
   };
 
