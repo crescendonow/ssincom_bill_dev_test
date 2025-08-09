@@ -204,6 +204,132 @@ def api_delete_customer(idx: int):
     db.close()
     return {"message": "deleted"}
 
+#product management part 
+@app.get("/products", response_class=HTMLResponse)
+async def products_page(request: Request):
+    return templates.TemplateResponse("product_form.html", {"request": request})
+
+# get product all columns 
+@app.get("/api/products/all")
+def api_get_products_all():
+    db = SessionLocal()
+    rows = db.query(ProductList).order_by(ProductList.idx.desc()).all()
+    db.close()
+    return [
+        {
+            "idx": r.idx,
+            "cf_itemid": r.cf_itemid,
+            "cf_itemname": r.cf_itemname,
+            "cf_unitname": r.cf_unitname,
+            "cf_itempricelevel_price": r.cf_itempricelevel_price,
+            "cf_items_ordinary": r.cf_items_ordinary,
+        } for r in rows
+    ]
+
+# check duplicate:cf_itemid and cf_itemname 
+@app.post("/api/products/check-duplicate")
+async def api_products_check_duplicate(
+    cf_itemid: str = Form(None),
+    cf_itemname: str = Form(None),
+    ignore_idx: int = Form(None),
+):
+    db = SessionLocal()
+    q = db.query(ProductList)
+    cond = or_(
+        ProductList.cf_itemid == cf_itemid,
+        ProductList.cf_itemname == cf_itemname
+    )
+    if ignore_idx:
+        q = q.filter(ProductList.idx != ignore_idx)
+    exists = db.query(q.filter(cond).exists()).scalar()
+    db.close()
+    return {"duplicate": bool(exists)}
+
+# add new product 
+@app.post("/api/products")
+async def api_create_product(
+    cf_itemid: str = Form(...),
+    cf_itemname: str = Form(...),
+    cf_unitname: str = Form(None),
+    cf_itempricelevel_price: float = Form(0),
+    cf_items_ordinary: int = Form(None),
+    redirect_to_dashboard: str = Form(None),
+):
+    db = SessionLocal()
+    dup = db.query(ProductList).filter(
+        or_(ProductList.cf_itemid == cf_itemid, ProductList.cf_itemname == cf_itemname)
+    ).first()
+    if dup:
+        db.close()
+        raise HTTPException(status_code=409, detail="ข้อมูลซ้ำ (รหัสหรือชื่อสินค้า)")
+
+    p = ProductList(
+        cf_itemid=cf_itemid,
+        cf_itemname=cf_itemname,
+        cf_unitname=cf_unitname,
+        cf_itempricelevel_price=cf_itempricelevel_price,
+        cf_items_ordinary=cf_items_ordinary
+    )
+    db.add(p)
+    db.commit()
+    db.refresh(p)
+    db.close()
+
+    if redirect_to_dashboard == "1":
+        return RedirectResponse(url="/?msg=เพิ่มสินค้าสำเร็จ", status_code=303)
+    return {"message": "created", "idx": p.idx}
+
+# edit product 
+@app.post("/api/products/{idx}")
+async def api_update_product(
+    idx: int,
+    cf_itemid: str = Form(...),
+    cf_itemname: str = Form(...),
+    cf_unitname: str = Form(None),
+    cf_itempricelevel_price: float = Form(0),
+    cf_items_ordinary: int = Form(None),
+    redirect_to_dashboard: str = Form(None),
+):
+    db = SessionLocal()
+    p = db.query(ProductList).filter(ProductList.idx == idx).first()
+    if not p:
+        db.close()
+        raise HTTPException(status_code=404, detail="ไม่พบสินค้า")
+
+    dup = db.query(ProductList).filter(
+        ProductList.idx != idx,
+        or_(ProductList.cf_itemid == cf_itemid, ProductList.cf_itemname == cf_itemname)
+    ).first()
+    if dup:
+        db.close()
+        raise HTTPException(status_code=409, detail="ข้อมูลซ้ำ (รหัสหรือชื่อสินค้า)")
+
+    p.cf_itemid = cf_itemid
+    p.cf_itemname = cf_itemname
+    p.cf_unitname = cf_unitname
+    p.cf_itempricelevel_price = cf_itempricelevel_price
+    p.cf_items_ordinary = cf_items_ordinary
+
+    db.commit()
+    db.close()
+
+    if redirect_to_dashboard == "1":
+        return RedirectResponse(url="/?msg=แก้ไขสินค้าสำเร็จ", status_code=303)
+    return {"message": "updated"}
+
+# delete proudct
+@app.delete("/api/products/{idx}")
+def api_delete_product(idx: int):
+    db = SessionLocal()
+    p = db.query(ProductList).filter(ProductList.idx == idx).first()
+    if not p:
+        db.close()
+        raise HTTPException(status_code=404, detail="ไม่พบสินค้า")
+    db.delete(p)
+    db.commit()
+    db.close()
+    return {"message": "deleted"}
+
 @app.get("/api/customers")
 def get_customers():
     db = SessionLocal()
