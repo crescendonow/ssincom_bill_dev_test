@@ -270,7 +270,6 @@ function previewInvoice() {
     customer_taxid: fd.get("customer_taxid"),
     customer_address: fd.get("customer_address"),
     fmlpaymentcreditday: fd.get("fmlpaymentcreditday"),
-    total_amount: fd.get("total_amount"),
     items: []
   };
 
@@ -282,6 +281,13 @@ function previewInvoice() {
     if (product_code || description) {
       invoice.items.push({ product_code, description, quantity, unit_price });
     }
+    // คำนวณยอดรวมจาก items ตรงนี้
+  const total_amount = invoice.items.reduce((sum, it) => {
+    const q = isFinite(it.quantity) ? it.quantity : 0;
+    const p = isFinite(it.unit_price) ? it.unit_price : 0;
+    return sum + q * p;
+  }, 0);
+  invoice.total_amount = Number(total_amount.toFixed(2));
   });
 
   fetch("/preview", {
