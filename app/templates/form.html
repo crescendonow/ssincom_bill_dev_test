@@ -33,6 +33,19 @@
           <input datepicker datepicker-autohide type="text" id="invoice_date" name="invoice_date"
             class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" placeholder="Select date">
         </div>
+        <!-- ใกล้ๆ กับส่วน Date -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="grn_number" class="block mb-2 text-sm font-medium text-gray-900">เลขที่ใบรับสินค้า (GRN)</label>
+            <input type="text" id="grn_number" name="grn_number"
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" placeholder="เช่น GRN-0001">
+          </div>
+          <div>
+            <label for="dn_number" class="block mb-2 text-sm font-medium text-gray-900">เลขที่ใบส่งสินค้า (DN)</label>
+            <input type="text" id="dn_number" name="dn_number"
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" placeholder="เช่น DN-0001">
+          </div>
+        </div>
 
         <!-- Customer Name -->
         <div>

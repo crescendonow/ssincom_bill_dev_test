@@ -26,6 +26,73 @@ async def dashboard(request: Request):
 async def form_page(request: Request):
     return templates.TemplateResponse("form.html", {"request": request})
 
+#api for submit invoice from form.html 
+@app.post("/submit")
+async def submit(
+    invoice_number: str = Form(...),
+    invoice_date: date = Form(None),
+    grn_number: str = Form(None),
+    dn_number: str = Form(None),
+
+    # customer information 
+    customer_name: str = Form(None),
+    customer_taxid: str = Form(None),
+    customer_address: str = Form(None),
+
+    # product information 
+    product_code: List[str] = Form(...),
+    description: List[str] = Form(...),
+    quantity: List[float] = Form(...),
+    unit_price: List[float] = Form(...)
+):
+    db = SessionLocal()
+    try:
+        # create invoice (head document)
+        inv = models.Invoice(
+            invoice_number=invoice_number,
+            invoice_date=invoice_date,
+            grn_number=grn_number,
+            dn_number=dn_number,
+            fname=customer_name,
+            personid=None,                 
+            tel=None,
+            mobile=None,
+            cf_personaddress=customer_address,
+            cf_personzipcode=None,
+            cf_provincename=None,
+            cf_taxid=customer_taxid,
+            fmlpaymentcreditday=None
+        )
+        db.add(inv)
+        db.flush()  # return inv.idx
+
+        # add invoice_items 
+        for i in range(len(product_code)):
+            qty = float(quantity[i] or 0)
+            price = float(unit_price[i] or 0)
+            amount = qty * price
+
+            item = models.InvoiceItem(
+                invoice_number=inv.idx,             # FK -> invoices.idx
+                personid=None,                       
+                cf_itemid=product_code[i],
+                cf_itemname=description[i],
+                cf_unitname=None,                    
+                cf_itempricelevel_price=price,
+                cf_items_ordinary=None,
+                quantity=qty,
+                amount=amount
+            )
+            db.add(item)
+
+        db.commit()
+        return {"message": "saved", "invoice_idx": inv.idx, "invoice_number": inv.invoice_number}
+    except:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
 @app.get("/customers", response_class=HTMLResponse)
 async def customer_page(request: Request):
     # load one page table and form 
@@ -105,7 +172,7 @@ async def api_create_customer(
     ).first()
     if dup:
         db.close()
-        raise HTTPException(status_code=409, detail="ข้อมูลซ้ำ (ชื่อ รหัสลูกค้า หรือ เลขภาษี)")
+        raise HTTPException(status_code=409, detail="duplicate (name personid tax_id)")
 
     c = CustomerList(
         prename=prename, sysprename=sysprename,

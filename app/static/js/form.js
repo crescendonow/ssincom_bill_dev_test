@@ -152,6 +152,8 @@ function previewInvoice(event) {
   const invoice = {
     invoice_number: formData.get("invoice_number"),
     invoice_date: formData.get("invoice_date"),
+    grn_number: formData.get("grn_number"),   // NEW
+    dn_number: formData.get("dn_number"),     // NEW
     customer_name: formData.get("customer_name"),
     customer_taxid: formData.get("customer_taxid"),
     customer_address: formData.get("customer_address"),
