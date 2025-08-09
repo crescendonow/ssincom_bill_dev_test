@@ -29,9 +29,22 @@ class CustomerList(Base):
     __table_args__ = {"schema": "products"}
 
     idx = Column(Integer, primary_key=True, index=True)
+    prename = Column(String)
+    sysprename = Column(String)
     fname = Column(String)
+    personid = Column(String)
+    tel = Column(String)
+    mobile = Column(String)
+    syspersonid = Column(String)
+    sex = Column(String)
+    lname = Column(String)
+    cf_personaddress_tel = Column(String)
+    cf_personaddress_mobile = Column(String)
     cf_personaddress = Column(String)
-    cf_taxid = Column(String)
+    cf_personzipcode = Column(String)
+    cf_provincename = Column(String)
+    cf_taxid = Column(String(13))
+    fmlpaymentcreditday = Column(Integer)
  
 #get data from product_list   
 class ProductList(Base):
