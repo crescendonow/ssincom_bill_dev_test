@@ -45,12 +45,11 @@ async def submit(
     grn_number: str = Form(None),
     dn_number: str = Form(None),
 
-    # customer information 
+    # form data to invoice head 
     customer_name: str = Form(None),
     customer_taxid: str = Form(None),
     customer_address: str = Form(None),
 
-    # product information 
     product_code: List[str] = Form(...),
     description: List[str] = Form(...),
     quantity: List[float] = Form(...),
@@ -58,23 +57,19 @@ async def submit(
 ):
     db = SessionLocal()
     try:
-        # duplicate check 
-        dup = db.query(models.Invoice)\
-                .filter(models.Invoice.invoice_number == invoice_number)\
-                .first()
+        # check duplicate invoice_number
+        dup = db.query(models.Invoice).filter(models.Invoice.invoice_number == invoice_number).first()
         if dup:
-            return JSONResponse(
-                status_code=409,
-                content={"detail": "Duplicate invoice_number"}
-            )
-        # create invoice (head document)
+            return JSONResponse(status_code=409, content={"detail": "Duplicate invoice_number"})
+
+        # 1) create invoice head
         inv = models.Invoice(
             invoice_number=invoice_number,
             invoice_date=invoice_date,
             grn_number=grn_number,
             dn_number=dn_number,
             fname=customer_name,
-            personid=None,                 
+            personid=None,
             tel=None,
             mobile=None,
             cf_personaddress=customer_address,
@@ -84,24 +79,23 @@ async def submit(
             fmlpaymentcreditday=None
         )
         db.add(inv)
-        db.flush()  # return inv.idx
+        db.flush()  # get inv.idx
 
-        # add invoice_items 
+        # 2) create product list 
         for i in range(len(product_code)):
             qty = float(quantity[i] or 0)
             price = float(unit_price[i] or 0)
-            amount = qty * price
-
+            amt = qty * price
             item = models.InvoiceItem(
-                invoice_number=inv.idx,             # FK -> invoices.idx
-                personid=None,                       
+                invoice_number=inv.idx,         # FK -> invoices.idx
+                personid=None,
                 cf_itemid=product_code[i],
                 cf_itemname=description[i],
-                cf_unitname=None,                    
+                cf_unitname=None,
                 cf_itempricelevel_price=price,
                 cf_items_ordinary=None,
                 quantity=qty,
-                amount=amount
+                amount=amt
             )
             db.add(item)
 
@@ -112,7 +106,7 @@ async def submit(
         raise
     finally:
         db.close()
-
+        
 @app.get("/customers", response_class=HTMLResponse)
 async def customer_page(request: Request):
     # load one page table and form 

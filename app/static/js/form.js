@@ -221,3 +221,57 @@ function previewInvoice(event) {
   return false;
 }
 
+async function saveInvoice() {
+  const form = document.getElementById("invoice_form");
+  const fd = new FormData(form);
+
+  
+  const rows = document.querySelectorAll("#items .item-row");
+  
+  const res = await fetch("/submit", { method: "POST", body: fd });
+  if (!res.ok) {
+    const t = await res.text();
+    alert("บันทึกล้มเหลว: " + t);
+    return;
+  }
+  const data = await res.json();
+  alert("บันทึกสำเร็จ เลขที่: " + data.invoice_number);
+}
+
+function previewInvoice() {
+  const form = document.getElementById("invoice_form");
+  const fd = new FormData(form);
+
+  const invoice = {
+    invoice_number: fd.get("invoice_number"),
+    invoice_date: fd.get("invoice_date"),
+    grn_number: fd.get("grn_number"),      // << add form
+    dn_number: fd.get("dn_number"),        // << add form
+    customer_name: fd.get("customer_name"),
+    customer_taxid: fd.get("customer_taxid"),
+    customer_address: fd.get("customer_address"),
+    items: []
+  };
+
+  document.querySelectorAll("#items .item-row").forEach(row => {
+    const product_code = row.querySelector('[name="product_code"]').value;
+    const description  = row.querySelector('[name="description"]').value;
+    const quantity     = parseFloat(row.querySelector('[name="quantity"]').value || 0);
+    const unit_price   = parseFloat(row.querySelector('[name="unit_price"]').value || 0);
+    if (product_code || description) {
+      invoice.items.push({ product_code, description, quantity, unit_price });
+    }
+  });
+
+  fetch("/preview", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify(invoice)
+  })
+  .then(r => r.text())
+  .then(html => {
+    const w = window.open("", "_blank");
+    w.document.open(); w.document.write(html); w.document.close();
+  });
+}
+
