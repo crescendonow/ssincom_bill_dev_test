@@ -86,7 +86,7 @@ async def submit(
             invoice_date=d,
             grn_number=grn_number,
             dn_number=dn_number,
-            po_number=data.po_number,  
+            po_number=po_number,  
             fname=customer_name,
             personid=personid,
             tel=tel,
