@@ -41,15 +41,12 @@ def check_invoice_number(number: str = Query(..., min_length=1)):
 @app.post("/submit")
 async def submit(
     invoice_number: str = Form(...),
-    invoice_date_str: str = Form(None),
+    invoice_date: str = Form(None),   # รับเป็น string
     grn_number: str = Form(None),
     dn_number: str = Form(None),
-
-    # form data to invoice head 
     customer_name: str = Form(None),
     customer_taxid: str = Form(None),
     customer_address: str = Form(None),
-
     product_code: List[str] = Form(...),
     description: List[str] = Form(...),
     quantity: List[float] = Form(...),
@@ -57,53 +54,52 @@ async def submit(
 ):
     db = SessionLocal()
     try:
-        # check duplicate invoice_number
-        dup = db.query(models.Invoice).filter(models.Invoice.invoice_number == invoice_number).first()
-        if dup:
+        # parse date 
+        d = None
+        if invoice_date:
+            for fmt in ("%m/%d/%Y", "%d/%m/%Y", "%Y-%m-%d"):
+                try:
+                    d = datetime.strptime(invoice_date, fmt).date()
+                    break
+                except:
+                    pass
+
+        # check duplicate number
+        if db.query(models.Invoice).filter(models.Invoice.invoice_number == invoice_number).first():
             return JSONResponse(status_code=409, content={"detail": "Duplicate invoice_number"})
 
-        # 1) create invoice head
-        d = None
-        if invoice_date_str:
-            try:
-                d = datetime.strptime(invoice_date_str, "%m/%d/%Y").date()
-            except:
-                d = None
+        # create title 
         inv = models.Invoice(
             invoice_number=invoice_number,
-            invoice_date_str=d,
+            invoice_date=d,
             grn_number=grn_number,
             dn_number=dn_number,
             fname=customer_name,
             personid=None,
-            tel=None,
-            mobile=None,
+            tel=None, mobile=None,
             cf_personaddress=customer_address,
-            cf_personzipcode=None,
-            cf_provincename=None,
+            cf_personzipcode=None, cf_provincename=None,
             cf_taxid=customer_taxid,
             fmlpaymentcreditday=None
         )
         db.add(inv)
         db.flush()  # get inv.idx
 
-        # 2) create product list 
+        # save list 
         for i in range(len(product_code)):
-            qty = float(quantity[i] or 0)
+            qty   = float(quantity[i] or 0)
             price = float(unit_price[i] or 0)
-            amt = qty * price
-            item = models.InvoiceItem(
-                invoice_number=inv.idx,         # FK -> invoices.idx
+            db.add(models.InvoiceItem(
+                invoice_number=inv.idx,
                 personid=None,
                 cf_itemid=product_code[i],
                 cf_itemname=description[i],
                 cf_unitname=None,
                 cf_itempricelevel_price=price,
-                cf_items_ordinary=None,
+                cf_items_ordinary=i+1,
                 quantity=qty,
-                amount=amt
-            )
-            db.add(item)
+                amount=qty * price
+            ))
 
         db.commit()
         return {"message": "saved", "invoice_idx": inv.idx, "invoice_number": inv.invoice_number}
@@ -112,7 +108,7 @@ async def submit(
         raise
     finally:
         db.close()
-        
+                
 @app.get("/customers", response_class=HTMLResponse)
 async def customer_page(request: Request):
     # load one page table and form 
