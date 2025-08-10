@@ -88,10 +88,24 @@
     table {
       width: 100%;
       border-collapse: collapse;
-    }
-    th,
-    td {
       border: 1.5px solid #0F3F7F;
+      /* เส้นรอบนอก */
+    }
+
+    table th {
+      background: #eef5ff;
+      font-weight: 700;
+      border: none;
+      /* ลบเส้นทั้งหมด */
+      border-bottom: 1.5px solid #0F3F7F;
+      /* เส้นใต้หัวตาราง */
+      padding: 6px 8px;
+      text-align: center;
+    }
+
+    table td {
+      border: none;
+      /* ไม่มีเส้นคั่น */
       padding: 6px 8px;
       vertical-align: top;
     }
