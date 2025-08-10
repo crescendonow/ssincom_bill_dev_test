@@ -85,57 +85,59 @@
       height: 70px;
     }
 
+    /* กรอบนอกตารางสินค้า: ไม่มีเส้นบน */
     .table-frame {
       border: 1.5px solid #0F3F7F;
-      border-radius: 10px;
+      border-top: none;
+      /* ตัดเส้นบนออก */
+      border-radius: 0 0 10px 10px;
+      /* มุมมนเฉพาะด้านล่าง */
       overflow: hidden;
-      /* ให้มุมมนทำงานจริง */
-      padding-top: 6mm;
-      /* เว้นช่องว่างด้านบน */
-      position: relative;
+      /* ให้มุมมนล่างทำงาน */
     }
 
-    /* วาดเส้นบนใหม่ให้ต่ำกว่าขอบบนกรอบ */
-    .table-frame::before {
-      content: "";
-      position: absolute;
-      top: 6mm;
-      /* ตรงกับ padding-top */
-      left: 0;
-      right: 0;
-      border-top: 1.5px solid #0F3F7F;
-    }
-
-    /* ตารางด้านใน: ไม่วาดเส้นรอบนอกซ้ำ ปล่อยให้กรอบเป็นคนวาด */
+    /* ตารางภายใน */
     table.items {
       width: 100%;
-      border-collapse: separate;
-      /* เลี่ยงปัญหาเส้นซ้อนกับมุมมน */
-      border-spacing: 0;
+      border-collapse: collapse;
     }
 
-    /* หัวตาราง: มีเฉพาะเส้นใต้หัวตาราง */
+    /* หัวตาราง: สร้างเส้นบน + มุมโค้ง */
     table.items th {
       background: #eef5ff;
       font-weight: 700;
       padding: 6px 8px;
       text-align: center;
-      border: 0;
+
+      /* เส้นบนหัวตาราง = เส้นบนของกรอบ */
+      border-top: 1.5px solid #0F3F7F;
       border-bottom: 1.5px solid #0F3F7F;
       /* เส้นใต้หัวตาราง */
     }
 
-    /* เส้นแบ่งคอลัมน์ภายใน: ใส่เฉพาะคอลัมน์ที่ 2 เป็นต้นไป (เลี่ยงทับกรอบซ้าย/ขวา) */
-    table.items th+th,
-    table.items td+td {
+    /* เส้นแนวตั้งแบ่งคอลัมน์ในหัวตาราง */
+    table.items th+th {
       border-left: 1.5px solid #0F3F7F;
     }
 
-    /* เซลล์ข้อมูล: ไม่มีเส้นบน/ล่าง เพื่อให้ “ไม่มีเส้นคั่นระหว่างบรรทัด” */
+    /* มุมโค้งบน */
+    table.items th:first-child {
+      border-top-left-radius: 10px;
+    }
+
+    table.items th:last-child {
+      border-top-right-radius: 10px;
+    }
+
+    /* ข้อมูล: ไม่มีเส้นบน/ล่าง แต่มีเส้นแนวตั้ง */
     table.items td {
       padding: 6px 8px;
       vertical-align: top;
-      border: 0;
+      border: none;
+    }
+
+    table.items td+td {
+      border-left: 1.5px solid #0F3F7F;
     }
 
     th {
