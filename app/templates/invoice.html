@@ -90,6 +90,10 @@
       border-collapse: collapse;
       border: 1.5px solid #0F3F7F;
       /* เส้นรอบนอก */
+      border-radius: 10px;
+      /* มุมมน */
+      overflow: hidden;
+      /* ให้มุมมนมีผลกับเนื้อหา */
     }
 
     table th {
@@ -97,9 +101,7 @@
       font-weight: 700;
       border-top: none;
       border-bottom: 1.5px solid #0F3F7F;
-      /* เส้นใต้หัวตาราง */
       border-left: 1.5px solid #0F3F7F;
-      /* เส้นแบ่งคอลัมน์ */
       border-right: 1.5px solid #0F3F7F;
       padding: 6px 8px;
       text-align: center;
@@ -107,20 +109,16 @@
 
     table th:first-child {
       border-left: none;
-      /* คอลัมน์แรกไม่ต้องมีเส้นซ้าย */
     }
 
     table th:last-child {
       border-right: none;
-      /* คอลัมน์สุดท้ายไม่ต้องมีเส้นขวา */
     }
 
     table td {
       border-top: none;
-      /* ไม่มีเส้นคั่นแนวนอน */
       border-bottom: none;
       border-left: 1.5px solid #0F3F7F;
-      /* เส้นแบ่งคอลัมน์ */
       border-right: 1.5px solid #0F3F7F;
       padding: 6px 8px;
       vertical-align: top;
@@ -128,12 +126,10 @@
 
     table td:first-child {
       border-left: none;
-      /* คอลัมน์แรกไม่ต้องมีเส้นซ้าย */
     }
 
     table td:last-child {
       border-right: none;
-      /* คอลัมน์สุดท้ายไม่ต้องมีเส้นขวา */
     }
 
     th {
@@ -145,8 +141,14 @@
       border: none !important;
     }
 
+    .sumtable {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
     .sumtable td {
       border: none;
+      /* ไม่มีกรอบเหลี่ยมใน */
       padding: 4px 0;
     }
 
