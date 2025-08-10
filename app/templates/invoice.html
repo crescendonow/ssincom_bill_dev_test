@@ -85,45 +85,54 @@
       height: 70px;
     }
 
+    /* กรอบนอก + มุมมน ของตารางสินค้า */
     .table-frame {
       border: 1.5px solid #0F3F7F;
-      border-radius: 10px;
+      border-top: none;
+      /* เอาเส้นบนออก */
+      border-radius: 0 0 10px 10px;
+      /* มุมมนเฉพาะล่าง */
       overflow: hidden;
-      /* ให้มุมมนแสดงผลจริง */
     }
 
-    /* ตารางด้านใน: ไม่มีเส้นนอก, มีเฉพาะเส้นแบ่งคอลัมน์ + เส้นใต้หัวตาราง */
+    /* ตารางด้านใน */
     table.items {
       width: 100%;
       border-collapse: collapse;
-      /* ใช้ collapse ได้ เพราะกรอบอยู่นอก table */
     }
 
+    /* หัวตาราง */
     table.items th {
       background: #eef5ff;
       font-weight: 700;
       padding: 6px 8px;
       text-align: center;
+
+      /* เส้นบน-ล่างหัวตาราง = เส้นขอบนอก */
+      border-top: 1.5px solid #0F3F7F;
+      /* เส้นบนแทนกรอบ */
       border-bottom: 1.5px solid #0F3F7F;
-      /* เส้นใต้หัวตาราง */
+
+      /* เส้นแนวตั้ง */
       border-left: 1.5px solid #0F3F7F;
-      /* เส้นแนวตั้งแบ่งคอลัมน์ */
       border-right: 1.5px solid #0F3F7F;
     }
 
     table.items th:first-child {
       border-left: none;
+      border-top-left-radius: 10px;
     }
 
     table.items th:last-child {
       border-right: none;
+      border-top-right-radius: 10px;
     }
 
+    /* เซลล์ข้อมูล */
     table.items td {
       padding: 6px 8px;
       vertical-align: top;
       border-left: 1.5px solid #0F3F7F;
-      /* เส้นแนวตั้งแบ่งคอลัมน์ */
       border-right: 1.5px solid #0F3F7F;
       /* ไม่มีเส้นคั่นแนวนอน */
     }
