@@ -85,49 +85,54 @@
       height: 70px;
     }
 
-    table {
+    .table-frame {
+      border: 1.5px solid #0F3F7F;
+      border-radius: 10px;
+      overflow: hidden;
+      /* ให้มุมมนแสดงผลจริง */
+    }
+
+    /* ตารางด้านใน: ไม่มีเส้นนอก, มีเฉพาะเส้นแบ่งคอลัมน์ + เส้นใต้หัวตาราง */
+    table.items {
       width: 100%;
       border-collapse: collapse;
-      border: 1.5px solid #0F3F7F;
-      /* เส้นรอบนอก */
-      border-radius: 10px;
-      /* มุมมน */
-      overflow: hidden; 
+      /* ใช้ collapse ได้ เพราะกรอบอยู่นอก table */
     }
 
-    table th {
+    table.items th {
       background: #eef5ff;
       font-weight: 700;
-      border-top: none;
-      border-bottom: 1.5px solid #0F3F7F;
-      border-left: 1.5px solid #0F3F7F;
-      border-right: 1.5px solid #0F3F7F;
       padding: 6px 8px;
       text-align: center;
+      border-bottom: 1.5px solid #0F3F7F;
+      /* เส้นใต้หัวตาราง */
+      border-left: 1.5px solid #0F3F7F;
+      /* เส้นแนวตั้งแบ่งคอลัมน์ */
+      border-right: 1.5px solid #0F3F7F;
     }
 
-    table th:first-child {
+    table.items th:first-child {
       border-left: none;
     }
 
-    table th:last-child {
+    table.items th:last-child {
       border-right: none;
     }
 
-    table td {
-      border-top: none;
-      border-bottom: none;
-      border-left: 1.5px solid #0F3F7F;
-      border-right: 1.5px solid #0F3F7F;
+    table.items td {
       padding: 6px 8px;
       vertical-align: top;
+      border-left: 1.5px solid #0F3F7F;
+      /* เส้นแนวตั้งแบ่งคอลัมน์ */
+      border-right: 1.5px solid #0F3F7F;
+      /* ไม่มีเส้นคั่นแนวนอน */
     }
 
-    table td:first-child {
+    table.items td:first-child {
       border-left: none;
     }
 
-    table td:last-child {
+    table.items td:last-child {
       border-right: none;
     }
 
@@ -233,48 +238,50 @@
     </div>
 
     <!-- ตารางสินค้า -->
-    <table class="mt14">
-      <thead>
-        <tr>
-          <th class="center" style="width:6%;">ลำดับ</th>
-          <th class="center" style="width:16%;">รหัสสินค้า</th>
-          <th class="center">ชื่อสินค้า / รายละเอียด</th>
-          <th class="center" style="width:12%;">จำนวน</th>
-          <th class="center" style="width:14%;">ราคาต่อหน่วย</th>
-          <th class="center" style="width:16%;">จำนวนเงิน</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% set ns = namespace(total=0) %}
-      <tbody>
-        {% for item in invoice["items"] %}
-        {% set qty = item["quantity"]|float %}
-        {% set price = item["unit_price"]|float %}
-        {% set amount = qty * price %}
-        {% set ns.total = ns.total + amount %}
-        <tr>
-          <td class="center">{{ loop.index }}</td>
-          <td class="center">{{ item["product_code"] }}</td>
-          <td>{{ item["description"] }}</td>
-          <td class="right">{{ '{:,.2f}'.format(qty) }}</td>
-          <td class="right">{{ '{:,.2f}'.format(price) }}</td>
-          <td class="right">{{ '{:,.2f}'.format(amount) }}</td>
-        </tr>
-        {% endfor %}
+    <div class="table-frame">
+      <table class="items mt14">
+        <thead>
+          <tr>
+            <th class="center" style="width:6%;">ลำดับ</th>
+            <th class="center" style="width:16%;">รหัสสินค้า</th>
+            <th class="center">ชื่อสินค้า / รายละเอียด</th>
+            <th class="center" style="width:12%;">จำนวน</th>
+            <th class="center" style="width:14%;">ราคาต่อหน่วย</th>
+            <th class="center" style="width:16%;">จำนวนเงิน</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set ns = namespace(total=0) %}
+        <tbody>
+          {% for item in invoice["items"] %}
+          {% set qty = item["quantity"]|float %}
+          {% set price = item["unit_price"]|float %}
+          {% set amount = qty * price %}
+          {% set ns.total = ns.total + amount %}
+          <tr>
+            <td class="center">{{ loop.index }}</td>
+            <td class="center">{{ item["product_code"] }}</td>
+            <td>{{ item["description"] }}</td>
+            <td class="right">{{ '{:,.2f}'.format(qty) }}</td>
+            <td class="right">{{ '{:,.2f}'.format(price) }}</td>
+            <td class="right">{{ '{:,.2f}'.format(amount) }}</td>
+          </tr>
+          {% endfor %}
 
-        {% set filler = 8 - (invoice["items"]|length) %}
-        {% for i in range(filler if filler > 0 else 0) %}
-        <tr>
-          <td>&nbsp;</td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+          {% set filler = 8 - (invoice["items"]|length) %}
+          {% for i in range(filler if filler > 0 else 0) %}
+          <tr>
+            <td>&nbsp;</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
 
     <!-- หมายเหตุ + สรุปยอด -->
     <div class="row mt10">
