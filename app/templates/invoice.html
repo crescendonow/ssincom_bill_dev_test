@@ -132,7 +132,7 @@
 <body>
 
   <div class="doc">
-    <!-- แถวหัว -->
+    <!-- head block -->
     <div class="row">
       <div class="col" style="flex:0 0 120px;">
         <img src="/static/ss_logo.png" class="logo" alt="logo" />
@@ -187,12 +187,13 @@
         </tr>
       </thead>
       <tbody>
-        {% set total = 0 %}
+        {% set ns = namespace(total=0) %}
+      <tbody>
         {% for item in invoice["items"] %}
         {% set qty = item["quantity"]|float %}
         {% set price = item["unit_price"]|float %}
         {% set amount = qty * price %}
-        {% set total = total + amount %}
+        {% set ns.total = ns.total + amount %}
         <tr>
           <td class="center">{{ loop.index }}</td>
           <td class="center">{{ item["product_code"] }}</td>
@@ -202,6 +203,7 @@
           <td class="right">{{ '{:,.2f}'.format(amount) }}</td>
         </tr>
         {% endfor %}
+
         {% set filler = 8 - (invoice["items"]|length) %}
         {% for i in range(filler if filler > 0 else 0) %}
         <tr>
@@ -231,7 +233,7 @@
 
       <div class="col" style="flex:0 0 380px;">
         {% set discount = (discount|float) if discount is defined else 0.0 %}
-        {% set before_vat = total - discount %}
+        {% set before_vat = ns.total - discount %}
         {% set vat = (vat_rate|float if vat_rate is defined else 7.0) %}
         {% set vat_amt = before_vat * (vat/100.0) %}
         {% set grand = before_vat + vat_amt %}
