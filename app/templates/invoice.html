@@ -85,64 +85,44 @@
       height: 70px;
     }
 
-    /* กรอบนอก + มุมมน ของตารางสินค้า */
+    /* กรอบนอก + มุมมน ของตารางสินค้า (เป็นเส้นรอบนอกทั้งหมด) */
     .table-frame {
       border: 1.5px solid #0F3F7F;
-      border-top: none;
-      /* เอาเส้นบนออก */
-      border-radius: 0 0 10px 10px;
-      /* มุมมนเฉพาะล่าง */
+      border-radius: 10px;
       overflow: hidden;
+      /* ให้มุมมนทำงานจริง */
     }
 
-    /* ตารางด้านใน */
+    /* ตารางด้านใน: ไม่วาดเส้นรอบนอกซ้ำ ปล่อยให้กรอบเป็นคนวาด */
     table.items {
       width: 100%;
-      border-collapse: collapse;
+      border-collapse: separate;
+      /* เลี่ยงปัญหาเส้นซ้อนกับมุมมน */
+      border-spacing: 0;
     }
 
-    /* หัวตาราง */
+    /* หัวตาราง: มีเฉพาะเส้นใต้หัวตาราง */
     table.items th {
       background: #eef5ff;
       font-weight: 700;
       padding: 6px 8px;
       text-align: center;
-
-      /* เส้นบน-ล่างหัวตาราง = เส้นขอบนอก */
-      border-top: 1.5px solid #0F3F7F;
-      /* เส้นบนแทนกรอบ */
+      border: 0;
       border-bottom: 1.5px solid #0F3F7F;
+      /* เส้นใต้หัวตาราง */
+    }
 
-      /* เส้นแนวตั้ง */
+    /* เส้นแบ่งคอลัมน์ภายใน: ใส่เฉพาะคอลัมน์ที่ 2 เป็นต้นไป (เลี่ยงทับกรอบซ้าย/ขวา) */
+    table.items th+th,
+    table.items td+td {
       border-left: 1.5px solid #0F3F7F;
-      border-right: 1.5px solid #0F3F7F;
     }
 
-    table.items th:first-child {
-      border-left: none;
-      border-top-left-radius: 10px;
-    }
-
-    table.items th:last-child {
-      border-right: none;
-      border-top-right-radius: 10px;
-    }
-
-    /* เซลล์ข้อมูล */
+    /* เซลล์ข้อมูล: ไม่มีเส้นบน/ล่าง เพื่อให้ “ไม่มีเส้นคั่นระหว่างบรรทัด” */
     table.items td {
       padding: 6px 8px;
       vertical-align: top;
-      border-left: 1.5px solid #0F3F7F;
-      border-right: 1.5px solid #0F3F7F;
-      /* ไม่มีเส้นคั่นแนวนอน */
-    }
-
-    table.items td:first-child {
-      border-left: none;
-    }
-
-    table.items td:last-child {
-      border-right: none;
+      border: 0;
     }
 
     th {
