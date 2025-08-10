@@ -85,12 +85,25 @@
       height: 70px;
     }
 
-    /* กรอบนอก + มุมมน ของตารางสินค้า (เป็นเส้นรอบนอกทั้งหมด) */
     .table-frame {
       border: 1.5px solid #0F3F7F;
       border-radius: 10px;
       overflow: hidden;
       /* ให้มุมมนทำงานจริง */
+      padding-top: 6mm;
+      /* เว้นช่องว่างด้านบน */
+      position: relative;
+    }
+
+    /* วาดเส้นบนใหม่ให้ต่ำกว่าขอบบนกรอบ */
+    .table-frame::before {
+      content: "";
+      position: absolute;
+      top: 6mm;
+      /* ตรงกับ padding-top */
+      left: 0;
+      right: 0;
+      border-top: 1.5px solid #0F3F7F;
     }
 
     /* ตารางด้านใน: ไม่วาดเส้นรอบนอกซ้ำ ปล่อยให้กรอบเป็นคนวาด */
