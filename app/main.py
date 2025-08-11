@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Form, Request, HTTPException, Query
-from sqlalchemy import or_, and_, func, cast, Date
+from sqlalchemy import or_, and_, func, cast, Integer, Date
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
