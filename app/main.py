@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Form, Request, HTTPException, Query
-from sqlalchemy import or_, and_
+from sqlalchemy import or_, and_, func, cast, Date
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -120,6 +120,99 @@ async def submit(
     except:
         db.rollback()
         raise
+    finally:
+        db.close()
+
+# ========= page summary =========
+@app.get("/summary_invoices.html", response_class=HTMLResponse)
+async def summary_invoices_page(request: Request):
+    return templates.TemplateResponse("summary_invoices.html", {"request": request})
+
+# ========= API summary =========
+@app.get("/api/invoices/summary")
+def api_invoice_summary(
+    granularity: str = Query("day", regex="^(day|month|year)$"),
+    start: str | None = None,
+    end: str | None = None,
+    month: str | None = None,  # 'YYYY-MM'
+    year: str | None = None    # 'YYYY'
+):
+    """
+    return [{ period, count, amount, discount, before_vat, vat, grand }]
+    by amount = SUM(quantity * price) จาก ss_invoices.invoice_items
+    NOTE: ใช้ VAT = 7% และ discount = 0 เป็นค่าเริ่ม (ถ้ามี logic ส่วนลด/ภาษีจริงในอนาคต ค่อยอัปเดต)
+    """
+    db = SessionLocal()
+    try:
+        inv = models.Invoice
+        it  = models.InvoiceItem
+
+        # JOIN: invoice_items.invoice_number เก็บค่า inv.idx (จากตอน submit)
+        j = db.query(
+            inv.idx.label("inv_id"),
+            inv.invoice_date.label("inv_date"),
+            (func.sum(it.quantity * it.cf_itempricelevel_price)).label("amount")
+        ).join(it, it.invoice_number == inv.idx)
+
+        # กรองช่วงเวลา
+        if granularity == "day":
+            # คาดหวัง start/end: 'YYYY-MM-DD'
+            if start:
+                j = j.filter(inv.invoice_date >= cast(start, Date))
+            if end:
+                j = j.filter(inv.invoice_date <= cast(end, Date))
+            period_expr = cast(inv.invoice_date, Date)
+        elif granularity == "month":
+            # month: 'YYYY-MM'
+            if month:
+                y, m = month.split("-")
+                j = j.filter(func.extract("year", inv.invoice_date) == int(y))
+                j = j.filter(func.extract("month", inv.invoice_date) == int(m))
+            period_expr = func.to_char(inv.invoice_date, "YYYY-MM")
+        else:
+            # year: 'YYYY'
+            if year:
+                j = j.filter(func.extract("year", inv.invoice_date) == int(year))
+            period_expr = func.to_char(inv.invoice_date, "YYYY")
+
+        # group ตาม period + นับจำนวนใบ (distinct ใบ)
+        q = j.group_by(inv.idx, inv.invoice_date)  # รวมยอดต่อใบก่อน
+        # สรุปต่อ period
+        sub = q.subquery()
+
+        # sub: inv_id, inv_date, amount
+        if granularity == "day":
+            group_period = cast(sub.c.inv_date, Date)
+        elif granularity == "month":
+            group_period = func.to_char(sub.c.inv_date, "YYYY-MM")
+        else:
+            group_period = func.to_char(sub.c.inv_date, "YYYY")
+
+        # รวมต่อ period
+        agg = db.query(
+            group_period.label("period"),
+            func.count().label("count"),
+            func.coalesce(func.sum(sub.c.amount), 0).label("amount")
+        ).group_by(group_period).order_by(group_period)
+
+        rows = []
+        VAT_RATE = 0.07
+        for period, count, amount in agg.all():
+            discount = 0.0
+            before_vat = (amount or 0) - discount
+            vat = before_vat * VAT_RATE
+            grand = before_vat + vat
+            rows.append({
+                "period": period,
+                "count": int(count or 0),
+                "amount": float(amount or 0),
+                "discount": float(discount),
+                "before_vat": float(before_vat),
+                "vat": float(vat),
+                "grand": float(grand)
+            })
+
+        return JSONResponse(rows)
     finally:
         db.close()
                 

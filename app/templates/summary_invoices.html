@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>สรุปรายการใบกำกับภาษี</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gradient-to-b from-blue-500 to-blue-200 min-h-screen font-sans text-gray-800">
+
+    <div class="max-w-7xl mx-auto px-6 py-8">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+            <h1 class="text-2xl font-bold text-white">ดูรายการใบกำกับภาษีที่ออก</h1>
+            <div class="flex gap-2">
+                <a href="/" class="bg-white text-blue-700 px-4 py-2 rounded hover:bg-gray-100">กลับแดชบอร์ด</a>
+                <button id="btnExportCsv" class="bg-white text-blue-700 px-4 py-2 rounded hover:bg-gray-100">ส่งออก
+                    CSV</button>
+            </div>
+        </div>
+
+        <!-- แถบตัวกรอง -->
+        <div class="bg-white rounded-lg p-4 shadow mb-6">
+            <div class="flex flex-wrap items-center gap-3">
+                <!-- ระดับเวลา -->
+                <div class="inline-flex rounded-md shadow-sm" role="group" aria-label="Granularity">
+                    <button type="button" data-granularity="day"
+                        class="btn-gran px-4 py-2 text-sm font-medium border border-gray-300 rounded-l-md bg-blue-600 text-white">
+                        รายวัน
+                    </button>
+                    <button type="button" data-granularity="month"
+                        class="btn-gran px-4 py-2 text-sm font-medium border border-gray-300 bg-white hover:bg-gray-50">
+                        รายเดือน
+                    </button>
+                    <button type="button" data-granularity="year"
+                        class="btn-gran px-4 py-2 text-sm font-medium border border-gray-300 rounded-r-md bg-white hover:bg-gray-50">
+                        รายปี
+                    </button>
+                </div>
+
+                <!-- ฟิลเตอร์ (สลับแสดงตาม granularity) -->
+                <div id="filter-day" class="flex items-center gap-2">
+                    <label class="text-sm text-gray-600">วันที่</label>
+                    <input id="dayFrom" type="date" class="border rounded px-2 py-1">
+                    <span class="text-sm text-gray-400">ถึง</span>
+                    <input id="dayTo" type="date" class="border rounded px-2 py-1">
+                </div>
+
+                <div id="filter-month" class="hidden items-center gap-2">
+                    <label class="text-sm text-gray-600">เดือน</label>
+                    <input id="monthPick" type="month" class="border rounded px-2 py-1">
+                </div>
+
+                <div id="filter-year" class="hidden items-center gap-2">
+                    <label class="text-sm text-gray-600">ปี</label>
+                    <input id="yearPick" type="number" class="border rounded px-2 py-1 w-28" step="1" min="2000"
+                        max="2100">
+                </div>
+
+                <button id="btnApply" class="ml-auto bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                    ใช้ตัวกรอง
+                </button>
+            </div>
+        </div>
+
+        <!-- ตารางสรุป -->
+        <div class="bg-white rounded-lg p-6 shadow">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-lg font-bold">สรุปรายการ</h2>
+                <div id="currentFilter" class="text-sm text-gray-500">—</div>
+            </div>
+
+            <div class="overflow-auto">
+                <table class="min-w-full border border-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-3 py-2 text-left text-sm font-semibold text-gray-700 border-b">ช่วงเวลา</th>
+                            <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">จำนวนใบกำกับ
+                            </th>
+                            <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">ยอดก่อนส่วนลด
+                            </th>
+                            <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">ส่วนลด</th>
+                            <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">ก่อน VAT</th>
+                            <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">VAT</th>
+                            <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">รวมสุทธิ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summaryBody"></tbody>
+                    <tfoot class="bg-gray-50">
+                        <tr>
+                            <td class="px-3 py-2 text-right font-semibold border-t">รวมทั้งหมด</td>
+                            <td class="px-3 py-2 text-right font-semibold border-t" id="sum_count">0</td>
+                            <td class="px-3 py-2 text-right font-semibold border-t" id="sum_amount">0.00</td>
+                            <td class="px-3 py-2 text-right font-semibold border-t" id="sum_discount">0.00</td>
+                            <td class="px-3 py-2 text-right font-semibold border-t" id="sum_before_vat">0.00</td>
+                            <td class="px-3 py-2 text-right font-semibold border-t" id="sum_vat">0.00</td>
+                            <td class="px-3 py-2 text-right font-semibold border-t" id="sum_grand">0.00</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/summary_invoices.js"></script>
+</body>
+
+</html>
