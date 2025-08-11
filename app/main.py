@@ -129,6 +129,96 @@ async def submit(
 async def summary_invoices_page(request: Request):
     return templates.TemplateResponse("summary_invoices.html", {"request": request})
 
+@app.get("/api/invoices")
+def api_list_invoices(
+    start: str | None = Query(None, description="YYYY-MM-DD"),
+    end: str | None = Query(None, description="YYYY-MM-DD"),
+    q: str | None = Query(None, description="ค้นหา (เลขที่/ชื่อลูกค้า/PO)")
+):
+    db = SessionLocal()
+    try:
+        inv = models.Invoice
+        it  = models.InvoiceItem
+
+        # รวมยอดต่อใบ (amount จาก items)
+        j = db.query(
+            inv.idx.label("idx"),
+            inv.invoice_number.label("invoice_number"),
+            inv.invoice_date.label("invoice_date"),
+            inv.fname.label("fname"),
+            inv.po_number.label("po_number"),
+            func.coalesce(func.sum(it.quantity * it.cf_itempricelevel_price), 0).label("amount")
+        ).join(
+            it, cast(it.invoice_number, Integer) == inv.idx   # items.invoice_number เป็นตัวเลขที่อ้าง idx
+        )
+
+        # filter by date
+        if start:
+            j = j.filter(inv.invoice_date >= cast(start, Date))
+        if end:
+            j = j.filter(inv.invoice_date <= cast(end, Date))
+
+        # search
+        if q:
+            like = f"%{q}%"
+            j = j.filter(or_(
+                inv.invoice_number.ilike(like),
+                inv.fname.ilike(like),
+                inv.po_number.ilike(like)
+            ))
+
+        j = j.group_by(inv.idx, inv.invoice_number, inv.invoice_date, inv.fname, inv.po_number)\
+             .order_by(inv.invoice_date.desc(), inv.idx.desc())
+
+        VAT_RATE = 0.07
+        rows = []
+        for idx, invoice_number, invoice_date, fname, po_number, amount in j.all():
+            before_vat = float(amount or 0)
+            vat = before_vat * VAT_RATE
+            grand = before_vat + vat
+            # แปลงวันที่เป็นสตริง
+            date_str = invoice_date.isoformat() if hasattr(invoice_date, "isoformat") else str(invoice_date)
+            rows.append({
+                "idx": idx,
+                "invoice_number": invoice_number,
+                "invoice_date": date_str,
+                "fname": fname,
+                "po_number": po_number,
+                "amount": float(before_vat),
+                "vat": float(vat),
+                "grand": float(grand),
+            })
+
+        return JSONResponse(content=jsonable_encoder(rows))
+    finally:
+        db.close()
+
+# ===== รายการสินค้าในใบกำกับ =====
+@app.get("/api/invoices/{inv_id}/items")
+def api_invoice_items(inv_id: int):
+    db = SessionLocal()
+    try:
+        it = models.InvoiceItem
+        # ดึงสินค้าตาม inv_id โดยเทียบกับ invoice_items.invoice_number
+        rows = db.query(
+            it.cf_itemid, it.cf_itemname, it.quantity, it.cf_itempricelevel_price, it.amount
+        ).filter(
+            cast(it.invoice_number, Integer) == inv_id
+        ).order_by(it.cf_items_ordinary.asc()).all()
+
+        data = []
+        for cf_itemid, cf_itemname, quantity, unit_price, amount in rows:
+            data.append({
+                "cf_itemid": cf_itemid,
+                "cf_itemname": cf_itemname,
+                "quantity": float(quantity or 0),
+                "unit_price": float(unit_price or 0),
+                "amount": float(amount or 0)
+            })
+        return JSONResponse(content=jsonable_encoder(data))
+    finally:
+        db.close()
+
 # ========= API summary =========
 @app.get("/api/invoices/summary")
 def api_invoice_summary(
