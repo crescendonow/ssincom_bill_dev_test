@@ -149,10 +149,13 @@ def api_invoice_summary(
 
         # JOIN: invoice_items.invoice_number เก็บค่า inv.idx (จากตอน submit)
         j = db.query(
-            inv.idx.label("inv_id"),
-            inv.invoice_date.label("inv_date"),
-            (func.sum(it.quantity * it.cf_itempricelevel_price)).label("amount")
-        ).join(it, it.invoice_number == inv.idx)
+    inv.idx.label("inv_id"),
+    inv.invoice_date.label("inv_date"),
+    (func.sum(it.quantity * it.cf_itempricelevel_price)).label("amount")
+        ).join(
+    it,
+    cast(it.invoice_number, Integer) == inv.idx  # << cast to integer
+)
 
         # กรองช่วงเวลา
         if granularity == "day":
