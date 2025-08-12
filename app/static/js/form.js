@@ -266,6 +266,8 @@ function previewInvoice() {
     grn_number: fd.get("grn_number"), // ✅ included
     dn_number: fd.get("dn_number"),   // ✅ included
     po_number: fd.get("po_number"),
+    tel: fd.get('tel'),
+    mobile: fd.get('mobile'),
     customer_name: fd.get("customer_name"),
     customer_taxid: fd.get("customer_taxid"),
     customer_address: fd.get("customer_address"),
