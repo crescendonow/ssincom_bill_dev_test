@@ -116,8 +116,15 @@ async def submit(
                 amount=qty*price
             ))
 
+        due_date = None
+        if d and fmlpaymentcreditday:
+            try:
+                due_date = (d + timedelta(days=int(fmlpaymentcreditday))).strftime("%d/%m/%Y")
+            except Exception:
+                due_date = None
+
         db.commit()
-        return {"message": "saved", "invoice_idx": inv.idx, "invoice_number": inv.invoice_number}
+        return {"message": "saved", "invoice_idx": inv.idx, "invoice_number": inv.invoice_number, "due_date": due_date}
     except:
         db.rollback()
         raise
@@ -646,30 +653,16 @@ def api_check_invoice_number(number: str = Query(..., min_length=1)):
 async def preview(request: Request, payload: dict):
     # Compute due_date from payload (invoice_date + fmlpaymentcreditday)
     data = dict(payload) if isinstance(payload, dict) else {}
+
     date_str = data.get("invoice_date") or ""
-    # credit may be string; convert safely
+    credit = int(data.get("fmlpaymentcreditday") or 0)
+
+    fmt_in = "%Y-%m-%d" if "-" in date_str else "%d/%m/%Y"
     try:
-        credit = int(data.get("fmlpaymentcreditday") or 0)
+        dt = datetime.strptime(date_str, fmt_in)
+        data["due_date"] = (dt + timedelta(days=credit)).strftime("%d/%m/%Y")
     except Exception:
-        credit = 0
-
-    # Try a few common date formats
-    fmt_candidates = ["%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"]
-    due_date = ""
-    for fmt in fmt_candidates:
-        try:
-            dt = datetime.strptime(str(date_str), fmt)
-            due_date = (dt + timedelta(days=credit)).strftime("%d/%m/%Y")
-            break
-        except Exception:
-            continue
-
-    # If couldn't parse, keep any provided due_date
-    if not due_date:
-        due_date = data.get("due_date") or ""
-
-    # Attach computed due_date back onto invoice payload
-    data["due_date"] = due_date
+        data["due_date"] = ""
 
     return templates.TemplateResponse(
         "invoice.html",
