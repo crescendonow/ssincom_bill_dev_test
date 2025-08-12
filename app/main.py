@@ -71,7 +71,7 @@ async def submit(
         # parse date 
         d = None
         if invoice_date:
-            for fmt in ("%m/%d/%Y", "%d/%m/%Y", "%Y-%m-%d"):
+            for fmt in ("%d/%m/%Y", "%Y-%m-%d", "%m/%d/%Y"):
                 try:
                     d = datetime.strptime(invoice_date, fmt).date()
                     break
