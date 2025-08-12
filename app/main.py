@@ -671,7 +671,7 @@ async def preview(request: Request, payload: dict):
     # Attach computed due_date back onto invoice payload
     data["due_date"] = due_date
 
-     return templates.TemplateResponse(
+    return templates.TemplateResponse(
         "invoice.html",
         {
             "request": request,   # << ต้องมีเสมอ
