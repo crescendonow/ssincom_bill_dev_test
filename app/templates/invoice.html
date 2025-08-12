@@ -254,14 +254,7 @@
         <div class="mt6">วันที่: <b>{{ invoice.invoice_date }}</b></div>
         <div class="mt6">เลขที่ใบสั่งซื้อ: <b>{{ invoice.po_number }}</b></div>
         <div class="mt6">เงื่อนไขการชำระเงิน: <b>{{ invoice.fmlpaymentcreditday }}</b></div>
-
-        {# --- วันครบกำหนดชำระเงิน (calculate from  invoice_date + fmlpaymentcreditday) --- #}
-        {% set credit = (invoice.fmlpaymentcreditday|int if invoice.fmlpaymentcreditday is not none else 0) %}
-        {% set fmt_in = '%Y-%m-%d' if '-' in invoice.invoice_date else '%d/%m/%Y' %}
-        {% set invoice_date_dt = datetime.strptime(invoice.invoice_date, fmt_in) %}
-        {% set due = invoice_date_dt + timedelta(days=credit) %}
-        <div class="mt6">วันครบกำหนดชำระเงิน: <b>{{ due.strftime('%d/%m/%Y') }}</b></div>
-
+         <div class="mt6">วันครบกำหนดชำระเงิน: <b>{{ invoice.due_date or "" }}</b></div>
         <div class="mt6">เลขที่ใบรับสินค้า: <b>{{ invoice.grn_number }}</b></div>
         <div class="mt6">เลขที่ใบส่งสินค้า: <b>{{ invoice.dn_number }}</b></div>
       </div>
@@ -269,7 +262,7 @@
 
     <!-- ตารางสินค้า -->
     <div class="table-frame">
-      <table class="items mt14">
+      <table class="items mt6">
         <thead>
           <tr>
             <th class="center" style="width:6%;">ลำดับ</th>

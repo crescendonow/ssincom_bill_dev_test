@@ -7,7 +7,7 @@ from fastapi.encoders import jsonable_encoder
 from . import models, database, crud, pdf_generator
 from .models import CustomerList, ProductList 
 from .database import SessionLocal
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import List
 from pathlib import Path
 
@@ -644,6 +644,26 @@ def api_check_invoice_number(number: str = Query(..., min_length=1)):
         
 @app.post("/preview", response_class=HTMLResponse)
 async def preview(request: Request, payload: dict):
+    # compute due_date from payload.invoice_date and fmlpaymentcreditday
+     
+     data = dict(payload) if isinstance(payload, dict) else {}
+     date_str = data.get("invoice_date") or ""
+     credit = 0
+     try:
+         credit = int(data.get("fmlpaymentcreditday") or 0)
+     except Exception:
+         credit = 0
+
+     fmt_in = "%Y-%m-%d" if "-" in str(date_str) else "%d/%m/%Y"
+     due_date = ""
+     try:
+         dt = datetime.strptime(str(date_str), fmt_in)
+         due_date = (dt + timedelta(days=credit)).strftime("%d/%m/%Y")
+     except Exception:
+         due_date = data.get("due_date") or ""
+
+     data["due_date"] = due_date
+
      return templates.TemplateResponse(
         "invoice.html",
         {
