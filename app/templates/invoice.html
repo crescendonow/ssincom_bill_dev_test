@@ -255,16 +255,12 @@
         <div class="mt6">เลขที่ใบสั่งซื้อ: <b>{{ invoice.po_number }}</b></div>
         <div class="mt6">เงื่อนไขการชำระเงิน: <b>{{ invoice.fmlpaymentcreditday }}</b></div>
 
-        {# --- วันครบกำหนดชำระเงิน (คำนวณจาก invoice_date + fmlpaymentcreditday) --- #}
+        {# --- วันครบกำหนดชำระเงิน (calculate from  invoice_date + fmlpaymentcreditday) --- #}
         {% set credit = (invoice.fmlpaymentcreditday|int if invoice.fmlpaymentcreditday is not none else 0) %}
-        {% if invoice.invoice_date_dt is defined %}
-        {% set due = invoice.invoice_date_dt + timedelta(days=credit) %}
+        {% set fmt_in = '%Y-%m-%d' if '-' in invoice.invoice_date else '%d/%m/%Y' %}
+        {% set invoice_date_dt = datetime.strptime(invoice.invoice_date, fmt_in) %}
+        {% set due = invoice_date_dt + timedelta(days=credit) %}
         <div class="mt6">วันครบกำหนดชำระเงิน: <b>{{ due.strftime('%d/%m/%Y') }}</b></div>
-        {% elif invoice.due_date is defined %}
-        <div class="mt6">วันครบกำหนดชำระเงิน: <b>{{ invoice.due_date }}</b></div>
-        {% else %}
-        <div class="mt6">วันครบกำหนดชำระเงิน: <b></b></div>
-        {% endif %}
 
         <div class="mt6">เลขที่ใบรับสินค้า: <b>{{ invoice.grn_number }}</b></div>
         <div class="mt6">เลขที่ใบส่งสินค้า: <b>{{ invoice.dn_number }}</b></div>
