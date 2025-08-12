@@ -644,25 +644,32 @@ def api_check_invoice_number(number: str = Query(..., min_length=1)):
         
 @app.post("/preview", response_class=HTMLResponse)
 async def preview(request: Request, payload: dict):
-    # compute due_date from payload.invoice_date and fmlpaymentcreditday
-     
-     data = dict(payload) if isinstance(payload, dict) else {}
-     date_str = data.get("invoice_date") or ""
-     credit = 0
-     try:
-         credit = int(data.get("fmlpaymentcreditday") or 0)
-     except Exception:
-         credit = 0
+    # Compute due_date from payload (invoice_date + fmlpaymentcreditday)
+    data = dict(payload) if isinstance(payload, dict) else {}
+    date_str = data.get("invoice_date") or ""
+    # credit may be string; convert safely
+    try:
+        credit = int(data.get("fmlpaymentcreditday") or 0)
+    except Exception:
+        credit = 0
 
-     fmt_in = "%Y-%m-%d" if "-" in str(date_str) else "%d/%m/%Y"
-     due_date = ""
-     try:
-         dt = datetime.strptime(str(date_str), fmt_in)
-         due_date = (dt + timedelta(days=credit)).strftime("%d/%m/%Y")
-     except Exception:
-         due_date = data.get("due_date") or ""
+    # Try a few common date formats
+    fmt_candidates = ["%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"]
+    due_date = ""
+    for fmt in fmt_candidates:
+        try:
+            dt = datetime.strptime(str(date_str), fmt)
+            due_date = (dt + timedelta(days=credit)).strftime("%d/%m/%Y")
+            break
+        except Exception:
+            continue
 
-     data["due_date"] = due_date
+    # If couldn't parse, keep any provided due_date
+    if not due_date:
+        due_date = data.get("due_date") or ""
+
+    # Attach computed due_date back onto invoice payload
+    data["due_date"] = due_date
 
      return templates.TemplateResponse(
         "invoice.html",
