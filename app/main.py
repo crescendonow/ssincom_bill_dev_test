@@ -140,7 +140,7 @@ def api_list_invoices(
         inv = models.Invoice
         it  = models.InvoiceItem
 
-        # รวมยอดต่อใบ (amount จาก items)
+        # sum bill (amount from items)
         j = db.query(
             inv.idx.label("idx"),
             inv.invoice_number.label("invoice_number"),
@@ -149,7 +149,7 @@ def api_list_invoices(
             inv.po_number.label("po_number"),
             func.coalesce(func.sum(it.quantity * it.cf_itempricelevel_price), 0).label("amount")
         ).join(
-            it, cast(it.invoice_number, Integer) == inv.idx   # items.invoice_number เป็นตัวเลขที่อ้าง idx
+            it, cast(it.invoice_number, Integer) == inv.idx   # items.invoice_number refer idx
         )
 
         # filter by date
