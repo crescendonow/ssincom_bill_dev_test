@@ -212,7 +212,7 @@
           <div class="title" style="align-self:flex-start;">
             บริษัท เอส แอนด์ เอส อินคอม จำกัด
           </div>
-          <div class="title">S &amp; S INCOM CO., LTD.</div>
+          <div class="title">S &amp; S INCOM CO., LTD.</b></div>
           <div class="muted">69 หมู่ 10 ตำบลพังตรุ อำเภอพนมทวน จังหวัดกาญจนบุรี 71140</div>
           <div class="muted">โทร. (035) 589 274, (081) 880 8840, (092) 265 9156</div>
           <div class="muted" style="font-size:12pt;">
@@ -241,7 +241,7 @@
 
     <!-- แถวข้อมูลลูกค้า + เลขที่เอกสาร -->
     <div class="row mt10">
-      <div class="col box-light">
+      <div class="col box-light" style="font-size:14pt;">
         <div class="muted">รหัสลูกค้า: <b>{{ invoice.customer_code or invoice.personid }}</b></div>
         <div class="mt6">ชื่อลูกค้า: <b>{{ invoice.customer_name }}</b></div>
         <div class="mt6">เลขประจำตัวผู้เสียภาษี: <b>{{ invoice.customer_taxid }}</b> / {{ invoice.customer_branch or
@@ -249,11 +249,23 @@
         <div class="mt6">ที่อยู่: <b>{{ invoice.customer_address }}</b></div>
         <div class="mt6">โทรศัพท์: <b>{{ invoice.tel or invoice.mobile or '' }}</b></div>
       </div>
-      <div class="col box-light" style="flex:0 0 320px;">
+      <div class="col box-light" style="flex:0 0 320px; font-size:14pt;">
         <div>เลขที่: <b>{{ invoice.invoice_number }}</b></div>
         <div class="mt6">วันที่: <b>{{ invoice.invoice_date }}</b></div>
         <div class="mt6">เลขที่ใบสั่งซื้อ: <b>{{ invoice.po_number }}</b></div>
         <div class="mt6">เงื่อนไขการชำระเงิน: <b>{{ invoice.fmlpaymentcreditday }}</b></div>
+
+        {# --- วันครบกำหนดชำระเงิน (คำนวณจาก invoice_date + fmlpaymentcreditday) --- #}
+        {% set credit = (invoice.fmlpaymentcreditday|int if invoice.fmlpaymentcreditday is not none else 0) %}
+        {% if invoice.invoice_date_dt is defined %}
+        {% set due = invoice.invoice_date_dt + timedelta(days=credit) %}
+        <div class="mt6">วันครบกำหนดชำระเงิน: <b>{{ due.strftime('%d/%m/%Y') }}</b></div>
+        {% elif invoice.due_date is defined %}
+        <div class="mt6">วันครบกำหนดชำระเงิน: <b>{{ invoice.due_date }}</b></div>
+        {% else %}
+        <div class="mt6">วันครบกำหนดชำระเงิน: <b></b></div>
+        {% endif %}
+
         <div class="mt6">เลขที่ใบรับสินค้า: <b>{{ invoice.grn_number }}</b></div>
         <div class="mt6">เลขที่ใบส่งสินค้า: <b>{{ invoice.dn_number }}</b></div>
       </div>
