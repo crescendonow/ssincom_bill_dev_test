@@ -115,15 +115,15 @@ async def submit(
                 quantity=qty,
                 amount=qty*price
             ))
-
-        due_date = None
-        if d and fmlpaymentcreditday:
-            try:
-                due_date = (d + timedelta(days=int(fmlpaymentcreditday))).strftime("%d/%m/%Y")
-            except Exception:
-                due_date = None
-
         db.commit()
+        # compute due_date for response (not stored)
+        due_date = ""
+        try:
+            if d and fmlpaymentcreditday is not None:
+                due_date = (d + timedelta(days=int(fmlpaymentcreditday or 0))).strftime("%d/%m/%Y")
+        except Exception:
+            due_date = ""
+
         return {"message": "saved", "invoice_idx": inv.idx, "invoice_number": inv.invoice_number, "due_date": due_date}
     except:
         db.rollback()
@@ -651,26 +651,35 @@ def api_check_invoice_number(number: str = Query(..., min_length=1)):
         
 @app.post("/preview", response_class=HTMLResponse)
 async def preview(request: Request, payload: dict):
-    # Compute due_date from payload (invoice_date + fmlpaymentcreditday)
     data = dict(payload) if isinstance(payload, dict) else {}
 
-    date_str = data.get("invoice_date") or ""
-    credit = int(data.get("fmlpaymentcreditday") or 0)
-
-    fmt_in = "%Y-%m-%d" if "-" in date_str else "%d/%m/%Y"
+    # compute due_date from invoice_date + fmlpaymentcreditday
+    date_str = str(data.get("invoice_date") or "").strip()
+    credit_raw = data.get("fmlpaymentcreditday")
     try:
-        dt = datetime.strptime(date_str, fmt_in)
-        data["due_date"] = (dt + timedelta(days=credit)).strftime("%d/%m/%Y")
+        credit = int(credit_raw) if (credit_raw not in (None, "")) else 0
     except Exception:
-        data["due_date"] = ""
+        credit = 0
+
+    due_date = ""
+    if date_str:
+        fmts = ["%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"]
+        for fmt in fmts:
+            try:
+                dt = datetime.strptime(date_str, fmt)
+                due_date = (dt + timedelta(days=credit)).strftime("%d/%m/%Y")
+                break
+            except Exception:
+                continue
+    data["due_date"] = due_date
 
     return templates.TemplateResponse(
         "invoice.html",
         {
             "request": request,   # << ต้องมีเสมอ
-            "invoice": payload,   # << ส่งทั้งก้อนเป็น invoice
-            "discount": payload.get("discount", 0),
-            "vat_rate": payload.get("vat_rate", 7)
+            "invoice": data,   # << ส่งทั้งก้อนเป็น invoice
+            "discount": data.get("discount", 0),
+            "vat_rate": data.get("vat_rate", 7)
         }
      )
 
