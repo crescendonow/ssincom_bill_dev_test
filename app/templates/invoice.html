@@ -149,50 +149,56 @@
       border: none !important;
     }
 
-    .sumtable {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
     .sumtable td {
-      border: none;
-      /* ไม่มีกรอบเหลี่ยมใน */
-      padding: 4px 0;
+      padding: 2px 6px;
+      /* ปรับ padding แนวตั้ง/แนวนอน */
+      line-height: 1.2;
+      /* ลดความสูงบรรทัด */
     }
 
-    .sumtable tr td:first-child {
-      padding-right: 14px;
-    }
+    .sumtable {
+      border-collapse: collapse;
+      /* เอาช่องว่างเส้นตารางออก */
 
-    .big-amount {
-      font-size: 18pt;
-      font-weight: 700;
-    }
-
-    /* ไม่พิมพ์ปุ่ม */
-    @media print {
-      .noprint {
-        display: none !important;
+      .sumtable td {
+        border: none;
+        /* ไม่มีกรอบเหลี่ยมใน */
+        padding: 4px 0;
       }
 
-      body {
-        font-size: 13pt;
+      .sumtable tr td:first-child {
+        padding-right: 14px;
       }
 
-      .doc {
-        padding: 6mm;
+      .big-amount {
+        font-size: 18pt;
+        font-weight: 700;
       }
 
-      th,
-      td {
-        padding: 4px 6px;
-      }
+      /* ไม่พิมพ์ปุ่ม */
+      @media print {
+        .noprint {
+          display: none !important;
+        }
 
-      .box,
-      .box-light {
-        padding: 6px;
+        body {
+          font-size: 13pt;
+        }
+
+        .doc {
+          padding: 6mm;
+        }
+
+        th,
+        td {
+          padding: 4px 6px;
+        }
+
+        .box,
+        .box-light {
+          padding: 6px;
+        }
       }
-    }
   </style>
 </head>
 
@@ -254,7 +260,7 @@
         <div class="mt6">วันที่: <b>{{ invoice.invoice_date }}</b></div>
         <div class="mt6">เลขที่ใบสั่งซื้อ: <b>{{ invoice.po_number }}</b></div>
         <div class="mt6">เงื่อนไขการชำระเงิน: <b>{{ invoice.fmlpaymentcreditday }}</b></div>
-         <div class="mt6">วันครบกำหนดชำระเงิน: <b>{{ invoice.due_date or "" }}</b></div>
+        <div class="mt6">วันครบกำหนดชำระเงิน: <b>{{ invoice.due_date or "" }}</b></div>
         <div class="mt6">เลขที่ใบรับสินค้า: <b>{{ invoice.grn_number }}</b></div>
         <div class="mt6">เลขที่ใบส่งสินค้า: <b>{{ invoice.dn_number }}</b></div>
       </div>
