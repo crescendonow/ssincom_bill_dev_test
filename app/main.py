@@ -4,10 +4,10 @@ from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, Redirect
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.encoders import jsonable_encoder
-from app import models, database, crud, pdf_generator
-from app.models import CustomerList, ProductList
-from app.database import SessionLocal
-from datetime import date, datetime, timedelta
+from . import models, database, crud, pdf_generator
+from .models import CustomerList, ProductList 
+from .database import SessionLocal
+from datetime import date, datetime
 from typing import List
 from pathlib import Path
 
@@ -71,7 +71,7 @@ async def submit(
         # parse date 
         d = None
         if invoice_date:
-            for fmt in ("%d/%m/%Y", "%Y-%m-%d", "%m/%d/%Y"):
+            for fmt in ("%m/%d/%Y", "%d/%m/%Y", "%Y-%m-%d"):
                 try:
                     d = datetime.strptime(invoice_date, fmt).date()
                     break
@@ -115,16 +115,9 @@ async def submit(
                 quantity=qty,
                 amount=qty*price
             ))
-        db.commit()
-        # compute due_date for response (not stored)
-        due_date = ""
-        try:
-            if d and fmlpaymentcreditday is not None:
-                due_date = (d + timedelta(days=int(fmlpaymentcreditday or 0))).strftime("%d/%m/%Y")
-        except Exception:
-            due_date = ""
 
-        return {"message": "saved", "invoice_idx": inv.idx, "invoice_number": inv.invoice_number, "due_date": due_date}
+        db.commit()
+        return {"message": "saved", "invoice_idx": inv.idx, "invoice_number": inv.invoice_number}
     except:
         db.rollback()
         raise
@@ -651,35 +644,13 @@ def api_check_invoice_number(number: str = Query(..., min_length=1)):
         
 @app.post("/preview", response_class=HTMLResponse)
 async def preview(request: Request, payload: dict):
-    data = dict(payload) if isinstance(payload, dict) else {}
-
-    # compute due_date from invoice_date + fmlpaymentcreditday
-    date_str = str(data.get("invoice_date") or "").strip()
-    credit_raw = data.get("fmlpaymentcreditday")
-    try:
-        credit = int(credit_raw) if (credit_raw not in (None, "")) else 0
-    except Exception:
-        credit = 0
-
-    due_date = ""
-    if date_str:
-        fmts = ["%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"]
-        for fmt in fmts:
-            try:
-                dt = datetime.strptime(date_str, fmt)
-                due_date = (dt + timedelta(days=credit)).strftime("%d/%m/%Y")
-                break
-            except Exception:
-                continue
-    data["due_date"] = due_date
-
-    return templates.TemplateResponse(
+     return templates.TemplateResponse(
         "invoice.html",
         {
             "request": request,   # << ต้องมีเสมอ
-            "invoice": data,   # << ส่งทั้งก้อนเป็น invoice
-            "discount": data.get("discount", 0),
-            "vat_rate": data.get("vat_rate", 7)
+            "invoice": payload,   # << ส่งทั้งก้อนเป็น invoice
+            "discount": payload.get("discount", 0),
+            "vat_rate": payload.get("vat_rate", 7)
         }
      )
 
@@ -688,7 +659,3 @@ async def export_pdf(invoice_id: int):
     invoice = crud.get_invoice(invoice_id)
     pdf_path = pdf_generator.generate_invoice_pdf(invoice)
     return FileResponse(pdf_path, media_type="application/pdf", filename="invoice.pdf")
-
-@app.get("/healthz")
-def healthz():
-    return {"ok": True}
