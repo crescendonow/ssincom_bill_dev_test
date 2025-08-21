@@ -4,9 +4,9 @@ from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, Redirect
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.encoders import jsonable_encoder
-from . import models, database, crud, pdf_generator
-from .models import CustomerList, ProductList 
-from .database import SessionLocal
+from app import models, database, crud, pdf_generator
+from app.models import CustomerList, ProductList
+from app.database import SessionLocal
 from datetime import date, datetime, timedelta
 from typing import List
 from pathlib import Path
