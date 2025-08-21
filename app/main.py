@@ -688,3 +688,7 @@ async def export_pdf(invoice_id: int):
     invoice = crud.get_invoice(invoice_id)
     pdf_path = pdf_generator.generate_invoice_pdf(invoice)
     return FileResponse(pdf_path, media_type="application/pdf", filename="invoice.pdf")
+
+@app.get("/healthz")
+def healthz():
+    return {"ok": True}
