@@ -6,8 +6,8 @@ RUN apt-get update && apt-get install -y \
     libpango1.0-0 \
     libpangocairo-1.0-0 \
     libgdk-pixbuf-2.0-0 \
-    libgdk-pixbuf2.0-bin
-    libgdk-pixbuf-xlib-2.0-0
+    libgdk-pixbuf2.0-bin \
+    libgdk-pixbuf-xlib-2.0-0 \
     libffi-dev \
     libglib2.0-0 \
     fonts-liberation \
