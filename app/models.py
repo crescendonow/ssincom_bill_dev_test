@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey
 from sqlalchemy.orm import relationship
-from .database import Base
+from database import Base
 
 # ===== invoices (schema ss_invoices) =====
 class Invoice(Base):
@@ -33,7 +33,7 @@ class InvoiceItem(Base):
 
     idx = Column(Integer, primary_key=True)  # PK
     # FK -> ss_invoices.invoices(invoice_number)
-    invoice_number = Column(Integer, ForeignKey("ss_invoices.invoices.invoice_number"), index=True)
+    invoice_number = Column(Integer, ForeignKey("ss_invoices.invoices.idx"), index=True)
 
     personid = Column(String)                     # รหัสลูกค้า (ถ้ามี)
     cf_itemid = Column(String(6))                 # รหัสสินค้า
