@@ -96,8 +96,8 @@ async def submit(
             cf_personzipcode=cf_personzipcode,
             cf_provincename=cf_provincename,
             cf_taxid=customer_taxid,
-            fmlpaymentcreditday=fmlpaymentcreditday
-             due_date=(d + timedelta(days=fmlpaymentcreditday)) if (d and fmlpaymentcreditday) else None
+            fmlpaymentcreditday=fmlpaymentcreditday,
+            due_date=(d + timedelta(days=fmlpaymentcreditday)) if (d and fmlpaymentcreditday) else None
         )
         db.add(inv)
         db.flush()
