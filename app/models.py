@@ -22,6 +22,7 @@ class Invoice(Base):
     cf_provincename = Column(String)
     cf_taxid = Column(String(13))
     fmlpaymentcreditday = Column(Integer)
+     due_date = Column(Date)
 
     items = relationship("InvoiceItem", back_populates="invoice", cascade="all, delete-orphan")
 
