@@ -1,11 +1,11 @@
-# ใช้ Python 3.11 บน Debian bookworm (stable)
+# Python 3.11 บน Debian bookworm (stable)
 FROM python:3.11-bookworm
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-# ติดตั้ง dependencies (cairo, pango, pixbuf, fonts รวมไทย)
+# ไลบรารี cairo/pango/pixbuf + ฟอนต์ (มีไทย)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libcairo2 \
@@ -24,16 +24,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-noto-color-emoji \
  && rm -rf /var/lib/apt/lists/*
 
-# เตรียมไดเรกทอรีแอป
 WORKDIR /app
-
-# copy requirements และติดตั้ง python dependencies
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
-# copy โค้ดจริง
+# คัดลอกโค้ดทั้งหมด (ต้องมีโฟลเดอร์ app/ ภายในโปรเจกต์)
 COPY ./app /app/app
 
-# ใช้พอร์ตที่ Railway กำหนด ($PORT) ถ้าไม่มี fallback 8000
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# ทำงานในโฟลเดอร์โค้ดโดยตรง -> import เป็น main:app
+WORKDIR /app/app
+
+# ใช้พอร์ต $PORT จาก Railway (fallback 8000 ตอนรัน local)
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+
 

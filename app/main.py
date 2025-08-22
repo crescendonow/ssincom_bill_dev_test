@@ -4,9 +4,9 @@ from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, Redirect
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.encoders import jsonable_encoder
-from . import models, database, crud, pdf_generator
-from .models import CustomerList, ProductList 
-from .database import SessionLocal
+import models, database, crud, pdf_generator
+from models import CustomerList, ProductList
+from database import SessionLocal
 from datetime import date, datetime
 from typing import List
 from pathlib import Path
@@ -660,3 +660,8 @@ async def export_pdf(invoice_id: int):
     invoice = crud.get_invoice(invoice_id)
     pdf_path = pdf_generator.generate_invoice_pdf(invoice)
     return FileResponse(pdf_path, media_type="application/pdf", filename="invoice.pdf")
+
+@app.get("/healthz")
+def healthz():
+    return {"ok": True}
+
