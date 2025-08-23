@@ -37,6 +37,38 @@ def check_invoice_number(number: str = Query(..., min_length=1)):
         return {"exists": bool(exists)}
     finally:
         db.close()
+
+#function convert date to thai date 
+TH_MONTHS = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน",
+             "กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"]
+
+def thaidate(value):
+    if not value:
+        return ""
+    # รองรับทั้ง date/datetime และสตริง (เช่น '2025-08-23')
+    d = None
+    if isinstance(value, datetime):
+        d = value.date()
+    elif isinstance(value, date):
+        d = value
+    elif isinstance(value, str):
+        value = value.strip()
+        for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"):
+            try:
+                d = datetime.strptime(value, fmt).date()
+                break
+            except Exception:
+                pass
+        if d is None:
+            return value  # ถ้า parse ไม่ได้ ให้แสดงตามเดิม
+    else:
+        return str(value)
+
+    y_be = d.year + 543
+    return f"{d.day} {TH_MONTHS[d.month-1]} {y_be}"
+
+templates.env.filters["thaidate"] = thaidate
+
         
 #api for submit invoice from form.html 
 @app.post("/submit")
