@@ -272,7 +272,7 @@
         <div class="mt6">วันที่: <b>{{ invoice.invoice_date | thaidate }}</b></div>
         <div class="mt6">เลขที่ใบสั่งซื้อ: <b>{{ invoice.po_number }}</b></div>
         <div class="mt6">เงื่อนไขการชำระเงิน: <b>{{ invoice.fmlpaymentcreditday }}</b></div>
-        <div class="mt6">วันครบกำหนดชำระเงิน: <b>{{ (invoice.due_date | thaidate) if invoice.due_date else {{ invoice.invoice_date | thaidate }} }}</b></div>
+        <div class="mt6">วันครบกำหนดชำระเงิน: <b>{{ (invoice.due_date or invoice.invoice_date) | thaidate  }}</b></div>
         <div class="mt6">เลขที่ใบรับสินค้า: <b>{{ invoice.grn_number }}</b></div>
         <div class="mt6">เลขที่ใบส่งสินค้า: <b>{{ invoice.dn_number }}</b></div>
       </div>
