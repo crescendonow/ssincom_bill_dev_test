@@ -24,7 +24,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-noto-color-emoji \
  && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
@@ -32,9 +31,9 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 COPY ./app /app/app
 
 # ทำงานในโฟลเดอร์โค้ดโดยตรง -> import เป็น main:app
-WORKDIR /app/app
+WORKDIR /app
 
 # ใช้พอร์ต $PORT จาก Railway (fallback 8000 ตอนรัน local)
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"] 
 
 
