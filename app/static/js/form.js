@@ -234,15 +234,20 @@ async function previewInvoice(evt) {
 async function saveInvoice() {
   const formEl = document.getElementById("invoice_form");
   const fd = new FormData(formEl);
+
+  // แปลงวันที่จาก datepicker → YYYY-MM-DD
   const _d = fd.get("invoice_date");
   if (_d) fd.set("invoice_date", formatDateToISO(_d));
 
-  // ensure fm_payment & due_date ติดไปด้วย
+  // แน่ใจว่าแนบวิธีชำระและกำหนดชำระ
   const pay = fd.get("fm_payment") || "cash";
   fd.set("fm_payment", pay);
-  // ถ้ายังไม่ได้คำนวณ (เช่นผู้ใช้ยังไม่เปลี่ยนค่า) ให้คำนวณตอนนี้
+
+  // ถ้ายังไม่มี due_date ให้คำนวณและอัปเดตลงฟอร์ม/FD
   if (!fd.get("due_date")) {
     computeAndFillDueDate();
+    fd.set("due_date", document.getElementById("due_date")?.value || "");
+  }
 
   const res = await fetch("/submit", { method: "POST", body: fd });
   if (!res.ok) {
@@ -253,6 +258,7 @@ async function saveInvoice() {
   const data = await res.json();
   alert("บันทึกสำเร็จ เลขที่: " + data.invoice_number);
 }
+
 
 function previewInvoice() {
   const formEl = document.getElementById("invoice_form");
