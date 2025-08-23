@@ -685,9 +685,10 @@ def get_products():
     ])
 
 #-------------------------------- API Car s&s --------------------------------------------------------# 
-@app.get("/car-numberplate", response_class=HTMLResponse)
-async def car_numberplate_pretty(request: Request):
+@app.get("/car_numberplate.html", response_class=HTMLResponse)
+async def car_numberplate_page(request: Request):
     return templates.TemplateResponse("car_numberplate.html", {"request": request})
+
 
 @app.get("/api/suggest/car_brand")
 def suggest_car_brand(q: str = Query(..., min_length=1), limit: int = Query(20, ge=1, le=50)):
