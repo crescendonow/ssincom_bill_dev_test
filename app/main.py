@@ -149,7 +149,7 @@ async def submit(
             cf_provincename=cf_provincename,
             cf_taxid=customer_taxid,
             fmlpaymentcreditday=fmlpaymentcreditday,
-            due_date=due
+            due_date=due,
             car_numberplate=car_numberplate
         )
         db.add(inv)
