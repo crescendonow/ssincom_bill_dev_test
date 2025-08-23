@@ -12,7 +12,7 @@ from typing import List
 from pathlib import Path
 
 app = FastAPI()
-models.Base.metadata.create_all(bind=database.engine)
+#models.Base.metadata.create_all(bind=database.engine)
 
 BASE_DIR = Path(__file__).resolve().parent
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
