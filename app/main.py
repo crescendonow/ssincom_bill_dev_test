@@ -489,7 +489,24 @@ def api_delete_customer(idx: int):
 @app.get("/products", response_class=HTMLResponse)
 async def products_page(request: Request):
     return templates.TemplateResponse("product_form.html", {"request": request})
-    
+
+# get product all columns 
+@app.get("/api/products/all")
+def api_get_products_all():
+    db = SessionLocal()
+    rows = db.query(ProductList).order_by(ProductList.idx.desc()).all()
+    db.close()
+    return [
+        {
+            "idx": r.idx,
+            "cf_itemid": r.cf_itemid,
+            "cf_itemname": r.cf_itemname,
+            "cf_unitname": r.cf_unitname,
+            "cf_itempricelevel_price": r.cf_itempricelevel_price,
+            "cf_items_ordinary": r.cf_items_ordinary,
+        } for r in rows
+    ]
+
 # check duplicate:cf_itemid and cf_itemname 
 @app.post("/api/products/check-duplicate")
 async def api_products_check_duplicate(
@@ -593,6 +610,13 @@ def api_delete_product(idx: int):
     db.commit()
     db.close()
     return {"message": "deleted"}
+
+@app.get("/api/customers")
+def get_customers():
+    db = SessionLocal()
+    customers = db.query(CustomerList).all()
+    db.close()
+    return JSONResponse(content=[{"id": c.idx, "fname": c.fname, "address": c.cf_personaddress, "taxid": c.cf_taxid} for c in customers])
 
 #get data from productlist 
 @app.get("/api/products")
