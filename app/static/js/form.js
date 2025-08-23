@@ -448,7 +448,7 @@ window.addEventListener("load", computeAndFillDueDate);
 
   if (!plateInput || !datalist) return;
 
-  const debounce = (fn, delay=250) => {
+  const debounce = (fn, delay = 250) => {
     let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); };
   };
 
@@ -488,6 +488,41 @@ window.addEventListener("load", computeAndFillDueDate);
   if (provInput) provInput.addEventListener('change', () => plateInput.value && suggest());
 })();
 
+// ===== Align TAX ID with company email on invoice header =====
+(function alignTaxIdWithEmail() {
+  function run() {
+    const emailEl = document.getElementById('company-email');
+    const rightCol = document.getElementById('header-right');
+    const taxIdEl = document.getElementById('tax-id');
+
+    // ทำงานเฉพาะหน้า invoice.html ที่มี element เหล่านี้
+    if (!emailEl || !rightCol || !taxIdEl) return;
+
+    // เว้นระยะ label จาก "TAX INVOICE/..." (ถ้ายังไม่ได้ตั้งไว้ใน HTML)
+    const taxLabel = document.getElementById('tax-label');
+    if (taxLabel && parseFloat(getComputedStyle(taxLabel).marginTop || 0) < 8) {
+      taxLabel.style.marginTop = '12px';
+    }
+
+    // จัดให้ตัวเลขภาษีอยู่ระดับเดียวกับบรรทัดอีเมล (ซ้าย)
+    const rightTop = rightCol.getBoundingClientRect().top + window.scrollY;
+    const emailTop = emailEl.getBoundingClientRect().top + window.scrollY;
+    const taxTop = taxIdEl.getBoundingClientRect().top + window.scrollY;
+
+    const delta = (emailTop - rightTop) - (taxTop - rightTop);
+    const currentMt = parseFloat(getComputedStyle(taxIdEl).marginTop || 0);
+    taxIdEl.style.marginTop = (currentMt + delta) + 'px';
+  }
+
+  // รันหลัง DOM พร้อม และอีกรอบหลังโหลดฟอนต์/รูปครบ
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(run, 0);
+  } else {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(run, 0));
+  }
+  window.addEventListener('load', run);
+  window.addEventListener('resize', run);
+})();
 
 // expose for inline handlers in HTML
 window.addItem = addItem;

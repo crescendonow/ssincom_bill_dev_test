@@ -230,25 +230,30 @@
           <div class="title" style="align-self:flex-start;">
             บริษัท เอส แอนด์ เอส อินคอม จำกัด
           </div>
-          <div class="title">S &amp; S INCOM CO., LTD.</b></div>
+          <div class="title">S &amp; S INCOM CO., LTD.</div>
           <div class="muted">69 หมู่ 10 ตำบลพังตรุ อำเภอพนมทวน จังหวัดกาญจนบุรี 71140</div>
           <div class="muted">โทร. (035) 589 274, (081) 880 8840, (092) 265 9156</div>
-          <div class="muted" style="font-size:12pt;">
+          <!-- ✅ ใส่ id ที่บรรทัดอีเมล -->
+          <div class="muted" id="company-email" style="font-size:12pt;">
             website: www.ssincom.com Email: mailtossincom@gmail.com
           </div>
         </div>
       </div>
 
       <!-- ฝั่งขวา -->
-      <div style="flex:0 0 auto; text-align:right; align-self:flex-start;">
+      <div id="header-right" style="flex:0 0 auto; text-align:right; align-self:flex-start;">
         <div class="title" style="font-size:18pt; white-space:nowrap;">
           ต้นฉบับใบกำกับภาษี/ใบส่งของ/ใบแจ้งหนี้
         </div>
         <div class="title" style="font-size:14pt; white-space:nowrap;">
           TAX INVOICE/DELIVERY ORDER /INVOICE ORIGINAL
         </div>
-        <div class="mt6">เลขประจำตัวผู้เสียภาษีอากร</div>
-        <div class="title" style="font-size:18pt; white-space:nowrap;">
+
+        <!-- ✅ เว้นจากบรรทัด TAX... -->
+        <div id="tax-label" class="muted" style="margin-top:12px;">เลขประจำตัวผู้เสียภาษีอากร</div>
+
+        <!-- ✅ เลขภาษี: จะจัดแนวให้ตรงกับบรรทัดอีเมลด้วย JS -->
+        <div class="title" id="tax-id" style="font-size:18pt; white-space:nowrap;">
           0715544000020
         </div>
       </div>
@@ -260,7 +265,7 @@
     <!-- แถวข้อมูลลูกค้า + เลขที่เอกสาร -->
     <div class="row mt10">
       <div class="col box-light" style="font-size:14pt;">
-        <div class="muted">รหัสลูกค้า: <b>{{ invoice.customer_code or invoice.personid }}</b></div>
+        <div class="mt6">รหัสลูกค้า: <b>{{ invoice.customer_code or invoice.personid }}</b></div>
         <div class="mt6">ชื่อลูกค้า: <b>{{ invoice.customer_name }}</b></div>
         <div class="mt6">เลขประจำตัวผู้เสียภาษี: <b>{{ invoice.customer_taxid }}</b> / {{ invoice.customer_branch or
           'สำนักงานใหญ่' }}</div>
@@ -272,7 +277,8 @@
         <div class="mt6">วันที่: <b>{{ invoice.invoice_date | thaidate }}</b></div>
         <div class="mt6">เลขที่ใบสั่งซื้อ: <b>{{ invoice.po_number }}</b></div>
         <div class="mt6">เงื่อนไขการชำระเงิน: <b>{{ invoice.fmlpaymentcreditday }}</b></div>
-        <div class="mt6">วันครบกำหนดชำระเงิน: <b>{{ invoice.due_date | default(invoice.invoice_date, true) | thaidate }}</b></div>
+        <div class="mt6">วันครบกำหนดชำระเงิน: <b>{{ invoice.due_date | default(invoice.invoice_date, true) | thaidate
+            }}</b></div>
         <div class="mt6">เลขที่ใบรับสินค้า: <b>{{ invoice.grn_number }}</b></div>
         <div class="mt6">เลขที่ใบส่งสินค้า: <b>{{ invoice.dn_number }}</b></div>
       </div>
@@ -328,8 +334,8 @@
     <div class="row mt10">
       <div class="col box-light">
         <div class="muted"><b>หมายเหตุ</b></div>
-        <div class="mt6" style="line-height:1.25;">
-          โปรดสั่งจ่ายเช็คในนาม <b>“บริษัท เอส แอนด์ เอส อินคอม จำกัด”</b> เท่านั้น
+        <div class="muted" style="line-height:1.25;">
+          โปรดโอเนเงินในนาม <b>“บริษัท เอส แอนด์ เอส อินคอม จำกัด”</b> เท่านั้น
           เมื่อพ้นกำหนดการชำระเงิน บริษัทฯ ขอสงวนสิทธิ์คิดดอกเบี้ยอัตราร้อยละ 1.5 ต่อเดือน
           สินค้าที่ยังมิได้ชำระเงินยังเป็นกรรมสิทธิ์ของบริษัท เอส แอนด์ เอส อินคอม จำกัด
           จนกว่าผู้ซื้อจะชำระค่าสินค้าเรียบร้อยแล้ว
