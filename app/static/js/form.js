@@ -360,18 +360,6 @@ function previewInvoice() {
   }, 50);
 })();
 
-// ---- Init Flowbite Datepicker ภาษาไทย ----
-document.addEventListener("DOMContentLoaded", function () {
-  const dateInput = document.getElementById("invoice_date");
-  if (dateInput) {
-    new Datepicker(dateInput, {
-      autohide: true,
-      language: "th",
-      format: "dd MM yyyy"   // แสดงวัน เดือน ปี เป็นภาษาไทย
-    });
-  }
-});
-
 function formatDateToISO(dateStr) {
   if (!dateStr) return "";
   const months = {
