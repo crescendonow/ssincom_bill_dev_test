@@ -23,6 +23,41 @@
       /* เพิ่ม ลดช่องไฟแนวตั้ง */
     }
 
+    /* ให้ขอบคำนวณรวมความกว้างเสมอ */
+    .col,
+    .box,
+    .box-light {
+      box-sizing: border-box;
+    }
+
+    /* กริด 2 คอลัมน์ ใช้ค่าเดียวกันทุกแถว */
+    .row.align-cols {
+      --gap: 10px;
+      --side-w: 380px;
+      /* ปรับ side-w ได้ที่นี่ */
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .row.align-cols .col-left {
+      flex: 1;
+      margin-right: var(--gap);
+    }
+
+    .row.align-cols .col-right {
+      flex: 0 0 var(--side-w);
+      max-width: var(--side-w);
+    }
+
+    /* (ตัวเลือก) ทำให้ .box กับ .box-light ดูหนาเส้นขอบเท่ากัน */
+    .box,
+    .box-light {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 8px 10px;
+    }
+
     .doc {
       border: 2px solid #0F3F7F;
       border-radius: 10px;
@@ -263,8 +298,8 @@
     <hr style="border: 1px solid #0F3F7F; margin: 8px 0;">
 
     <!-- แถวข้อมูลลูกค้า + เลขที่เอกสาร -->
-    <div class="row mt10">
-      <div class="col box-light" style="font-size:14pt;">
+    <div class="row mt10 align-cols">
+      <div class=class="col box-light col-left" style="font-size:14pt;">
         <div class="mt6">รหัสลูกค้า: <b>{{ invoice.customer_code or invoice.personid }}</b></div>
         <div class="mt6">ชื่อลูกค้า: <b>{{ invoice.customer_name }}</b></div>
         <div class="mt6">เลขประจำตัวผู้เสียภาษี: <b>{{ invoice.customer_taxid }}</b> / {{ invoice.customer_branch or
@@ -272,7 +307,7 @@
         <div class="mt6">ที่อยู่: <b>{{ invoice.customer_address }}</b></div>
         <div class="mt6">โทรศัพท์: <b>{{ invoice.tel or invoice.mobile or '' }}</b></div>
       </div>
-      <div class="col box-light" style="flex:0 0 320px; font-size:14pt;">
+      <div class=class="col box-light col-right" style="flex:0 0 320px; font-size:14pt;">
         <div>เลขที่: <b>{{ invoice.invoice_number }}</b></div>
         <div class="mt6">วันที่: <b>{{ invoice.invoice_date | thaidate }}</b></div>
         <div class="mt6">เลขที่ใบสั่งซื้อ: <b>{{ invoice.po_number }}</b></div>
@@ -331,8 +366,8 @@
     </div>
 
     <!-- หมายเหตุ + สรุปยอด -->
-    <div class="row mt10">
-      <div class="col box-light">
+    <div class="row mt10 align-cols">
+      <div class="col box-light col-left">
         <div class="muted"><b>หมายเหตุ</b></div>
         <div class="muted" style="line-height:1.25;">
           โปรดโอเนเงินในนาม <b>“บริษัท เอส แอนด์ เอส อินคอม จำกัด”</b> เท่านั้น
@@ -343,7 +378,7 @@
         </div>
       </div>
 
-      <div class="col" style="flex:0 0 380px;">
+      <div class="col col-right">
         {% set discount = (discount|float) if discount is defined else 0.0 %}
         {% set before_vat = ns.total - discount %}
         {% set vat = (vat_rate|float if vat_rate is defined else 7.0) %}
