@@ -30,11 +30,19 @@
       box-sizing: border-box;
     }
 
-    /* กริด 2 คอลัมน์ ใช้ค่าเดียวกันทุกแถว */
+    /* กรอบมนเหมือนเดิม */
+    .box-light {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      /* ✅ มน */
+      padding: 8px 10px;
+      background: #fff;
+    }
+
+    /* จัดกริดให้คอลัมน์ขวากว้างเท่ากับกล่องสรุปยอด */
     .row.align-cols {
       --gap: 10px;
       --side-w: 380px;
-      /* ปรับ side-w ได้ที่นี่ */
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
@@ -299,7 +307,7 @@
 
     <!-- แถวข้อมูลลูกค้า + เลขที่เอกสาร -->
     <div class="row mt10 align-cols">
-      <div class=class="col box-light col-left" style="font-size:14pt;">
+      <div class="col box-light col-left" style="font-size:14pt;">
         <div class="mt6">รหัสลูกค้า: <b>{{ invoice.customer_code or invoice.personid }}</b></div>
         <div class="mt6">ชื่อลูกค้า: <b>{{ invoice.customer_name }}</b></div>
         <div class="mt6">เลขประจำตัวผู้เสียภาษี: <b>{{ invoice.customer_taxid }}</b> / {{ invoice.customer_branch or
@@ -307,7 +315,8 @@
         <div class="mt6">ที่อยู่: <b>{{ invoice.customer_address }}</b></div>
         <div class="mt6">โทรศัพท์: <b>{{ invoice.tel or invoice.mobile or '' }}</b></div>
       </div>
-      <div class=class="col box-light col-right" style="flex:0 0 320px; font-size:14pt;">
+
+      <div class="col box-light col-right" style="font-size:14pt;">
         <div>เลขที่: <b>{{ invoice.invoice_number }}</b></div>
         <div class="mt6">วันที่: <b>{{ invoice.invoice_date | thaidate }}</b></div>
         <div class="mt6">เลขที่ใบสั่งซื้อ: <b>{{ invoice.po_number }}</b></div>
