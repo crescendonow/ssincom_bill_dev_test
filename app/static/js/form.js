@@ -237,6 +237,13 @@ async function saveInvoice() {
   const _d = fd.get("invoice_date");
   if (_d) fd.set("invoice_date", formatDateToISO(_d));
 
+  // ensure fm_payment & due_date ติดไปด้วย
+  const pay = fd.get("fm_payment") || "cash";
+  fd.set("fm_payment", pay);
+  // ถ้ายังไม่ได้คำนวณ (เช่นผู้ใช้ยังไม่เปลี่ยนค่า) ให้คำนวณตอนนี้
+  if (!fd.get("due_date")) {
+    computeAndFillDueDate();
+
   const res = await fetch("/submit", { method: "POST", body: fd });
   if (!res.ok) {
     const t = await res.text();
@@ -374,6 +381,55 @@ function formatDateToISO(dateStr) {
   }
   return dateStr;
 }
+
+function parseInvoiceDateToDate(dateStr) {
+  if (!dateStr) return null;
+  const months = {
+    "มกราคม": 0, "กุมภาพันธ์": 1, "มีนาคม": 2,
+    "เมษายน": 3, "พฤษภาคม": 4, "มิถุนายน": 5,
+    "กรกฎาคม": 6, "สิงหาคม": 7, "กันยายน": 8,
+    "ตุลาคม": 9, "พฤศจิกายน": 10, "ธันวาคม": 11
+  };
+  const parts = String(dateStr).trim().split(" ");
+  if (parts.length === 3 && months.hasOwnProperty(parts[1])) {
+    const d = parseInt(parts[0], 10);
+    const m = months[parts[1]];
+    let y = parseInt(parts[2], 10);
+    if (y > 2400) y -= 543; // พ.ศ. -> ค.ศ.
+    return new Date(y, m, d);
+  }
+  const jsDate = new Date(dateStr);
+  return isNaN(jsDate) ? null : jsDate;
+}
+
+function computeAndFillDueDate() {
+  const dateInput = document.getElementById("invoice_date")?.value || "";
+  const pay = document.getElementById("fm_payment")?.value || "cash";
+  const creditDays = parseInt(document.getElementById("fmlpaymentcreditday")?.value || "0", 10) || 0;
+  const out = document.getElementById("due_date");
+  if (!out) return;
+
+  const base = parseInvoiceDateToDate(dateInput);
+  if (!base) { out.value = ""; return; }
+
+  let due = new Date(base);
+  if (pay === "credit" && creditDays > 0) {
+    due.setDate(due.getDate() + creditDays);
+  }
+  // แสดงเป็น YYYY-MM-DD (ส่งให้ backend ก็เข้าใจง่าย)
+  out.value = due.toISOString().slice(0, 10);
+}
+
+// ผูก event
+["invoice_date", "fm_payment", "fmlpaymentcreditday"].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener("change", computeAndFillDueDate);
+  if (el) el.addEventListener("input", computeAndFillDueDate);
+});
+
+// คำนวณครั้งแรกตอนโหลดหน้า (เผื่อมีค่า default)
+window.addEventListener("load", computeAndFillDueDate);
+
 
 // expose for inline handlers in HTML
 window.addItem = addItem;

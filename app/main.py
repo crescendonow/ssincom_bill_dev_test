@@ -59,6 +59,8 @@ async def submit(
     cf_personzipcode: str = Form(None),
     cf_provincename: str = Form(None),
     fmlpaymentcreditday: int = Form(None),
+    fm_payment: str = Form("cash"),
+    due_date: str = Form(None),
 
     product_code: List[str] = Form(...),
     description: List[str] = Form(...),
@@ -78,9 +80,23 @@ async def submit(
                 except:
                     pass
 
+        # parse due_date (ถ้าฟรอนต์ส่งมา)
+        due = None
+        if due_date:
+            for fmt in ("%m/%d/%Y", "%d/%m/%Y", "%Y-%m-%d"):
+                try:
+                    due = datetime.strptime(due_date, fmt).date()
+                    break
+                except:
+                    pass
+
         # check duplicate number 
         if db.query(models.Invoice).filter(models.Invoice.invoice_number == invoice_number).first():
             return JSONResponse(status_code=409, content={"detail": "Duplicate invoice_number"})
+
+        # fallback: ถ้า due ไม่มี ให้คำนวณจาก d + creditday (เหมือนเดิม)
+        if not due and d and fmlpaymentcreditday:
+            due = d + timedelta(days=fmlpaymentcreditday)
 
         inv = models.Invoice(
             invoice_number=invoice_number,
@@ -97,7 +113,7 @@ async def submit(
             cf_provincename=cf_provincename,
             cf_taxid=customer_taxid,
             fmlpaymentcreditday=fmlpaymentcreditday,
-            due_date=(d + timedelta(days=fmlpaymentcreditday)) if (d and fmlpaymentcreditday) else None
+            due_date=due
         )
         db.add(inv)
         db.flush()

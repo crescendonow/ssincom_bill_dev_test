@@ -107,10 +107,27 @@
             <input type="text" name="cf_provincename" id="cf_provincename"
               class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5">
           </div>
+        </div>
+
+        <!-- Payment / Credit / Due date -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+          <div>
+            <label for="fm_payment" class="block mb-2 text-sm font-medium text-gray-900">วิธีชำระ</label>
+            <select id="fm_payment" name="fm_payment"
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5">
+              <option value="cash">เงินสด / โอนทันที</option>
+              <option value="credit">เครดิต</option>
+            </select>
+          </div>
           <div>
             <label for="fmlpaymentcreditday" class="block mb-2 text-sm font-medium text-gray-900">เครดิต (วัน)</label>
             <input type="number" name="fmlpaymentcreditday" id="fmlpaymentcreditday"
               class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5">
+          </div>
+          <div>
+            <label for="due_date" class="block mb-2 text-sm font-medium text-gray-900">กำหนดชำระ (Due date)</label>
+            <input type="text" id="due_date" name="due_date" readonly
+              class="bg-gray-100 border border-gray-300 text-sm rounded-lg w-full p-2.5" placeholder="จะคำนวณอัตโนมัติ">
           </div>
         </div>
 
