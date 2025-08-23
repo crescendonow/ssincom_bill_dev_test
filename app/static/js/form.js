@@ -108,16 +108,6 @@ function selectProduct(p) {
   closeProductModal();
 }
 
-function updateTotal() {
-  let total = 0;
-  document.querySelectorAll("#items .item-row").forEach(row => {
-    const qty = parseFloat(row.querySelector(".quantity")?.value || 0);
-    const price = parseFloat(row.querySelector(".unit_price")?.value || 0);
-    total += qty * price;
-  });
-  document.getElementById("total_amount").innerText = `฿ ${total.toFixed(2)}`;
-}
-
 // preload products
 fetch('/api/products')
   .then(res => res.json())
