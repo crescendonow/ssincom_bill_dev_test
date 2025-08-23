@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.encoders import jsonable_encoder
 from . import models, database, crud, pdf_generator
 from .models import CustomerList, ProductList
-from database import SessionLocal
+from .database import SessionLocal
 from datetime import date, datetime, timedelta
 from typing import List
 from pathlib import Path
