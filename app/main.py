@@ -96,6 +96,7 @@ async def submit(
     fmlpaymentcreditday: int = Form(None),
     fm_payment: str = Form("cash"),
     due_date: str = Form(None),
+    car_numberplate: str = Form(None),
 
     product_code: List[str] = Form(...),
     description: List[str] = Form(...),
@@ -149,6 +150,7 @@ async def submit(
             cf_taxid=customer_taxid,
             fmlpaymentcreditday=fmlpaymentcreditday,
             due_date=due
+            car_numberplate=car_numberplate
         )
         db.add(inv)
         db.flush()
@@ -798,6 +800,47 @@ def list_cars(
             "page_size": page_size,
             "total": int(total),
         })
+    finally:
+        db.close()
+
+@app.get("/api/suggest/number_plate")
+def suggest_number_plate(
+    q: str = Query(..., min_length=1, description="คำค้นทะเบียนรถ"),
+    province: str | None = Query(None, description="กรองตามจังหวัด (optional)"),
+    limit: int = Query(20, ge=1, le=50),
+):
+    """
+    ดึงทะเบียนรถจาก products.ss_car.number_plate
+    - ค้นหาแบบ case-insensitive ด้วย LIKE
+    - ถ้ามี province จะช่วยกรอง (LIKE) เพิ่มเติม
+    """
+    db = SessionLocal()
+    try:
+        like = f"%{q.lower()}%"
+        params = {"like": like, "limit": limit}
+
+        if province:
+            prov_like = f"%{province.lower()}%"
+            sql = text("""
+                SELECT DISTINCT number_plate
+                FROM products.ss_car
+                WHERE LOWER(number_plate) LIKE :like
+                  AND LOWER(COALESCE(province, '')) LIKE :prov_like
+                ORDER BY number_plate
+                LIMIT :limit
+            """)
+            params["prov_like"] = prov_like
+        else:
+            sql = text("""
+                SELECT DISTINCT number_plate
+                FROM products.ss_car
+                WHERE LOWER(number_plate) LIKE :like
+                ORDER BY number_plate
+                LIMIT :limit
+            """)
+
+        rows = db.execute(sql, params).mappings().all()
+        return JSONResponse(content=[{"number_plate": r["number_plate"]} for r in rows])
     finally:
         db.close()
 

@@ -205,6 +205,8 @@ function collectFormData() {
     cf_personzipcode: v('cf_personzipcode'),
     cf_provincename: v('cf_provincename'),
     fmlpaymentcreditday: v('fmlpaymentcreditday'),
+    due_date: v('due_date'),
+    car_numberplate: v('car_numberplate'),
 
     // ยอดรวมจากฟอร์ม (optional, ที่ template ก็คำนวณได้เองอยู่แล้ว)
     total_amount: totalRaw,
@@ -282,6 +284,8 @@ function previewInvoice() {
     customer_taxid: fd.get("customer_taxid"),
     customer_address: fd.get("customer_address"),
     fmlpaymentcreditday: fd.get("fmlpaymentcreditday"),
+    due_date: fd.get("due_date"),
+    car_numberplate: fd.get("car_numberplate"),
     items: []
   };
 

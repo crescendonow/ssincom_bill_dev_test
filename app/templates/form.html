@@ -107,6 +107,15 @@
             <input type="text" name="cf_provincename" id="cf_provincename"
               class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5">
           </div>
+          <div>
+            <label for="car_numberplate" class="block mb-2 text-sm font-medium text-gray-900">
+              ทะเบียนรถจัดส่ง
+            </label>
+            <input type="text" name="car_numberplate" id="car_numberplate" list="car_plate_datalist"
+              placeholder="เช่น 1กก 1234" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5">
+            <datalist id="car_plate_datalist"></datalist>
+            <p id="car_plate_msg" class="text-xs text-gray-400 mt-1"></p>
+          </div>
         </div>
 
         <!-- Payment / Credit / Due date -->
