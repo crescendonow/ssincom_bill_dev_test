@@ -162,49 +162,55 @@
 
     .sumtable {
       border-collapse: collapse;
-      /* เอาช่องว่างเส้นตารางออก */
+    }
 
-      .sumtable td {
-        border: none;
-        padding: 1px 4px;
-        /* เดิม 2px 6px */
-        line-height: 1.1;
-        /* เดิม 1.2 */
+    /* แยก selector ปกติ (ห้ามซ้อนใน CSS ปกติ) */
+    .sumtable td {
+      border: none;
+      padding: 1px 4px;
+      /* เดิม 2px 6px */
+      line-height: 1.1;
+      /* เดิม 1.2 */
+    }
+
+    .sumtable tr td:first-child {
+      padding-right: 14px;
+    }
+
+    .big-amount {
+      font-size: 14pt;
+      font-weight: 700;
+    }
+
+    /* ไม่พิมพ์ปุ่มและทุกอย่างภายใน .noprint */
+    @media print {
+
+      .noprint,
+      .noprint * {
+        display: none !important;
       }
 
-      .sumtable tr td:first-child {
-        padding-right: 14px;
+      body {
+        font-size: 13pt;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
       }
 
-      .big-amount {
-        font-size: 14pt;
-        font-weight: 700;
+      .doc {
+        padding: 6mm;
+        box-shadow: none;
       }
 
-      /* ไม่พิมพ์ปุ่ม */
-      @media print {
-        .noprint {
-          display: none !important;
-        }
-
-        body {
-          font-size: 13pt;
-        }
-
-        .doc {
-          padding: 6mm;
-        }
-
-        th,
-        td {
-          padding: 4px 6px;
-        }
-
-        .box,
-        .box-light {
-          padding: 6px;
-        }
+      th,
+      td {
+        padding: 4px 6px;
       }
+
+      .box,
+      .box-light {
+        padding: 6px;
+      }
+    }
   </style>
 </head>
 
