@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>ทะเบียนรถ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-b from-blue-500 to-blue-200 min-h-screen font-sans text-gray-800">
+  <div class="max-w-5xl mx-auto px-6 py-8">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-3xl font-bold text-white">ทะเบียนรถ</h1>
+      <a href="/" class="bg-white text-blue-700 px-4 py-2 rounded hover:bg-gray-100">← กลับหน้า Dashboard</a>
+    </div>
+
+    <!-- ฟอร์มบันทึกทะเบียนรถ -->
+    <div class="bg-white rounded-lg p-6 shadow mb-8">
+      <h2 class="text-lg font-bold mb-4">เพิ่มทะเบียนรถ</h2>
+
+      <form id="carForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm text-gray-600 mb-1">เลขทะเบียนรถ <span class="text-red-500">*</span></label>
+          <input id="number_plate" type="text" placeholder="เช่น 1กก 1234"
+                 class="w-full border rounded px-3 py-2 focus:outline-none focus:ring" required />
+        </div>
+
+        <div>
+          <label class="block text-sm text-gray-600 mb-1">ยี่ห้อรถยนต์</label>
+          <input id="car_brand" type="text" list="brand_datalist" placeholder="พิมพ์เพื่อค้นหา…"
+                 class="w-full border rounded px-3 py-2 focus:outline-none focus:ring" />
+          <datalist id="brand_datalist"></datalist>
+          <p id="brandMsg" class="text-xs text-gray-400 mt-1"></p>
+        </div>
+
+        <div>
+          <label class="block text-sm text-gray-600 mb-1">จังหวัดที่จดทะเบียน</label>
+          <input id="province" type="text" list="province_datalist" placeholder="พิมพ์เพื่อค้นหา…"
+                 class="w-full border rounded px-3 py-2 focus:outline-none focus:ring" />
+          <datalist id="province_datalist"></datalist>
+          <p id="provMsg" class="text-xs text-gray-400 mt-1"></p>
+        </div>
+
+        <div class="md:col-span-3 flex items-center gap-2">
+          <button id="btnSave" type="submit"
+                  class="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700">บันทึก</button>
+          <button id="btnReset" type="button"
+                  class="bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200">ล้างค่า</button>
+          <span id="formMsg" class="text-sm ml-2"></span>
+        </div>
+      </form>
+    </div>
+
+    <!-- ตารางรายการ -->
+    <div class="bg-white rounded-lg p-6 shadow">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold">รายการทะเบียนรถ</h2>
+        <div class="flex items-center gap-2">
+          <input id="searchText" type="text" placeholder="ค้นหา (ทะเบียน / ยี่ห้อ / จังหวัด)"
+                 class="border rounded px-3 py-2 focus:outline-none focus:ring w-64" />
+          <button id="btnSearch" class="bg-white border px-4 py-2 rounded hover:bg-gray-50">ค้นหา</button>
+          <button id="btnReload" class="bg-white border px-4 py-2 rounded hover:bg-gray-50">รีเฟรช</button>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full border">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-3 py-2 border text-left w-24">#</th>
+              <th class="px-3 py-2 border text-left">เลขทะเบียนรถ</th>
+              <th class="px-3 py-2 border text-left">ยี่ห้อรถยนต์</th>
+              <th class="px-3 py-2 border text-left">จังหวัด</th>
+            </tr>
+          </thead>
+          <tbody id="carsTableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="flex items-center justify-between mt-4">
+        <div id="resultInfo" class="text-sm text-gray-500">—</div>
+        <div class="flex items-center gap-2">
+          <button id="prevPage" class="bg-white border px-3 py-1 rounded hover:bg-gray-50">ก่อนหน้า</button>
+          <span id="pageInfo" class="text-sm">หน้า 1</span>
+          <button id="nextPage" class="bg-white border px-3 py-1 rounded hover:bg-gray-50">ถัดไป</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/car_numberplate.js"></script>
+</body>
+</html>

@@ -1,4 +1,7 @@
 from fastapi import FastAPI, Form, Request, HTTPException, Query
+from pydantic import BaseModel
+from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy import or_, and_, func, cast, Integer, Date
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -681,7 +684,158 @@ def get_products():
         for p in products
     ])
 
+#-------------------------------- API Car s&s --------------------------------------------------------# 
+@app.get("/api/suggest/car_brand")
+def suggest_car_brand(q: str = Query(..., min_length=1), limit: int = Query(20, ge=1, le=50)):
+    """
+    ดึงคำแนะนำยี่ห้อรถ จาก public.car_brand.brand_name
+    ใช้กับ <input list="brand_datalist">
+    """
+    db = SessionLocal()
+    try:
+        like = f"%{q.lower()}%"
+        sql = text("""
+            SELECT DISTINCT brand_name
+            FROM public.car_brand
+            WHERE LOWER(brand_name) LIKE :like
+            ORDER BY brand_name
+            LIMIT :limit
+        """)
+        rows = db.execute(sql, {"like": like, "limit": limit}).mappings().all()
+        return JSONResponse(content=[{"brand_name": r["brand_name"]} for r in rows])
+    finally:
+        db.close()
 
+
+@app.get("/api/suggest/province")
+def suggest_province(q: str = Query(..., min_length=1), limit: int = Query(20, ge=1, le=50)):
+    """
+    ดึงคำแนะนำจังหวัด จาก public.province_nostra.prov_nam_t
+    ใช้กับ <input list="province_datalist">
+    """
+    db = SessionLocal()
+    try:
+        like = f"%{q.lower()}%"
+        sql = text("""
+            SELECT DISTINCT prov_nam_t
+            FROM public.province_nostra
+            WHERE LOWER(prov_nam_t) LIKE :like
+            ORDER BY prov_nam_t
+            LIMIT :limit
+        """)
+        rows = db.execute(sql, {"like": like, "limit": limit}).mappings().all()
+        return JSONResponse(content=[{"prov_nam_t": r["prov_nam_t"]} for r in rows])
+    finally:
+        db.close()
+
+# ---------- Cars: list & create (products.ss_car) ----------
+
+class CarCreate(BaseModel):
+    number_plate: str
+    car_brand: str | None = None
+    province: str | None = None
+
+
+@app.get("/api/cars")
+def list_cars(
+    search: str = Query("", description="ค้นหาจาก (ทะเบียน/ยี่ห้อ/จังหวัด)"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=200),
+):
+    """
+    คืนค่า:
+    {
+      "items": [{idx, number_plate, car_brand, province}, ...],
+      "page": 1, "page_size": 10, "total": 123
+    }
+    """
+    db = SessionLocal()
+    try:
+        off = (page - 1) * page_size
+        like = f"%{(search or '').lower()}%"
+
+        # นับ total
+        sql_count = text("""
+            SELECT COUNT(*) AS c
+            FROM products.ss_car
+            WHERE (:s = '' OR LOWER(number_plate) LIKE :like
+                           OR LOWER(COALESCE(car_brand,'')) LIKE :like
+                           OR LOWER(COALESCE(province,''))   LIKE :like)
+        """)
+        total = db.execute(sql_count, {"s": search or "", "like": like}).scalar() or 0
+
+        # ดึงรายการ
+        sql_list = text("""
+            SELECT idx, number_plate, car_brand, province
+            FROM products.ss_car
+            WHERE (:s = '' OR LOWER(number_plate) LIKE :like
+                           OR LOWER(COALESCE(car_brand,'')) LIKE :like
+                           OR LOWER(COALESCE(province,''))   LIKE :like)
+            ORDER BY idx DESC
+            LIMIT :limit OFFSET :off
+        """)
+        rows = db.execute(sql_list, {
+            "s": search or "", "like": like,
+            "limit": page_size, "off": off
+        }).mappings().all()
+
+        items = [
+            {
+                "idx": r["idx"],
+                "number_plate": r["number_plate"],
+                "car_brand": r["car_brand"],
+                "province": r["province"],
+            } for r in rows
+        ]
+        return JSONResponse(content={
+            "items": items,
+            "page": page,
+            "page_size": page_size,
+            "total": int(total),
+        })
+    finally:
+        db.close()
+
+
+@app.post("/api/cars", status_code=201)
+def create_car(payload: CarCreate):
+    """
+    สร้างรถใหม่ใน products.ss_car
+    - ถ้าตั้ง unique index (LOWER(number_plate), LOWER(COALESCE(province,''))) ไว้ จะกันซ้ำทะเบียน+จังหวัดได้
+    """
+    db = SessionLocal()
+    try:
+        np = (payload.number_plate or "").strip()
+        if np == "":
+            raise HTTPException(status_code=400, detail="number_plate is required")
+
+        sql_insert = text("""
+            INSERT INTO products.ss_car(number_plate, car_brand, province)
+            VALUES (:np, :brand, :prov)
+            RETURNING idx
+        """)
+        idx = db.execute(sql_insert, {
+            "np": np,
+            "brand": (payload.car_brand or "").strip() or None,
+            "prov":  (payload.province   or "").strip() or None,
+        }).scalar()
+
+        db.commit()
+        return {"idx": idx}
+    except IntegrityError:
+        db.rollback()
+        # กรณีมี unique index กันซ้ำไว้
+        raise HTTPException(status_code=409, detail="ทะเบียนซ้ำ (ทะเบียน+จังหวัด)")
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db.close()
+
+# invoice api 
 @app.get("/api/invoices/check-number")
 def api_check_invoice_number(number: str = Query(..., min_length=1)):
     db = SessionLocal()
