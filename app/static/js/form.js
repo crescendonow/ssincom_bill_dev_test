@@ -454,7 +454,7 @@ window.addEventListener("load", computeAndFillDueDate);
 
   const suggest = async () => {
     const q = (plateInput.value || '').trim();
-    const prov = (document.getElementById('cf_provincename')?.value || '').trim(); // ใช้จังหวัดช่วยกรอง (optional)
+
     datalist.innerHTML = '';
     if (plateMsg) plateMsg.textContent = '';
 
@@ -463,7 +463,6 @@ window.addEventListener("load", computeAndFillDueDate);
     try {
       const url = new URL('/api/suggest/number_plate', window.location.origin);
       url.searchParams.set('q', q);
-      if (prov) url.searchParams.set('province', prov);
       const res = await fetch(url.toString());
       if (!res.ok) throw new Error('โหลดคำแนะนำไม่สำเร็จ');
       const data = await res.json(); // [{number_plate:'1กก 1234'}, ...]
@@ -482,10 +481,6 @@ window.addEventListener("load", computeAndFillDueDate);
   const debouncedSuggest = debounce(suggest, 250);
   plateInput.addEventListener('input', debouncedSuggest);
   plateInput.addEventListener('focus', () => plateInput.value && suggest());
-
-  // ถ้าผู้ใช้เปลี่ยนจังหวัด ให้แนะนำใหม่ (ช่วยกรองให้ตรงมากขึ้น)
-  const provInput = document.getElementById('cf_provincename');
-  if (provInput) provInput.addEventListener('change', () => plateInput.value && suggest());
 })();
 
 // ===== Align TAX ID with company email on invoice header =====

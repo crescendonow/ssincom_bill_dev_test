@@ -13,6 +13,7 @@ from .database import SessionLocal
 from datetime import date, datetime, timedelta
 from typing import List
 from pathlib import Path
+from decimal import Decimal, ROUND_HALF_UP
 
 app = FastAPI()
 #models.Base.metadata.create_all(bind=database.engine)
@@ -71,6 +72,78 @@ def thaidate(value):
     return f"{d.day} {TH_MONTHS[d.month-1]} {y_be}"
 
 templates.env.filters["thaidate"] = thaidate
+
+# --- function convert thai baht to thai bath string ---
+_TH_NUM = ['ศูนย์','หนึ่ง','สอง','สาม','สี่','ห้า','หก','เจ็ด','แปด','เก้า']
+_TH_POS = ['', 'สิบ', 'ร้อย', 'พัน', 'หมื่น', 'แสน']
+
+def _read_chunk_th(num_str: str) -> str:
+    # อ่านเลขเป็นคำไทยสำหรับกลุ่มไม่เกิน 6 หลัก
+    s = ''
+    n = len(num_str)
+    for i, ch in enumerate(num_str):
+        d = ord(ch) - 48
+        pos = n - i - 1  # 0=หน่วย,1=สิบ,...
+        if d == 0:
+            continue
+        if pos == 1:  # หลักสิบ
+            if d == 1:
+                s += 'สิบ'
+            elif d == 2:
+                s += 'ยี่สิบ'
+            else:
+                s += _TH_NUM[d] + 'สิบ'
+        elif pos == 0:  # หลักหน่วย
+            # ใช้ "เอ็ด" เฉพาะเมื่อมีหลักสิบไม่เป็นศูนย์
+            tens_digit = int(num_str[-2]) if n >= 2 else 0
+            if d == 1 and n > 1 and tens_digit != 0:
+                s += 'เอ็ด'
+            else:
+                s += _TH_NUM[d]
+        else:
+            s += (_TH_NUM[d] if d != 1 else 'หนึ่ง') + _TH_POS[pos]
+    return s
+
+def _read_int_th(n: int) -> str:
+    if n == 0:
+        return 'ศูนย์'
+    parts = []
+    i = 0
+    while n > 0:
+        chunk = n % 1_000_000
+        if chunk:
+            w = _read_chunk_th(str(chunk))
+            if i > 0:
+                w += 'ล้าน' * i
+            parts.append(w)
+        n //= 1_000_000
+        i += 1
+    return ''.join(reversed(parts))
+
+def thai_baht_text(value) -> str:
+    # แปลงเป็น "…บาทถ้วน" หรือ "…บาท…สตางค์"
+    try:
+        amt = Decimal(str(value)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    except Exception:
+        return ''
+    neg = amt < 0
+    if neg:
+        amt = -amt
+
+    baht = int(amt)
+    satang = int((amt * 100) % 100)
+
+    baht_words = _read_int_th(baht) + 'บาท'
+    if satang == 0:
+        words = baht_words + 'ถ้วน'
+    else:
+        # สตางค์สองหลัก
+        satang_words = _read_chunk_th(f'{satang:02d}') + 'สตางค์'
+        words = baht_words + satang_words
+    return ('ลบ' + words) if neg else words
+
+# --- จดทะเบียนฟิลเตอร์กับ Jinja ---
+templates.env.filters['thbaht'] = thai_baht_text
 
         
 #api for submit invoice from form.html 
@@ -806,40 +879,24 @@ def list_cars(
 @app.get("/api/suggest/number_plate")
 def suggest_number_plate(
     q: str = Query(..., min_length=1, description="คำค้นทะเบียนรถ"),
-    province: str | None = Query(None, description="กรองตามจังหวัด (optional)"),
     limit: int = Query(20, ge=1, le=50),
 ):
     """
     ดึงทะเบียนรถจาก products.ss_car.number_plate
     - ค้นหาแบบ case-insensitive ด้วย LIKE
-    - ถ้ามี province จะช่วยกรอง (LIKE) เพิ่มเติม
+    - ไม่กรองจังหวัด
     """
     db = SessionLocal()
     try:
         like = f"%{q.lower()}%"
-        params = {"like": like, "limit": limit}
-
-        if province:
-            prov_like = f"%{province.lower()}%"
-            sql = text("""
-                SELECT DISTINCT number_plate
-                FROM products.ss_car
-                WHERE LOWER(number_plate) LIKE :like
-                  AND LOWER(COALESCE(province, '')) LIKE :prov_like
-                ORDER BY number_plate
-                LIMIT :limit
-            """)
-            params["prov_like"] = prov_like
-        else:
-            sql = text("""
-                SELECT DISTINCT number_plate
-                FROM products.ss_car
-                WHERE LOWER(number_plate) LIKE :like
-                ORDER BY number_plate
-                LIMIT :limit
-            """)
-
-        rows = db.execute(sql, params).mappings().all()
+        sql = text("""
+            SELECT DISTINCT number_plate
+            FROM products.ss_car
+            WHERE LOWER(number_plate) LIKE :like
+            ORDER BY number_plate
+            LIMIT :limit
+        """)
+        rows = db.execute(sql, {"like": like, "limit": limit}).mappings().all()
         return JSONResponse(content=[{"number_plate": r["number_plate"]} for r in rows])
     finally:
         db.close()
