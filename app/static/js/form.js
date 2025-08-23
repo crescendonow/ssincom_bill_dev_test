@@ -1,3 +1,5 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/locales/th.js"></script>
+
 let customers = [];
 
 // Load customers (for autofill)
@@ -20,7 +22,7 @@ function selectCustomer() {
 
   // Basic fields
   document.getElementById("customer_address").value = match.cf_personaddress || '';
-  document.getElementById("customer_taxid").value   = match.cf_taxid || '';
+  document.getElementById("customer_taxid").value = match.cf_taxid || '';
 
   // Extra customer details (if your form.html has these inputs)
   const fill = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
@@ -176,7 +178,7 @@ function updateTotal() {
     sum += q * p;
   });
   const totalEl = document.getElementById('total_amount');
-  totalEl.textContent = '฿ ' + sum.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+  totalEl.textContent = '฿ ' + sum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   totalEl.dataset.value = String(sum);  // <-- เก็บค่าเลขดิบไว้ที่นี่
 }
 
@@ -185,9 +187,9 @@ function collectItems() {
   document.querySelectorAll('#items .item-row').forEach(row => {
     items.push({
       product_code: row.querySelector('.product_code').value || '',
-      description:  row.querySelector('.description').value || '',
-      quantity:     parseFloat(row.querySelector('.quantity').value || 0),
-      unit_price:   parseFloat(row.querySelector('.unit_price').value || 0),
+      description: row.querySelector('.description').value || '',
+      quantity: parseFloat(row.querySelector('.quantity').value || 0),
+      unit_price: parseFloat(row.querySelector('.unit_price').value || 0),
     });
   });
   return items;
@@ -209,15 +211,15 @@ function collectFormData() {
     customer_name: v('customer_name'),
     customer_taxid: v('customer_taxid'),
     customer_address: v('customer_address'),
-    personid: v('personid'),                        
+    personid: v('personid'),
     tel: v('tel'),
     mobile: v('mobile'),
     cf_personzipcode: v('cf_personzipcode'),
     cf_provincename: v('cf_provincename'),
-    fmlpaymentcreditday: v('fmlpaymentcreditday'), 
+    fmlpaymentcreditday: v('fmlpaymentcreditday'),
 
     // ยอดรวมจากฟอร์ม (optional, ที่ template ก็คำนวณได้เองอยู่แล้ว)
-    total_amount: totalRaw,                          
+    total_amount: totalRaw,
 
     // สินค้า
     items: collectItems(),
@@ -234,7 +236,7 @@ async function previewInvoice(evt) {
 
   const res = await fetch('/preview', {
     method: 'POST',
-    headers: {'Content-Type':'application/json'},
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   });
   // …จัดการเปิดหน้า preview ตามเดิม…
@@ -244,6 +246,8 @@ async function previewInvoice(evt) {
 async function saveInvoice() {
   const formEl = document.getElementById("invoice_form");
   const fd = new FormData(formEl);
+  const _d = fd.get("invoice_date");
+  if (_d) fd.set("invoice_date", formatDateToISO(_d));
 
   const res = await fetch("/submit", { method: "POST", body: fd });
   if (!res.ok) {
@@ -258,10 +262,15 @@ async function saveInvoice() {
 function previewInvoice() {
   const formEl = document.getElementById("invoice_form");
   const fd = new FormData(formEl);
+  let dateStr = fd.get("invoice_date");
+  if (dateStr) {
+    dateStr = formatDateToISO(dateStr);
+  }
+
 
   const invoice = {
     invoice_number: fd.get("invoice_number"),
-    invoice_date: fd.get("invoice_date"),
+    invoice_date: dateStr,
     personid: fd.get("personid"),
     grn_number: fd.get("grn_number"), // ✅ included
     dn_number: fd.get("dn_number"),   // ✅ included
@@ -277,31 +286,31 @@ function previewInvoice() {
 
   document.querySelectorAll("#items .item-row").forEach(row => {
     const product_code = row.querySelector('[name="product_code"]').value;
-    const description  = row.querySelector('[name="description"]').value;
-    const quantity     = parseFloat(row.querySelector('[name="quantity"]').value || 0);
-    const unit_price   = parseFloat(row.querySelector('[name="unit_price"]').value || 0);
+    const description = row.querySelector('[name="description"]').value;
+    const quantity = parseFloat(row.querySelector('[name="quantity"]').value || 0);
+    const unit_price = parseFloat(row.querySelector('[name="unit_price"]').value || 0);
     if (product_code || description) {
       invoice.items.push({ product_code, description, quantity, unit_price });
     }
     // คำนวณยอดรวมจาก items ตรงนี้
-  const total_amount = invoice.items.reduce((sum, it) => {
-    const q = isFinite(it.quantity) ? it.quantity : 0;
-    const p = isFinite(it.unit_price) ? it.unit_price : 0;
-    return sum + q * p;
-  }, 0);
-  invoice.total_amount = Number(total_amount.toFixed(2));
+    const total_amount = invoice.items.reduce((sum, it) => {
+      const q = isFinite(it.quantity) ? it.quantity : 0;
+      const p = isFinite(it.unit_price) ? it.unit_price : 0;
+      return sum + q * p;
+    }, 0);
+    invoice.total_amount = Number(total_amount.toFixed(2));
   });
 
   fetch("/preview", {
     method: "POST",
-    headers: {"Content-Type":"application/json"},
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(invoice)
   })
-  .then(r => r.text())
-  .then(html => {
-    const w = window.open("", "_blank");
-    w.document.open(); w.document.write(html); w.document.close();
-  });
+    .then(r => r.text())
+    .then(html => {
+      const w = window.open("", "_blank");
+      w.document.open(); w.document.write(html); w.document.close();
+    });
 }
 
 (function () {
@@ -351,7 +360,44 @@ function previewInvoice() {
   }, 50);
 })();
 
+// ---- Init Flowbite Datepicker ภาษาไทย ----
+document.addEventListener("DOMContentLoaded", function () {
+  const dateInput = document.getElementById("invoice_date");
+  if (dateInput) {
+    new Datepicker(dateInput, {
+      autohide: true,
+      language: "th",
+      format: "dd MM yyyy"   // แสดงวัน เดือน ปี เป็นภาษาไทย
+    });
+  }
+});
 
+function formatDateToISO(dateStr) {
+  if (!dateStr) return "";
+  const months = {
+    "มกราคม": 0, "กุมภาพันธ์": 1, "มีนาคม": 2,
+    "เมษายน": 3, "พฤษภาคม": 4, "มิถุนายน": 5,
+    "กรกฎาคม": 6, "สิงหาคม": 7, "กันยายน": 8,
+    "ตุลาคม": 9, "พฤศจิกายน": 10, "ธันวาคม": 11
+  };
+  try {
+    // case: dd Month yyyy (ไทย)
+    const parts = dateStr.trim().split(" ");
+    if (parts.length === 3 && months.hasOwnProperty(parts[1])) {
+      const d = parseInt(parts[0], 10);
+      const m = months[parts[1]];
+      let y = parseInt(parts[2], 10);
+      if (y > 2400) y -= 543;  // แปลง พ.ศ. → ค.ศ.
+      return new Date(y, m, d).toISOString().slice(0, 10);
+    }
+    // case: dd/mm/yyyy หรือ yyyy-mm-dd
+    const jsDate = new Date(dateStr);
+    if (!isNaN(jsDate)) return jsDate.toISOString().slice(0, 10);
+  } catch (e) {
+    console.warn("Date parse failed:", dateStr);
+  }
+  return dateStr;
+}
 
 // expose for inline handlers in HTML
 window.addItem = addItem;
@@ -363,3 +409,4 @@ window.selectCustomer = selectCustomer;
 window.previewInvoice = previewInvoice;
 window.saveInvoice = saveInvoice;
 window.filterProducts = filterProducts;
+
