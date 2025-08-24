@@ -15,6 +15,7 @@ from typing import List
 from pathlib import Path
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional
+import re
 
 app = FastAPI()
 #models.Base.metadata.create_all(bind=database.engine)
@@ -415,6 +416,44 @@ def api_invoice_detail(inv_id: int):
         return {"invoice": head, "items": items}
     finally:
         db.close()
+
+#----------------function change date format --------------#
+TH_MONTHS_MAP = { # ใช้ชุดเดียวกับ TH_MONTHS ที่มีอยู่
+    "มกราคม":1,"กุมภาพันธ์":2,"มีนาคม":3,"เมษายน":4,"พฤษภาคม":5,"มิถุนายน":6,
+    "กรกฎาคม":7,"สิงหาคม":8,"กันยายน":9,"ตุลาคม":10,"พฤศจิกายน":11,"ธันวาคม":12
+}
+
+def _parse_ymd(s: str | None) -> date | None:
+    """รับรูปแบบ: YYYY-MM-DD, dd/mm/YYYY, mm/dd/YYYY, dd <เดือนไทย> YYYY (พ.ศ./ค.ศ.)"""
+    if not s:
+        return None
+    s = s.strip()
+
+    m = re.match(r"^(\d{4})-(\d{2})-(\d{2})$", s)
+    if m:
+        y, mo, d = map(int, m.groups())
+        try:
+            return date(y, mo, d)
+        except ValueError:
+            return None
+
+    for fmt in ("%d/%m/%Y", "%m/%d/%Y"):
+        try:
+            return datetime.strptime(s, fmt).date()
+        except Exception:
+            pass
+
+    parts = s.split()
+    if len(parts) == 3 and parts[1] in TH_MONTHS_MAP:
+        d = int(parts[0]); mo = TH_MONTHS_MAP[parts[1]]; y = int(parts[2])
+        if y > 2400:  # พ.ศ. → ค.ศ.
+            y -= 543
+        try:
+            return date(y, mo, d)
+        except ValueError:
+            return None
+
+    return None
 
 # ====== แก้ไขหัวบิล + แทนที่รายการสินค้าแบบ bulk ======
 @app.put("/api/invoices/{inv_id}")

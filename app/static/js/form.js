@@ -396,7 +396,7 @@ function buildUpdatePayload() {
   // map -> schema ของ InvoiceUpdate ใน backend
   const payload = {
     invoice_number: v('invoice_number'),
-    invoice_date: formatDateToISO(v('invoice_date')) || v('invoice_date') || null,
+    invoice_date: formatDateToISO(v('invoice_date')),
 
     // ชื่อฟิลด์ฝั่ง DB คือ fname (ชื่อลูกค้า)
     fname: v('customer_name'),
@@ -413,7 +413,7 @@ function buildUpdatePayload() {
     grn_number: v('grn_number'),
     dn_number: v('dn_number'),
     fmlpaymentcreditday: (v('fmlpaymentcreditday') ? parseInt(v('fmlpaymentcreditday'), 10) : null),
-    due_date: v('due_date') || null,
+    due_date: formatDateToISO(v('due_date')),
     car_numberplate: v('car_numberplate'),
 
     // สินค้า: map เป็น {cf_itemid, cf_itemname, quantity, unit_price}
@@ -518,29 +518,46 @@ window.updateInvoice = updateInvoice;
 function formatDateToISO(dateStr) {
   if (!dateStr) return "";
   const months = {
-    "มกราคม": 0, "กุมภาพันธ์": 1, "มีนาคม": 2,
-    "เมษายน": 3, "พฤษภาคม": 4, "มิถุนายน": 5,
-    "กรกฎาคม": 6, "สิงหาคม": 7, "กันยายน": 8,
-    "ตุลาคม": 9, "พฤศจิกายน": 10, "ธันวาคม": 11
+    "มกราคม":0,"กุมภาพันธ์":1,"มีนาคม":2,"เมษายน":3,"พฤษภาคม":4,"มิถุนายน":5,
+    "กรกฎาคม":6,"สิงหาคม":7,"กันยายน":8,"ตุลาคม":9,"พฤศจิกายน":10,"ธันวาคม":11
   };
-  try {
-    // case: dd Month yyyy (ไทย)
-    const parts = dateStr.trim().split(" ");
-    if (parts.length === 3 && months.hasOwnProperty(parts[1])) {
-      const d = parseInt(parts[0], 10);
-      const m = months[parts[1]];
-      let y = parseInt(parts[2], 10);
-      if (y > 2400) y -= 543;  // แปลง พ.ศ. → ค.ศ.
-      return new Date(y, m, d).toISOString().slice(0, 10);
-    }
-    // case: dd/mm/yyyy หรือ yyyy-mm-dd
-    const jsDate = new Date(dateStr);
-    if (!isNaN(jsDate)) return jsDate.toISOString().slice(0, 10);
-  } catch (e) {
-    console.warn("Date parse failed:", dateStr);
+
+  // ISO เดิม
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+
+  // dd <เดือนไทย> yyyy (พ.ศ./ค.ศ.)
+  const p = dateStr.trim().split(" ");
+  if (p.length === 3 && months[p[1]] !== undefined) {
+    const d = parseInt(p[0],10);
+    const m = months[p[1]];
+    let y = parseInt(p[2],10);
+    if (y > 2400) y -= 543; // พ.ศ. -> ค.ศ.
+    const js = new Date(y, m, d);
+    if (!isNaN(js) && js.getFullYear() >= 1900 && js.getFullYear() <= 2100)
+      return js.toISOString().slice(0,10);
+    return "";
   }
-  return dateStr;
+
+  // dd/mm/YYYY หรือ mm/dd/YYYY
+  const m1 = dateStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m1) {
+    const [ , a, b, c ] = m1; // a,b = d/m หรือ m/d ; c = YYYY
+    const try1 = new Date(`${c}-${b.padStart(2,'0')}-${a.padStart(2,'0')}`);
+    if (!isNaN(try1) && try1.getFullYear() >= 1900 && try1.getFullYear() <= 2100)
+      return try1.toISOString().slice(0,10);
+    const try2 = new Date(`${c}-${a.padStart(2,'0')}-${b.padStart(2,'0')}`);
+    if (!isNaN(try2) && try2.getFullYear() >= 1900 && try2.getFullYear() <= 2100)
+      return try2.toISOString().slice(0,10);
+  }
+
+  // fallback
+  const js = new Date(dateStr);
+  if (!isNaN(js) && js.getFullYear() >= 1900 && js.getFullYear() <= 2100)
+    return js.toISOString().slice(0,10);
+
+  return ""; // ถ้าแปลงไม่ได้
 }
+
 
 function parseInvoiceDateToDate(dateStr) {
   if (!dateStr) return null;
