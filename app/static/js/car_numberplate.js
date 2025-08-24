@@ -138,7 +138,11 @@ function renderTable(rows, page, page_size, total) {
 
   if (!rows || rows.length === 0) {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td colspan="5" class="px-3 py-3 border text-center text-gray-500">ไม่พบข้อมูล</td>`;
+    const td = document.createElement('td');
+    td.colSpan = 5;
+    td.className = 'px-3 py-3 border text-center text-gray-500';
+    td.textContent = 'ไม่พบข้อมูล';
+    tr.appendChild(td);
     tbody.appendChild(tr);
   } else {
     rows.forEach(r => {
@@ -148,19 +152,57 @@ function renderTable(rows, page, page_size, total) {
       tr.dataset.brand = r.car_brand || '';
       tr.dataset.province = r.province || '';
 
-      tr.innerHTML = `
-        <td class="px-3 py-2 border">${r.idx}</td>
-        <td class="px-3 py-2 border cell-plate">${escapeHtml(r.number_plate || '')}</td>
-        <td class="px-3 py-2 border cell-brand">${escapeHtml(r.car_brand || '')}</td>
-        <td class="px-3 py-2 border cell-province">${escapeHtml(r.province || '')}</td>
-        <td class="px-3 py-2 border cell-actions">
-          <button class="btn-edit bg-white border px-3 py-1 rounded hover:bg-gray-50 mr-1">แก้ไข</button>
-          <button class="btn-del bg-white border px-3 py-1 rounded hover:bg-gray-50 text-red-600">ลบ</button>
-        </td>
-      `;
+      const tdIdx = document.createElement('td');
+      tdIdx.className = 'px-3 py-2 border';
+      tdIdx.textContent = r.idx;
+
+      const tdPlate = document.createElement('td');
+      tdPlate.className = 'px-3 py-2 border cell-plate';
+      tdPlate.textContent = r.number_plate || '';
+
+      const tdBrand = document.createElement('td');
+      tdBrand.className = 'px-3 py-2 border cell-brand';
+      tdBrand.textContent = r.car_brand || '';
+
+      const tdProv = document.createElement('td');
+      tdProv.className = 'px-3 py-2 border cell-province';
+      tdProv.textContent = r.province || '';
+
+      const tdAct = document.createElement('td');
+      tdAct.className = 'px-3 py-2 border cell-actions';
+
+      const btnEdit = document.createElement('button');
+      btnEdit.className = 'btn-edit bg-white border px-3 py-1 rounded hover:bg-gray-50 mr-1';
+      btnEdit.type = 'button';
+      btnEdit.textContent = 'แก้ไข';
+
+      const btnDel = document.createElement('button');
+      btnDel.className = 'btn-del bg-white border px-3 py-1 rounded hover:bg-gray-50 text-red-600';
+      btnDel.type = 'button';
+      btnDel.textContent = 'ลบ';
+
+      tdAct.appendChild(btnEdit);
+      tdAct.appendChild(btnDel);
+
+      tr.appendChild(tdIdx);
+      tr.appendChild(tdPlate);
+      tr.appendChild(tdBrand);
+      tr.appendChild(tdProv);
+      tr.appendChild(tdAct);
+
       tbody.appendChild(tr);
     });
   }
+
+  // pager info
+  const pageInfo = document.getElementById('pageInfo');
+  if (pageInfo) pageInfo.textContent = `หน้า ${page}`;
+  const start = total === 0 ? 0 : (page - 1) * page_size + 1;
+  const end = Math.min(total, page * page_size);
+  const resultInfo = document.getElementById('resultInfo');
+  if (resultInfo) resultInfo.textContent = `แสดง ${start}-${end} จากทั้งหมด ${total} รายการ`;
+}
+
 
   // pager info
   document.getElementById('pageInfo').textContent = `หน้า ${page}`;
