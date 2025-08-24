@@ -940,6 +940,65 @@ def create_car(payload: CarCreate):
     finally:
         db.close()
 
+@app.put("/api/cars/{idx}")
+def update_car(idx: int, payload: CarCreate):
+    db = SessionLocal()
+    try:
+        np = (payload.number_plate or "").strip()
+        if np == "":
+            raise HTTPException(status_code=400, detail="number_plate is required")
+
+        sql = text("""
+            UPDATE products.ss_car
+               SET number_plate = :np,
+                   car_brand    = :brand,
+                   province     = :prov
+             WHERE idx = :idx
+        """)
+        result = db.execute(sql, {
+            "np": np,
+            "brand": (payload.car_brand or "").strip() or None,
+            "prov":  (payload.province   or "").strip() or None,
+            "idx": idx
+        })
+        if result.rowcount == 0:
+            db.rollback()
+            raise HTTPException(status_code=404, detail="not found")
+
+        db.commit()
+        return {"ok": True}
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="ทะเบียนซ้ำ (ทะเบียน+จังหวัด)")
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db.close()
+
+
+@app.delete("/api/cars/{idx}", status_code=204)
+def delete_car(idx: int):
+    db = SessionLocal()
+    try:
+        result = db.execute(text("DELETE FROM products.ss_car WHERE idx = :idx"), {"idx": idx})
+        if result.rowcount == 0:
+            db.rollback()
+            raise HTTPException(status_code=404, detail="not found")
+        db.commit()
+        return Response(status_code=204)
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db.close()
+
 # invoice api 
 @app.get("/api/invoices/check-number")
 def api_check_invoice_number(number: str = Query(..., min_length=1)):
