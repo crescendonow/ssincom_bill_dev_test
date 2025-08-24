@@ -1,4 +1,7 @@
 from fastapi import FastAPI, Form, Request, HTTPException, Query
+import os
+from urllib.parse import quote
+from fastapi import Response   
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
@@ -85,10 +88,6 @@ def dashboard_page(request: Request):
     return templates.TemplateResponse("dashboard.html", {"request": request, "user": user})
 
 #----------------------------------- open form.html ---------------#
-@app.get("/", response_class=HTMLResponse)
-async def dashboard(request: Request):
-    return templates.TemplateResponse("dashboard.html", {"request": request})
-
 
 @app.get("/form", response_class=HTMLResponse)
 @app.get("/form.html", response_class=HTMLResponse)
