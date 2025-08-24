@@ -17,7 +17,18 @@
   <datalist id="productNames"></datalist>
   <div class="max-w-5xl mx-auto bg-white rounded-xl shadow p-8 space-y-6">
     <div class="flex items-center gap-2 text-blue-700 font-semibold mb-4">
-      <span>&larr;</span> <a href="/" class="hover:underline">กลับหน้าหลัก</a>
+      <nav class="flex items-center gap-2 text-sm mb-4">
+        <!-- กลับหน้าหลัก -->
+        <a href="/" class="inline-flex items-center px-3 py-1.5 rounded border hover:bg-gray-50">
+          <span class="mr-2">←</span> กลับหน้าหลัก
+        </a>
+
+        <!-- ✅ กลับไปหน้ารายการใบกำกับภาษีทั้งหมด -->
+        <a href="/summary_invoices.html"
+          class="inline-flex items-center px-3 py-1.5 rounded border text-blue-700 hover:bg-blue-50">
+          <span class="mr-2">📃</span> รายการใบกำกับภาษีทั้งหมด
+        </a>
+      </nav>
     </div>
     <div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow">
       <h2 class="text-2xl font-bold mb-6">แบบฟอร์มใบกำกับภาษี</h2>
