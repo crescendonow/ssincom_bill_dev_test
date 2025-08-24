@@ -5,9 +5,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // toggle ปุ่ม
   const btnUpdate = document.getElementById('btnUpdate');
-  const btnSave   = document.getElementById('btnSave');
+  const btnSave = document.getElementById('btnSave');
   if (btnUpdate) btnUpdate.classList.toggle('hidden', !editId);
-  if (btnSave)   btnSave.classList.toggle('hidden', !!editId);
+  if (btnSave) btnSave.classList.toggle('hidden', !!editId);
 
   if (!editId) return;
 
@@ -422,14 +422,14 @@ function buildUpdatePayload() {
 
   document.querySelectorAll('#items .item-row').forEach(row => {
     const product_code = row.querySelector('.product_code')?.value || '';
-    const description  = row.querySelector('.description')?.value || '';
-    const quantity     = parseFloat(row.querySelector('.quantity')?.value || 0);
-    const unit_price   = parseFloat(row.querySelector('.unit_price')?.value || 0);
+    const description = row.querySelector('.description')?.value || '';
+    const quantity = parseFloat(row.querySelector('.quantity')?.value || 0);
+    const unit_price = parseFloat(row.querySelector('.unit_price')?.value || 0);
 
     // เพิ่มเฉพาะแถวที่มีข้อมูล
     if (product_code || description) {
       payload.items.push({
-        cf_itemid:   product_code,
+        cf_itemid: product_code,
         cf_itemname: description,
         quantity,
         unit_price
@@ -449,7 +449,7 @@ async function updateInvoice() {
   try {
     const res = await fetch(`/api/invoices/${editId}`, {
       method: 'PUT',
-      headers: {'Content-Type':'application/json'},
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
     if (!res.ok) {
@@ -517,47 +517,53 @@ window.updateInvoice = updateInvoice;
 
 function formatDateToISO(dateStr) {
   if (!dateStr) return "";
-  const months = {
-    "มกราคม":0,"กุมภาพันธ์":1,"มีนาคม":2,"เมษายน":3,"พฤษภาคม":4,"มิถุนายน":5,
-    "กรกฎาคม":6,"สิงหาคม":7,"กันยายน":8,"ตุลาคม":9,"พฤศจิกายน":10,"ธันวาคม":11
+  const TH_MONTHS = {
+    "มกราคม": 0, "กุมภาพันธ์": 1, "มีนาคม": 2, "เมษายน": 3, "พฤษภาคม": 4, "มิถุนายน": 5,
+    "กรกฎาคม": 6, "สิงหาคม": 7, "กันยายน": 8, "ตุลาคม": 9, "พฤศจิกายน": 10, "ธันวาคม": 11
   };
 
-  // ISO เดิม
+  // 1) ISO อยู่แล้ว
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
 
-  // dd <เดือนไทย> yyyy (พ.ศ./ค.ศ.)
-  const p = dateStr.trim().split(" ");
-  if (p.length === 3 && months[p[1]] !== undefined) {
-    const d = parseInt(p[0],10);
-    const m = months[p[1]];
-    let y = parseInt(p[2],10);
+  // 2) dd <เดือนไทย> yyyy (พ.ศ./ค.ศ.)
+  const p = dateStr.trim().split(/\s+/);
+  if (p.length === 3 && TH_MONTHS[p[1]] !== undefined) {
+    const d = parseInt(p[0], 10);
+    const m = TH_MONTHS[p[1]];
+    let y = parseInt(p[2], 10);
     if (y > 2400) y -= 543; // พ.ศ. -> ค.ศ.
-    const js = new Date(y, m, d);
-    if (!isNaN(js) && js.getFullYear() >= 1900 && js.getFullYear() <= 2100)
-      return js.toISOString().slice(0,10);
+
+    if (y >= 1900 && y <= 2100) {
+      const js = new Date(Date.UTC(y, m, d));
+      if (!isNaN(js)) return js.toISOString().slice(0, 10);
+    }
     return "";
   }
 
-  // dd/mm/YYYY หรือ mm/dd/YYYY
+  // 3) dd/mm/YYYY หรือ mm/dd/YYYY
   const m1 = dateStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
   if (m1) {
-    const [ , a, b, c ] = m1; // a,b = d/m หรือ m/d ; c = YYYY
-    const try1 = new Date(`${c}-${b.padStart(2,'0')}-${a.padStart(2,'0')}`);
-    if (!isNaN(try1) && try1.getFullYear() >= 1900 && try1.getFullYear() <= 2100)
-      return try1.toISOString().slice(0,10);
-    const try2 = new Date(`${c}-${a.padStart(2,'0')}-${b.padStart(2,'0')}`);
-    if (!isNaN(try2) && try2.getFullYear() >= 1900 && try2.getFullYear() <= 2100)
-      return try2.toISOString().slice(0,10);
+    const [, a, b, c] = m1; // a,b= d/m หรือ m/d ; c=YYYY
+    const try1 = new Date(`${c}-${b.padStart(2, '0')}-${a.padStart(2, '0')}T00:00:00Z`);
+    if (!isNaN(try1) && try1.getUTCFullYear() >= 1900 && try1.getUTCFullYear() <= 2100)
+      return try1.toISOString().slice(0, 10);
+    const try2 = new Date(`${c}-${a.padStart(2, '0')}-${b.padStart(2, '0')}T00:00:00Z`);
+    if (!isNaN(try2) && try2.getUTCFullYear() >= 1900 && try2.getUTCFullYear() <= 2100)
+      return try2.toISOString().slice(0, 10);
   }
 
-  // fallback
-  const js = new Date(dateStr);
-  if (!isNaN(js) && js.getFullYear() >= 1900 && js.getFullYear() <= 2100)
-    return js.toISOString().slice(0,10);
-
-  return ""; // ถ้าแปลงไม่ได้
+  // 4) ห้ามใช้ new Date(locale-string) อีกต่อไป -> ป้องกันปี 0192/0190
+  return "";
 }
 
+// ใช้ค่านี้ normalize field ให้เป็น ISO ถ้าทำได้
+function normalizeDateInputValue(inputId) {
+  const el = document.getElementById(inputId);
+  if (!el) return "";
+  const iso = formatDateToISO((el.value || "").trim());
+  if (iso) el.value = iso;
+  return iso;
+}
 
 function parseInvoiceDateToDate(dateStr) {
   if (!dateStr) return null;
