@@ -24,6 +24,66 @@ BASE_DIR = Path(__file__).resolve().parent
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
+#---------------- manage session -------------------------#
+# ✅ เปิด session (ตั้งค่า env: SESSION_SECRET)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("SESSION_SECRET", "please-change-me"),
+    max_age=60 * 60 * 8,  # 8 ชม.
+)
+
+# กำหนดหน้า/เส้นทางที่ต้องล็อกอินก่อน (เพิ่มได้ตามต้องการ)
+PROTECTED_PATHS = {"/", "/dashboard", "/dashboard.html"}
+
+# ✅ Middleware บังคับล็อกอิน
+@app.middleware("http")
+async def require_login_for_pages(request: Request, call_next):
+    path = request.url.path
+    if path in PROTECTED_PATHS:
+        if not request.session.get("user"):
+            next_path = path
+            if request.url.query:
+                next_path += "?" + request.url.query
+            return RedirectResponse(url=f"/login?next={quote(next_path)}", status_code=303)
+    return await call_next(request)
+
+# ✅ เพจล็อกอิน
+@app.get("/login", response_class=HTMLResponse)
+def login_page(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
+
+# ✅ โพสต์ล็อกอิน (ตัวอย่างตรวจแบบง่ายจาก ENV)
+@app.post("/login")
+async def do_login(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    next: str = Form(default="/dashboard"),
+):
+    VALID_USER = os.getenv("APP_USER", "admin")
+    VALID_PASS = os.getenv("APP_PASS", "ssincom_2025")
+
+    if username == VALID_USER and password == VALID_PASS:
+        request.session["user"] = {"name": username}
+        return RedirectResponse(url=next or "/dashboard", status_code=303)
+
+    return RedirectResponse(url=f"/login?error=1&next={quote(next)}", status_code=303)
+
+# ✅ ออกจากระบบ
+@app.get("/logout")
+def logout(request: Request):
+    request.session.clear()
+    return RedirectResponse(url="/login", status_code=303)
+
+# ✅ เพจ Dashboard (เสิร์ฟไฟล์ templates/dashboard.html)
+@app.get("/", response_class=HTMLResponse)
+@app.get("/dashboard", response_class=HTMLResponse)
+@app.get("/dashboard.html", response_class=HTMLResponse)
+def dashboard_page(request: Request):
+    user = request.session.get("user")
+    return templates.TemplateResponse("dashboard.html", {"request": request, "user": user})
+
+#----------------------------------- open form.html ---------------#
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
     return templates.TemplateResponse("dashboard.html", {"request": request})
