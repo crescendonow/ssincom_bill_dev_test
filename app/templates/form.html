@@ -44,8 +44,8 @@
         <!-- Date -->
         <div>
           <label for="invoice_date" class="block mb-2 text-sm font-medium text-gray-900">วันที่</label>
-          <input datepicker datepicker-autohide type="text" id="invoice_date" name="invoice_date"
-            class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" placeholder="Select date">
+          <input id="invoice_date" name="invoice_date" type="date" min="1900-01-01" max="2100-12-31"
+            class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
         </div>
         <!-- GRN DN-->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
