@@ -29,6 +29,7 @@ async def dashboard(request: Request):
 
 
 @app.get("/form", response_class=HTMLResponse)
+@app.get("/form.html", response_class=HTMLResponse)
 async def form_page(request: Request):
     return templates.TemplateResponse("form.html", {"request": request})
 

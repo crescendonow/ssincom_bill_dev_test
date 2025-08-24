@@ -447,3 +447,5 @@ async function saveEdit() {
         alert("บันทึกไม่สำเร็จ: " + err.message);
     }
 }
+
+window.location.href = `/form?edit=${id}`;
