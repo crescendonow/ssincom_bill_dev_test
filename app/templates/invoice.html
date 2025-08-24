@@ -142,12 +142,23 @@
     /* กรอบนอกตารางสินค้า: ไม่มีเส้นบน */
     .table-frame {
       border: 1.5px solid #0F3F7F;
-      border-top: none;
-      /* ตัดเส้นบนออก */
-      border-radius: 0 0 10px 10px;
-      /* มุมมนเฉพาะด้านล่าง */
+      border-radius: 10px;
+      /* เดิมมีแค่มุมล่าง */
       overflow: hidden;
-      /* ให้มุมมนล่างทำงาน */
+      /* ให้หัวตารางถูกครอบตามมุมโค้ง */
+    }
+
+    table.items thead th {
+      background: #eef5ff;
+      font-weight: 700;
+      padding: 6px 8px;
+      text-align: center;
+      border-top: none;
+      /* เดิมมีเส้นบน */
+      border-bottom: 1.5px solid #0F3F7F;
+      /* มุมบนไม่ต้องโค้ง ปล่อยให้กรอบจัดการ */
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
     }
 
     /* ตารางภายใน */
@@ -173,6 +184,8 @@
     table.items th+th {
       border-left: 1.5px solid #0F3F7F;
     }
+
+    .table-frame .items{ margin-top: 0 !important; }
 
     /* มุมโค้งบน */
     table.items th:first-child {
@@ -355,7 +368,6 @@
         </thead>
         <tbody>
           {% set ns = namespace(total=0) %}
-        <tbody>
           {% for item in invoice["items"] %}
           {% set qty = item["quantity"]|float %}
           {% set price = item["unit_price"]|float %}
