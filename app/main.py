@@ -14,6 +14,7 @@ from datetime import date, datetime, timedelta
 from typing import List
 from pathlib import Path
 from decimal import Decimal, ROUND_HALF_UP
+from typing import Optional
 
 app = FastAPI()
 #models.Base.metadata.create_all(bind=database.engine)
@@ -320,6 +321,33 @@ def api_list_invoices(
     finally:
         db.close()
 
+class InvoiceItemIn(BaseModel):
+    idx: Optional[int] = None
+    cf_itemid: Optional[str] = None
+    cf_itemname: Optional[str] = None
+    quantity: float = 0
+    unit_price: float = 0
+    amount: Optional[float] = None
+
+class InvoiceUpdate(BaseModel):
+    invoice_number: Optional[str] = None
+    invoice_date: Optional[str] = None        # YYYY-MM-DD
+    fname: Optional[str] = None
+    personid: Optional[str] = None
+    tel: Optional[str] = None
+    mobile: Optional[str] = None
+    cf_personaddress: Optional[str] = None
+    cf_personzipcode: Optional[str] = None
+    cf_provincename: Optional[str] = None
+    cf_taxid: Optional[str] = None
+    po_number: Optional[str] = None
+    grn_number: Optional[str] = None
+    dn_number: Optional[str] = None
+    fmlpaymentcreditday: Optional[int] = None
+    due_date: Optional[str] = None            # YYYY-MM-DD
+    car_numberplate: Optional[str] = None
+    items: Optional[list[InvoiceItemIn]] = None
+
 # ===== รายการสินค้าในใบกำกับ =====
 @app.get("/api/invoices/{inv_id}/items")
 def api_invoice_items(inv_id: int):
@@ -343,6 +371,103 @@ def api_invoice_items(inv_id: int):
                 "amount": float(amount or 0)
             })
         return JSONResponse(content=jsonable_encoder(data))
+    finally:
+        db.close()
+
+def api_invoice_detail(inv_id: int):
+    db = SessionLocal()
+    try:
+        inv = db.query(models.Invoice).filter(models.Invoice.idx == inv_id).first()
+        if not inv:
+            raise HTTPException(status_code=404, detail="invoice not found")
+
+        head = {
+            "idx": inv.idx,
+            "invoice_number": inv.invoice_number,
+            "invoice_date": inv.invoice_date.isoformat() if inv.invoice_date else None,
+            "fname": inv.fname,
+            "personid": inv.personid,
+            "tel": inv.tel,
+            "mobile": inv.mobile,
+            "cf_personaddress": inv.cf_personaddress,
+            "cf_personzipcode": inv.cf_personzipcode,
+            "cf_provincename": inv.cf_provincename,
+            "cf_taxid": inv.cf_taxid,
+            "po_number": inv.po_number,
+            "grn_number": inv.grn_number,
+            "dn_number": inv.dn_number,
+            "fmlpaymentcreditday": inv.fmlpaymentcreditday,
+            "due_date": inv.due_date.isoformat() if inv.due_date else None,
+            "car_numberplate": inv.car_numberplate,
+        }
+
+        items = []
+        for it in inv.items:
+            items.append({
+                "idx": it.idx,
+                "cf_itemid": it.cf_itemid,
+                "cf_itemname": it.cf_itemname,
+                "quantity": float(it.quantity or 0),
+                "unit_price": float(it.cf_itempricelevel_price or 0),
+                "amount": float(it.amount or 0)
+            })
+        return {"invoice": head, "items": items}
+    finally:
+        db.close()
+
+# ====== แก้ไขหัวบิล + แทนที่รายการสินค้าแบบ bulk ======
+@app.put("/api/invoices/{inv_id}")
+def api_update_invoice(inv_id: int, payload: InvoiceUpdate):
+    db = SessionLocal()
+    try:
+        inv = db.query(models.Invoice).filter(models.Invoice.idx == inv_id).first()
+        if not inv:
+            raise HTTPException(status_code=404, detail="invoice not found")
+
+        # อัปเดตหัวบิล (อัปเดตเฉพาะฟิลด์ที่ส่งมา)
+        for field in [
+            "invoice_number","fname","personid","tel","mobile",
+            "cf_personaddress","cf_personzipcode","cf_provincename","cf_taxid",
+            "po_number","grn_number","dn_number",
+            "fmlpaymentcreditday","car_numberplate"
+        ]:
+            val = getattr(payload, field)
+            if val is not None:
+                setattr(inv, field, val)
+
+        if payload.invoice_date is not None:
+            inv.invoice_date = _parse_ymd(payload.invoice_date)
+        if payload.due_date is not None:
+            inv.due_date = _parse_ymd(payload.due_date)
+
+        # ถ้ามี items → ลบของเดิม แล้วใส่ใหม่ทั้งหมด (ง่ายและปลอดภัย)
+        if payload.items is not None:
+            db.query(models.InvoiceItem).filter(models.InvoiceItem.invoice_number == inv_id).delete()
+            order = 1
+            for it in payload.items:
+                qty = float(it.quantity or 0)
+                price = float(it.unit_price or 0)
+                db.add(models.InvoiceItem(
+                    invoice_number=inv_id,
+                    personid=inv.personid,
+                    cf_itemid=it.cf_itemid,
+                    cf_itemname=it.cf_itemname,
+                    cf_unitname=None,
+                    cf_itempricelevel_price=price,
+                    cf_items_ordinary=order,
+                    quantity=qty,
+                    amount=qty*price
+                ))
+                order += 1
+
+        db.commit()
+        return {"ok": True}
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
 
