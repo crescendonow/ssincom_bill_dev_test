@@ -279,20 +279,62 @@ function collectFormData() {
   };
 }
 
-async function previewInvoice(evt) {
+function previewInvoice(evt) {
   if (evt) evt.preventDefault();
-  const payload = collectFormData();
 
-  // variant fetch('/preview', ...)
-  invoice.variant = document.getElementById('variant')?.value || 'invoice_original';
+  const formEl = document.getElementById("invoice_form");
+  const fd = new FormData(formEl);
 
-  const res = await fetch('/preview', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+  // แปลงวันที่ → YYYY-MM-DD
+  let dateStr = fd.get("invoice_date");
+  if (dateStr) {
+    dateStr = formatDateToISO(dateStr);
+  }
+
+  // รวบรวมหัวเอกสาร
+  const invoice = {
+    invoice_number: fd.get("invoice_number"),
+    invoice_date: dateStr,
+    personid: fd.get("personid"),
+    grn_number: fd.get("grn_number"),
+    dn_number: fd.get("dn_number"),
+    po_number: fd.get("po_number"),
+    tel: fd.get("tel"),
+    mobile: fd.get("mobile"),
+    customer_name: fd.get("customer_name"),
+    customer_taxid: fd.get("customer_taxid"),
+    customer_address: fd.get("customer_address"),
+    fmlpaymentcreditday: fd.get("fmlpaymentcreditday"),
+    due_date: fd.get("due_date"),
+    car_numberplate: fd.get("car_numberplate"),
+    items: [],
+    // ✅ ใส่ชนิดเอกสารลง payload
+    variant: document.getElementById("variant")?.value || "invoice_original"
+  };
+
+  // รายการสินค้า
+  document.querySelectorAll("#items .item-row").forEach(row => {
+    const product_code = row.querySelector('[name="product_code"]').value;
+    const description = row.querySelector('[name="description"]').value;
+    const quantity = parseFloat(row.querySelector('[name="quantity"]').value || 0);
+    const unit_price = parseFloat(row.querySelector('[name="unit_price"]').value || 0);
+    if (product_code || description) {
+      invoice.items.push({ product_code, description, quantity, unit_price });
+    }
   });
-  // …จัดการเปิดหน้า preview ตามเดิม…
 }
+
+// ส่งไปเรนเดอร์ invoice.html
+fetch("/preview", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(invoice)
+})
+  .then(r => r.text())
+  .then(html => {
+    const w = window.open("", "_blank");
+    w.document.open(); w.document.write(html); w.document.close();
+  });
 
 // ------- Preview & Save (with GRN/DN included in preview) -------
 async function saveInvoice() {
@@ -321,63 +363,6 @@ async function saveInvoice() {
   }
   const data = await res.json();
   alert("บันทึกสำเร็จ เลขที่: " + data.invoice_number);
-}
-
-
-function previewInvoice() {
-  const formEl = document.getElementById("invoice_form");
-  const fd = new FormData(formEl);
-  let dateStr = fd.get("invoice_date");
-  if (dateStr) {
-    dateStr = formatDateToISO(dateStr);
-  }
-
-
-  const invoice = {
-    invoice_number: fd.get("invoice_number"),
-    invoice_date: dateStr,
-    personid: fd.get("personid"),
-    grn_number: fd.get("grn_number"), // ✅ included
-    dn_number: fd.get("dn_number"),   // ✅ included
-    po_number: fd.get("po_number"),
-    tel: fd.get('tel'),
-    mobile: fd.get('mobile'),
-    customer_name: fd.get("customer_name"),
-    customer_taxid: fd.get("customer_taxid"),
-    customer_address: fd.get("customer_address"),
-    fmlpaymentcreditday: fd.get("fmlpaymentcreditday"),
-    due_date: fd.get("due_date"),
-    car_numberplate: fd.get("car_numberplate"),
-    items: []
-  };
-
-  document.querySelectorAll("#items .item-row").forEach(row => {
-    const product_code = row.querySelector('[name="product_code"]').value;
-    const description = row.querySelector('[name="description"]').value;
-    const quantity = parseFloat(row.querySelector('[name="quantity"]').value || 0);
-    const unit_price = parseFloat(row.querySelector('[name="unit_price"]').value || 0);
-    if (product_code || description) {
-      invoice.items.push({ product_code, description, quantity, unit_price });
-    }
-    // คำนวณยอดรวมจาก items ตรงนี้
-    const total_amount = invoice.items.reduce((sum, it) => {
-      const q = isFinite(it.quantity) ? it.quantity : 0;
-      const p = isFinite(it.unit_price) ? it.unit_price : 0;
-      return sum + q * p;
-    }, 0);
-    invoice.total_amount = Number(total_amount.toFixed(2));
-  });
-
-  fetch("/preview", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(invoice)
-  })
-    .then(r => r.text())
-    .then(html => {
-      const w = window.open("", "_blank");
-      w.document.open(); w.document.write(html); w.document.close();
-    });
 }
 
 (function () {
