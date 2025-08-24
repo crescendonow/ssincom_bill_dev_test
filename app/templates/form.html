@@ -191,7 +191,13 @@
           </select>
           <button type="button" onclick="previewInvoice(event)" class="px-4 py-2 rounded bg-gray-600 text-white">🔍
             Preview</button>
-          <button type="button" onclick="saveInvoice()" class="px-4 py-2 rounded bg-blue-600 text-white">✅ Save</button>
+          <!-- ✅ ปุ่ม Save (สร้างใหม่) -->
+          <button type="button" id="btnSave" onclick="saveInvoice()" class="px-4 py-2 rounded bg-blue-600 text-white">✅
+            Save</button>
+
+          <!-- ✅ ปุ่ม Edit (อัปเดต) — ซ่อนไว้ก่อน แล้วค่อยโชว์เมื่อมี ?edit= -->
+          <button type="button" id="btnUpdate" onclick="updateInvoice()"
+            class="px-4 py-2 rounded bg-amber-600 text-white hidden">✏️ Update</button>
         </div>
         <!-- Product Selection Modal -->
         <div id="productModal" tabindex="-1" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 overflow-y-auto">

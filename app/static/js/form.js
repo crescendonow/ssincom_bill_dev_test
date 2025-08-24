@@ -2,6 +2,13 @@
 document.addEventListener("DOMContentLoaded", async () => {
   const url = new URL(location.href);
   const editId = url.searchParams.get("edit");
+
+  // toggle ปุ่ม
+  const btnUpdate = document.getElementById('btnUpdate');
+  const btnSave   = document.getElementById('btnSave');
+  if (btnUpdate) btnUpdate.classList.toggle('hidden', !editId);
+  if (btnSave)   btnSave.classList.toggle('hidden', !!editId);
+
   if (!editId) return;
 
   // พยายามอ่านจาก sessionStorage ก่อน (เร็วกว่า)
@@ -378,6 +385,89 @@ async function saveInvoice() {
   alert("บันทึกสำเร็จ เลขที่: " + data.invoice_number);
 }
 
+//-----------------------edit invoice function --------------------//
+function buildUpdatePayload() {
+  // รวบรวมค่าจากฟอร์ม (ใช้ตัวช่วยเดิมก็ได้)
+  const v = id => document.getElementById(id)?.value ?? '';
+
+  // ให้แน่ใจว่า due_date ถูกคำนวณแล้ว
+  computeAndFillDueDate();
+
+  // map -> schema ของ InvoiceUpdate ใน backend
+  const payload = {
+    invoice_number: v('invoice_number'),
+    invoice_date: formatDateToISO(v('invoice_date')) || v('invoice_date') || null,
+
+    // ชื่อฟิลด์ฝั่ง DB คือ fname (ชื่อลูกค้า)
+    fname: v('customer_name'),
+
+    personid: v('personid'),
+    tel: v('tel'),
+    mobile: v('mobile'),
+    cf_personaddress: v('customer_address'),
+    cf_personzipcode: v('cf_personzipcode'),
+    cf_provincename: v('cf_provincename'),
+    cf_taxid: v('customer_taxid'),
+
+    po_number: v('po_number'),
+    grn_number: v('grn_number'),
+    dn_number: v('dn_number'),
+    fmlpaymentcreditday: (v('fmlpaymentcreditday') ? parseInt(v('fmlpaymentcreditday'), 10) : null),
+    due_date: v('due_date') || null,
+    car_numberplate: v('car_numberplate'),
+
+    // สินค้า: map เป็น {cf_itemid, cf_itemname, quantity, unit_price}
+    items: []
+  };
+
+  document.querySelectorAll('#items .item-row').forEach(row => {
+    const product_code = row.querySelector('.product_code')?.value || '';
+    const description  = row.querySelector('.description')?.value || '';
+    const quantity     = parseFloat(row.querySelector('.quantity')?.value || 0);
+    const unit_price   = parseFloat(row.querySelector('.unit_price')?.value || 0);
+
+    // เพิ่มเฉพาะแถวที่มีข้อมูล
+    if (product_code || description) {
+      payload.items.push({
+        cf_itemid:   product_code,
+        cf_itemname: description,
+        quantity,
+        unit_price
+      });
+    }
+  });
+
+  return payload;
+}
+
+async function updateInvoice() {
+  const editId = new URL(location.href).searchParams.get("edit");
+  if (!editId) { alert('ไม่พบรหัสสำหรับแก้ไข'); return; }
+
+  const payload = buildUpdatePayload();
+
+  try {
+    const res = await fetch(`/api/invoices/${editId}`, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const t = await res.text();
+      throw new Error(t || 'อัปเดตไม่สำเร็จ');
+    }
+    // เคลียร์ cache ที่อาจเก็บจากหน้า summary
+    sessionStorage.removeItem('invoice_edit_data');
+    alert('อัปเดตเรียบร้อย');
+  } catch (e) {
+    console.error(e);
+    alert('ผิดพลาด: ' + e.message);
+  }
+}
+
+// export ให้เรียกจากปุ่ม
+window.updateInvoice = updateInvoice;
+
 (function () {
   // mm -> px (อิง 96dpi)
   const mmToPx = mm => (mm / 25.4) * 96;
@@ -589,4 +679,6 @@ window.selectCustomer = selectCustomer;
 window.previewInvoice = previewInvoice;
 window.saveInvoice = saveInvoice;
 window.filterProducts = filterProducts;
+window.location.href = '/summary_invoices.html';
+
 
