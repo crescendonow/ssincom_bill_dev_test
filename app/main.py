@@ -470,6 +470,49 @@ def api_update_invoice(inv_id: int, payload: InvoiceUpdate):
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
+        
+# ===== รายละเอียดบิล (หัวบิล + รายการ) =====
+@app.get("/api/invoices/{inv_id}/detail")
+def api_invoice_detail(inv_id: int):
+    db = SessionLocal()
+    try:
+        inv = db.query(models.Invoice).filter(models.Invoice.idx == inv_id).first()
+        if not inv:
+            raise HTTPException(status_code=404, detail="invoice not found")
+
+        head = {
+            "idx": inv.idx,
+            "invoice_number": inv.invoice_number,
+            "invoice_date": inv.invoice_date.isoformat() if inv.invoice_date else None,
+            "personid": inv.personid,
+            "customer_name": inv.fname,
+            "customer_taxid": inv.cf_taxid,
+            "customer_address": inv.cf_personaddress,
+            "cf_personzipcode": inv.cf_personzipcode,
+            "cf_provincename": inv.cf_provincename,
+            "tel": inv.tel,
+            "mobile": inv.mobile,
+            "po_number": inv.po_number,
+            "grn_number": inv.grn_number,
+            "dn_number": inv.dn_number,
+            "fmlpaymentcreditday": inv.fmlpaymentcreditday,
+            "due_date": inv.due_date.isoformat() if inv.due_date else None,
+            "car_numberplate": inv.car_numberplate,
+        }
+
+        items = []
+        for it in inv.items:
+            items.append({
+                "idx": it.idx,
+                "cf_itemid": it.cf_itemid,
+                "cf_itemname": it.cf_itemname,
+                "quantity": float(it.quantity or 0),
+                "unit_price": float(it.cf_itempricelevel_price or 0),
+                "amount": float(it.amount or 0),
+            })
+        return {"invoice": head, "items": items}
+    finally:
+        db.close()
 
 # ========= API summary =========
 @app.get("/api/invoices/summary")

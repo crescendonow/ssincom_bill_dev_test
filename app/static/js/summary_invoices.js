@@ -3,7 +3,8 @@ const API_URL = "/api/invoices/summary";
 const API_LIST = "/api/invoices";
 const API_ITEMS = (id) => `/api/invoices/${id}/items`;
 const API_DETAIL = (id) => `/api/invoices/${id}/detail`;
-const API_SAVE   = (id) => `/api/invoices/${id}`;
+const API_SAVE = (id) => `/api/invoices/${id}`;
+
 
 // === Utilities ===
 const fmtNum = (n) =>
@@ -235,12 +236,12 @@ async function loadAllInvoices() {
 }
 
 function renderAllTable() {
-  const body = document.getElementById("allBody");
-  body.innerHTML = "";
+    const body = document.getElementById("allBody");
+    body.innerHTML = "";
 
-  for (const r of state.allRows) {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
+    for (const r of state.allRows) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
       <td class="px-3 py-2 text-sm border-b">${r.invoice_date ?? "-"}</td>
       <td class="px-3 py-2 text-sm border-b">${r.invoice_number ?? "-"}</td>
       <td class="px-3 py-2 text-sm border-b">${r.fname ?? "-"}</td>
@@ -250,26 +251,33 @@ function renderAllTable() {
       <td class="px-3 py-2 text-sm text-right border-b">${fmtNum(r.grand)}</td>
       <td class="px-3 py-2 text-sm text-center border-b">
         <div class="inline-flex gap-2">
-          <button class="px-3 py-1 rounded bg-white border hover:bg-gray-50" data-edit="${r.idx}">ดู/แก้ไข</button>
+          <button class="px-3 py-1 rounded bg-white border hover:bg-green-50" data-edit="${r.idx}">ดู/แก้ไข</button>
           <button class="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700" data-items="${r.idx}">สินค้า</button>
         </div>
       </td>
     `;
-    body.appendChild(tr);
-  }
+        body.appendChild(tr);
+    }
 
-  body.querySelectorAll("button[data-items]").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const id = btn.getAttribute("data-items");
-      await openItemsModal(id);
+    body.querySelectorAll("button[data-items]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+            const id = btn.getAttribute("data-items");
+            await openItemsModal(id);
+        });
     });
-  });
-  body.querySelectorAll("button[data-edit]").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const id = btn.getAttribute("data-edit");
-      await openEditModal(id);
+
+    body.querySelectorAll("button[data-edit]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+            const id = btn.getAttribute("data-edit");
+            // โหลดรายละเอียดบิล
+            const res = await fetch(API_DETAIL(id), { headers: { "Accept": "application/json" } });
+            if (!res.ok) { alert("โหลดรายละเอียดบิลไม่สำเร็จ"); return; }
+            const detail = await res.json(); // {invoice:{...}, items:[...]}
+            // เก็บลง sessionStorage แล้วไปหน้า form.html
+            sessionStorage.setItem("invoice_edit_data", JSON.stringify(detail));
+            window.location.href = `/form.html?edit=${id}`;
+        });
     });
-  });
 }
 
 async function openItemsModal(invId) {
@@ -306,136 +314,136 @@ function toggleModal(show) {
 // ====== Edit Modal for summary invoice ======
 let currentEditId = null;
 
-document.getElementById("editClose").addEventListener("click", ()=>toggleEdit(false));
-document.getElementById("em_close2").addEventListener("click", ()=>toggleEdit(false));
+document.getElementById("editClose").addEventListener("click", () => toggleEdit(false));
+document.getElementById("em_close2").addEventListener("click", () => toggleEdit(false));
 document.getElementById("em_save").addEventListener("click", saveEdit);
-document.getElementById("em_addItem").addEventListener("click", ()=> addItemRow());
+document.getElementById("em_addItem").addEventListener("click", () => addItemRow());
 
-function toggleEdit(show){
-  document.getElementById("editModal").classList.toggle("hidden", !show);
-  if (show){
-    document.getElementById("editModal").classList.add("flex");
-  } else {
-    document.getElementById("em_itemsBody").innerHTML = "";
-    currentEditId = null;
-  }
+function toggleEdit(show) {
+    document.getElementById("editModal").classList.toggle("hidden", !show);
+    if (show) {
+        document.getElementById("editModal").classList.add("flex");
+    } else {
+        document.getElementById("em_itemsBody").innerHTML = "";
+        currentEditId = null;
+    }
 }
 
-async function openEditModal(invId){
-  try{
-    const res = await fetch(API_DETAIL(invId), { headers: {"Accept":"application/json"} });
-    if (!res.ok) throw new Error(await res.text());
-    const data = await res.json();
+async function openEditModal(invId) {
+    try {
+        const res = await fetch(API_DETAIL(invId), { headers: { "Accept": "application/json" } });
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
 
-    currentEditId = invId;
-    fillEditHead(data.invoice || {});
-    fillEditItems(data.items || []);
-    toggleEdit(true);
-  }catch(err){
-    console.error(err);
-    alert("ดึงรายละเอียดใบกำกับไม่สำเร็จ");
-  }
+        currentEditId = invId;
+        fillEditHead(data.invoice || {});
+        fillEditItems(data.items || []);
+        toggleEdit(true);
+    } catch (err) {
+        console.error(err);
+        alert("ดึงรายละเอียดใบกำกับไม่สำเร็จ");
+    }
 }
 
-function fillEditHead(h){
-  document.getElementById("em_invoice_number").value = h.invoice_number ?? "";
-  document.getElementById("em_invoice_date").value  = (h.invoice_date ?? "").slice(0,10);
-  document.getElementById("em_po_number").value     = h.po_number ?? "";
-  document.getElementById("em_fname").value         = h.fname ?? "";
-  document.getElementById("em_personid").value      = h.personid ?? "";
-  document.getElementById("em_taxid").value         = h.cf_taxid ?? "";
-  document.getElementById("em_address").value       = h.cf_personaddress ?? "";
-  document.getElementById("em_zipcode").value       = h.cf_personzipcode ?? "";
-  document.getElementById("em_province").value      = h.cf_provincename ?? "";
-  document.getElementById("em_tel").value           = h.tel ?? "";
-  document.getElementById("em_mobile").value        = h.mobile ?? "";
-  document.getElementById("em_creditday").value     = h.fmlpaymentcreditday ?? "";
-  document.getElementById("em_due_date").value      = (h.due_date ?? "").slice(0,10);
-  document.getElementById("em_car_plate").value     = h.car_numberplate ?? "";
+function fillEditHead(h) {
+    document.getElementById("em_invoice_number").value = h.invoice_number ?? "";
+    document.getElementById("em_invoice_date").value = (h.invoice_date ?? "").slice(0, 10);
+    document.getElementById("em_po_number").value = h.po_number ?? "";
+    document.getElementById("em_fname").value = h.fname ?? "";
+    document.getElementById("em_personid").value = h.personid ?? "";
+    document.getElementById("em_taxid").value = h.cf_taxid ?? "";
+    document.getElementById("em_address").value = h.cf_personaddress ?? "";
+    document.getElementById("em_zipcode").value = h.cf_personzipcode ?? "";
+    document.getElementById("em_province").value = h.cf_provincename ?? "";
+    document.getElementById("em_tel").value = h.tel ?? "";
+    document.getElementById("em_mobile").value = h.mobile ?? "";
+    document.getElementById("em_creditday").value = h.fmlpaymentcreditday ?? "";
+    document.getElementById("em_due_date").value = (h.due_date ?? "").slice(0, 10);
+    document.getElementById("em_car_plate").value = h.car_numberplate ?? "";
 }
 
-function fillEditItems(items){
-  const body = document.getElementById("em_itemsBody");
-  body.innerHTML = "";
-  for (const it of items){
-    addItemRow(it);
-  }
+function fillEditItems(items) {
+    const body = document.getElementById("em_itemsBody");
+    body.innerHTML = "";
+    for (const it of items) {
+        addItemRow(it);
+    }
 }
 
-function addItemRow(it={}){
-  const body = document.getElementById("em_itemsBody");
-  const tr = document.createElement("tr");
+function addItemRow(it = {}) {
+    const body = document.getElementById("em_itemsBody");
+    const tr = document.createElement("tr");
 
-  tr.innerHTML = `
+    tr.innerHTML = `
     <td class="px-2 py-1 border-b"><input class="w-full border rounded px-2 py-1" value="${it.cf_itemid ?? ''}"></td>
     <td class="px-2 py-1 border-b"><input class="w-full border rounded px-2 py-1" value="${it.cf_itemname ?? ''}"></td>
     <td class="px-2 py-1 border-b text-right"><input class="w-24 text-right border rounded px-2 py-1" value="${Number(it.quantity ?? 0)}"></td>
     <td class="px-2 py-1 border-b text-right"><input class="w-28 text-right border rounded px-2 py-1" value="${Number(it.unit_price ?? 0)}"></td>
-    <td class="px-2 py-1 border-b text-right amount-cell">${fmtNum(Number(it.amount ?? (Number(it.quantity||0)*Number(it.unit_price||0))))}</td>
+    <td class="px-2 py-1 border-b text-right amount-cell">${fmtNum(Number(it.amount ?? (Number(it.quantity || 0) * Number(it.unit_price || 0))))}</td>
     <td class="px-2 py-1 border-b text-center">
       <button class="px-2 py-1 rounded bg-white border hover:bg-gray-50 btn-row-del">ลบ</button>
     </td>
   `;
-  body.appendChild(tr);
+    body.appendChild(tr);
 
-  const qty = tr.children[2].querySelector("input");
-  const price = tr.children[3].querySelector("input");
-  const amtCell = tr.querySelector(".amount-cell");
-  function recalc(){ 
-    const q = parseFloat(qty.value || 0);
-    const p = parseFloat(price.value || 0);
-    amtCell.textContent = fmtNum(q*p);
-  }
-  qty.addEventListener("input", recalc);
-  price.addEventListener("input", recalc);
+    const qty = tr.children[2].querySelector("input");
+    const price = tr.children[3].querySelector("input");
+    const amtCell = tr.querySelector(".amount-cell");
+    function recalc() {
+        const q = parseFloat(qty.value || 0);
+        const p = parseFloat(price.value || 0);
+        amtCell.textContent = fmtNum(q * p);
+    }
+    qty.addEventListener("input", recalc);
+    price.addEventListener("input", recalc);
 
-  tr.querySelector(".btn-row-del").addEventListener("click", ()=>tr.remove());
+    tr.querySelector(".btn-row-del").addEventListener("click", () => tr.remove());
 }
 
-async function saveEdit(){
-  if (!currentEditId) return;
+async function saveEdit() {
+    if (!currentEditId) return;
 
-  // เก็บหัวบิล
-  const head = {
-    invoice_number: document.getElementById("em_invoice_number").value?.trim() || null,
-    invoice_date:   document.getElementById("em_invoice_date").value || null,
-    po_number:      document.getElementById("em_po_number").value?.trim() || null,
-    fname:          document.getElementById("em_fname").value?.trim() || null,
-    personid:       document.getElementById("em_personid").value?.trim() || null,
-    cf_taxid:       document.getElementById("em_taxid").value?.trim() || null,
-    cf_personaddress: document.getElementById("em_address").value?.trim() || null,
-    cf_personzipcode: document.getElementById("em_zipcode").value?.trim() || null,
-    cf_provincename:  document.getElementById("em_province").value?.trim() || null,
-    tel:            document.getElementById("em_tel").value?.trim() || null,
-    mobile:         document.getElementById("em_mobile").value?.trim() || null,
-    fmlpaymentcreditday: parseInt(document.getElementById("em_creditday").value || 0) || null,
-    due_date:       document.getElementById("em_due_date").value || null,
-    car_numberplate: document.getElementById("em_car_plate").value?.trim() || null,
-  };
+    // เก็บหัวบิล
+    const head = {
+        invoice_number: document.getElementById("em_invoice_number").value?.trim() || null,
+        invoice_date: document.getElementById("em_invoice_date").value || null,
+        po_number: document.getElementById("em_po_number").value?.trim() || null,
+        fname: document.getElementById("em_fname").value?.trim() || null,
+        personid: document.getElementById("em_personid").value?.trim() || null,
+        cf_taxid: document.getElementById("em_taxid").value?.trim() || null,
+        cf_personaddress: document.getElementById("em_address").value?.trim() || null,
+        cf_personzipcode: document.getElementById("em_zipcode").value?.trim() || null,
+        cf_provincename: document.getElementById("em_province").value?.trim() || null,
+        tel: document.getElementById("em_tel").value?.trim() || null,
+        mobile: document.getElementById("em_mobile").value?.trim() || null,
+        fmlpaymentcreditday: parseInt(document.getElementById("em_creditday").value || 0) || null,
+        due_date: document.getElementById("em_due_date").value || null,
+        car_numberplate: document.getElementById("em_car_plate").value?.trim() || null,
+    };
 
-  // เก็บรายการสินค้า
-  const items = [];
-  document.querySelectorAll("#em_itemsBody tr").forEach(tr=>{
-    const tds = tr.querySelectorAll("td");
-    const cf_itemid   = tds[0].querySelector("input").value.trim();
-    const cf_itemname = tds[1].querySelector("input").value.trim();
-    const quantity    = parseFloat(tds[2].querySelector("input").value || 0);
-    const unit_price  = parseFloat(tds[3].querySelector("input").value || 0);
-    items.push({ cf_itemid, cf_itemname, quantity, unit_price });
-  });
-
-  try{
-    const res = await fetch(API_SAVE(currentEditId), {
-      method: "PUT",
-      headers: { "Content-Type":"application/json" },
-      body: JSON.stringify({ ...head, items })
+    // เก็บรายการสินค้า
+    const items = [];
+    document.querySelectorAll("#em_itemsBody tr").forEach(tr => {
+        const tds = tr.querySelectorAll("td");
+        const cf_itemid = tds[0].querySelector("input").value.trim();
+        const cf_itemname = tds[1].querySelector("input").value.trim();
+        const quantity = parseFloat(tds[2].querySelector("input").value || 0);
+        const unit_price = parseFloat(tds[3].querySelector("input").value || 0);
+        items.push({ cf_itemid, cf_itemname, quantity, unit_price });
     });
-    if (!res.ok) throw new Error(await res.text());
-    toggleEdit(false);
-    await loadAllInvoices();   // รีโหลดตาราง
-    alert("บันทึกเรียบร้อย");
-  }catch(err){
-    console.error(err);
-    alert("บันทึกไม่สำเร็จ: " + err.message);
-  }
+
+    try {
+        const res = await fetch(API_SAVE(currentEditId), {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...head, items })
+        });
+        if (!res.ok) throw new Error(await res.text());
+        toggleEdit(false);
+        await loadAllInvoices();   // รีโหลดตาราง
+        alert("บันทึกเรียบร้อย");
+    } catch (err) {
+        console.error(err);
+        alert("บันทึกไม่สำเร็จ: " + err.message);
+    }
 }

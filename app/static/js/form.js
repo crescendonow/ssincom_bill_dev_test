@@ -1,3 +1,62 @@
+//------------- check edit -------------------//
+document.addEventListener("DOMContentLoaded", async () => {
+  const url = new URL(location.href);
+  const editId = url.searchParams.get("edit");
+  if (!editId) return;
+
+  // พยายามอ่านจาก sessionStorage ก่อน (เร็วกว่า)
+  let data = null;
+  try { data = JSON.parse(sessionStorage.getItem("invoice_edit_data") || "null"); } catch {}
+  if (!data) {
+    const res = await fetch(`/api/invoices/${editId}/detail`);
+    if (!res.ok) { alert("โหลดรายละเอียดบิลไม่สำเร็จ"); return; }
+    data = await res.json();
+  }
+
+  fillInvoiceForm(data.invoice);
+  fillInvoiceItems(data.items);
+});
+
+function setVal(id, v){ const el = document.getElementById(id); if (el) el.value = v ?? ""; }
+
+function fillInvoiceForm(h) {
+  setVal("invoice_number", h.invoice_number);
+  setVal("invoice_date", h.invoice_date);           // YYYY-MM-DD
+  setVal("personid", h.personid);
+  setVal("customer_name", h.customer_name);
+  setVal("customer_taxid", h.customer_taxid);
+  setVal("customer_address", h.customer_address);
+  setVal("cf_personzipcode", h.cf_personzipcode);
+  setVal("cf_provincename", h.cf_provincename);
+  setVal("tel", h.tel);
+  setVal("mobile", h.mobile);
+  setVal("po_number", h.po_number);
+  setVal("grn_number", h.grn_number);
+  setVal("dn_number", h.dn_number);
+  setVal("fmlpaymentcreditday", h.fmlpaymentcreditday);
+  setVal("due_date", h.due_date);
+  setVal("car_numberplate", h.car_numberplate);
+}
+
+function fillInvoiceItems(items) {
+  const wrap = document.getElementById("items");
+  wrap.innerHTML = "";
+  (items || []).forEach(it => {
+    const div = document.createElement("div");
+    div.className = "item-row flex gap-2 items-center mb-2";
+    div.innerHTML = `
+      <input name="product_code" class="product_code w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" value="${it.cf_itemid ?? ""}">
+      <input name="description" class="description flex-1 min-w-[120px] bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5" value="${it.cf_itemname ?? ""}">
+      <input name="quantity" type="number" step="0.01" class="quantity w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" value="${it.quantity ?? 0}">
+      <input name="unit_price" type="number" step="0.01" class="unit_price w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" value="${it.unit_price ?? 0}">
+      <button type="button" onclick="openProductModal(this)" class="text-sm text-blue-600 hover:text-blue-800 px-2">🔍 ค้นหา</button>
+      <button type="button" onclick="removeItem(this)" class="text-red-600 hover:text-red-800 font-semibold px-2">🗑️</button>
+    `;
+    wrap.appendChild(div);
+  });
+  updateTotal && updateTotal();
+}
+
 let customers = [];
 
 // Load customers (for autofill)
