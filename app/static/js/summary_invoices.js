@@ -448,4 +448,6 @@ async function saveEdit() {
     }
 }
 
+payload.variant = document.getElementById('variant')?.value || 'invoice_original'; 
+// หรือกำหนดเป็น 'invoice_original' ไปเลยถ้าไม่มีตัวเลือกบนหน้านั้น
 window.location.href = `/form?edit=${id}`;
