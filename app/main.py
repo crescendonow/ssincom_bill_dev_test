@@ -39,16 +39,22 @@ app.add_middleware(
 # กำหนดหน้า/เส้นทางที่ต้องล็อกอินก่อน (เพิ่มได้ตามต้องการ)
 PROTECTED_PATHS = {"/", "/dashboard", "/dashboard.html"}
 
-# ✅ Middleware บังคับล็อกอิน
+ALLOW_PREFIXES = ("/login", "/logout", "/healthz", "/static", "/api")
+
 @app.middleware("http")
 async def require_login_for_pages(request: Request, call_next):
     path = request.url.path
-    if path in PROTECTED_PATHS:
-        if not request.session.get("user"):
-            next_path = path
-            if request.url.query:
-                next_path += "?" + request.url.query
-            return RedirectResponse(url=f"/login?next={quote(next_path)}", status_code=303)
+    # ผ่านเลยถ้าเป็น static/api/login/healthz
+    if path.startswith(ALLOW_PREFIXES):
+        return await call_next(request)
+
+    # ถ้ายังไม่ได้ล็อกอิน → เด้งไปหน้า login
+    if not request.session.get("user"):
+        next_path = path
+        if request.url.query:
+            next_path += "?" + request.url.query
+        return RedirectResponse(url=f"/login?next={quote(next_path)}", status_code=303)
+
     return await call_next(request)
 
 # ✅ เพจล็อกอิน
