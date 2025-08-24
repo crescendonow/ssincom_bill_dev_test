@@ -396,7 +396,7 @@ function buildUpdatePayload() {
   // map -> schema ของ InvoiceUpdate ใน backend
   const payload = {
     invoice_number: v('invoice_number'),
-    invoice_date: formatDateToISO(v('invoice_date')),
+
 
     // ชื่อฟิลด์ฝั่ง DB คือ fname (ชื่อลูกค้า)
     fname: v('customer_name'),
@@ -413,12 +413,18 @@ function buildUpdatePayload() {
     grn_number: v('grn_number'),
     dn_number: v('dn_number'),
     fmlpaymentcreditday: (v('fmlpaymentcreditday') ? parseInt(v('fmlpaymentcreditday'), 10) : null),
-    due_date: formatDateToISO(v('due_date')),
+
     car_numberplate: v('car_numberplate'),
 
     // สินค้า: map เป็น {cf_itemid, cf_itemname, quantity, unit_price}
     items: []
   };
+  const idISO = normalizeDateInputValue('invoice_date'); // แปลงและเขียนกลับ input
+  const ddISO = normalizeDateInputValue('due_date');     // เช่นกัน
+
+  // ใส่ลง payload เฉพาะเมื่อแปลงได้
+  if (idISO) payload.invoice_date = idISO;
+  if (ddISO) payload.due_date = ddISO;
 
   document.querySelectorAll('#items .item-row').forEach(row => {
     const product_code = row.querySelector('.product_code')?.value || '';
@@ -586,28 +592,21 @@ function parseInvoiceDateToDate(dateStr) {
 }
 
 function computeAndFillDueDate() {
-  const dateInput = document.getElementById("invoice_date")?.value || "";
-  const pay = document.getElementById("fm_payment")?.value || "cash";
-  const creditDays = parseInt(document.getElementById("fmlpaymentcreditday")?.value || "0", 10) || 0;
-  const out = document.getElementById("due_date");
-  if (!out) return;
+  const invISO = normalizeDateInputValue('invoice_date'); // แปลง/บันทึกกลับเป็น ISO ในช่อง
+  const credit = parseInt(document.getElementById('fmlpaymentcreditday')?.value || '0', 10) || 0;
+  if (!invISO) return; // ไม่มีวันที่เริ่ม → ไม่คำนวณ
 
-  const base = parseInvoiceDateToDate(dateInput);
-  if (!base) { out.value = ""; return; }
-
-  let due = new Date(base);
-  if (pay === "credit" && creditDays > 0) {
-    due.setDate(due.getDate() + creditDays);
-  }
-  // แสดงเป็น YYYY-MM-DD (ส่งให้ backend ก็เข้าใจง่าย)
-  out.value = due.toISOString().slice(0, 10);
+  const base = new Date(invISO + 'T00:00:00Z');
+  base.setUTCDate(base.getUTCDate() + credit);
+  const dueISO = base.toISOString().slice(0, 10);
+  const dueEl = document.getElementById('due_date');
+  if (dueEl) dueEl.value = dueISO;
 }
 
-// ผูก event
-["invoice_date", "fm_payment", "fmlpaymentcreditday"].forEach(id => {
-  const el = document.getElementById(id);
-  if (el) el.addEventListener("change", computeAndFillDueDate);
-  if (el) el.addEventListener("input", computeAndFillDueDate);
+// ผูก event เมื่อหน้าโหลด
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('invoice_date')?.addEventListener('change', computeAndFillDueDate);
+  document.getElementById('fmlpaymentcreditday')?.addEventListener('input', computeAndFillDueDate);
 });
 
 // คำนวณครั้งแรกตอนโหลดหน้า (เผื่อมีค่า default)
