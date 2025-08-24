@@ -135,6 +135,23 @@
       margin-top: 8px;
     }
 
+    .mb6 {
+      margin-bottom: 6px;
+    }
+
+    .mb8 {
+      margin-bottom: 8px;
+    }
+
+    .mb10 {
+      margin-bottom: 10px;
+    }
+
+    /* กันไว้ เผื่อมี mt6 บนตารางจากของเดิม */
+    .table-frame .items {
+      margin-top: 0 !important;
+    }
+
     .logo {
       height: 70px;
     }
@@ -185,7 +202,9 @@
       border-left: 1.5px solid #0F3F7F;
     }
 
-    .table-frame .items{ margin-top: 0 !important; }
+    .table-frame .items {
+      margin-top: 0 !important;
+    }
 
     /* มุมโค้งบน */
     table.items th:first-child {
@@ -331,7 +350,7 @@
     <hr style="border: 1px solid #0F3F7F; margin: 8px 0;">
 
     <!-- แถวข้อมูลลูกค้า + เลขที่เอกสาร -->
-    <div class="row mt10 align-cols">
+    <div class="row mt10 align-cols mb8">
       <div class="col box-light col-left" style="font-size:14pt;">
         <div class="mt6">รหัสลูกค้า: <b>{{ invoice.customer_code or invoice.personid }}</b></div>
         <div class="mt6">ชื่อลูกค้า: <b>{{ invoice.customer_name }}</b></div>
@@ -355,7 +374,7 @@
 
     <!-- ตารางสินค้า -->
     <div class="table-frame">
-      <table class="items mt6">
+      <table class="items">
         <thead>
           <tr>
             <th class="center" style="width:6%;">ลำดับ</th>
