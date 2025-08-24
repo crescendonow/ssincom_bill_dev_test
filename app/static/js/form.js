@@ -282,6 +282,9 @@ function collectFormData() {
 function previewInvoice(evt) {
   if (evt) evt.preventDefault();
 
+  // คำนวณ due_date ให้เรียบร้อยก่อน
+  computeAndFillDueDate();
+
   const formEl = document.getElementById("invoice_form");
   const fd = new FormData(formEl);
 
@@ -305,11 +308,11 @@ function previewInvoice(evt) {
     customer_taxid: fd.get("customer_taxid"),
     customer_address: fd.get("customer_address"),
     fmlpaymentcreditday: fd.get("fmlpaymentcreditday"),
-    due_date: fd.get("due_date"),
+    due_date: document.getElementById("due_date")?.value || fd.get("due_date"),
     car_numberplate: fd.get("car_numberplate"),
-    items: [],
-    // ✅ ใส่ชนิดเอกสารลง payload
-    variant: document.getElementById("variant")?.value || "invoice_original"
+    // ✅ ใส่ชนิดเอกสาร
+    variant: document.getElementById("variant")?.value || "invoice_original",
+    items: []
   };
 
   // รายการสินค้า
@@ -322,19 +325,29 @@ function previewInvoice(evt) {
       invoice.items.push({ product_code, description, quantity, unit_price });
     }
   });
-}
 
-// ส่งไปเรนเดอร์ invoice.html
-fetch("/preview", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify(invoice)
-})
-  .then(r => r.text())
-  .then(html => {
-    const w = window.open("", "_blank");
-    w.document.open(); w.document.write(html); w.document.close();
-  });
+  // เปิดหน้าต่างไว้ก่อน กัน popup blocker
+  const popup = window.open('about:blank', '_blank');
+
+  // ส่งไปเรนเดอร์ invoice.html (ใช้ endpoint /preview ที่มีอยู่แล้ว)
+  fetch("/preview", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(invoice)
+  })
+    .then(r => r.text())
+    .then(html => {
+      if (!popup) return;
+      popup.document.open();
+      popup.document.write(html);
+      popup.document.close();
+    })
+    .catch(err => {
+      console.error(err);
+      if (popup) popup.close();
+      alert("พรีวิวไม่สำเร็จ");
+    });
+}
 
 // ------- Preview & Save (with GRN/DN included in preview) -------
 async function saveInvoice() {
