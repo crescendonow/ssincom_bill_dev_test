@@ -442,7 +442,9 @@ def api_update_invoice(inv_id: int, payload: InvoiceUpdate):
 
         # ถ้ามี items → ลบของเดิม แล้วใส่ใหม่ทั้งหมด (ง่ายและปลอดภัย)
         if payload.items is not None:
-            db.query(models.InvoiceItem).filter(models.InvoiceItem.invoice_number == inv_id).delete()
+            db.query(models.InvoiceItem)\
+            .filter(cast(models.InvoiceItem.invoice_number, Integer) == inv_id)\
+            .delete()
             order = 1
             for it in payload.items:
                 qty = float(it.quantity or 0)
@@ -470,7 +472,7 @@ def api_update_invoice(inv_id: int, payload: InvoiceUpdate):
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
-        
+
 # ===== รายละเอียดบิล (หัวบิล + รายการ) =====
 @app.get("/api/invoices/{inv_id}/detail")
 def api_invoice_detail(inv_id: int):
@@ -500,16 +502,20 @@ def api_invoice_detail(inv_id: int):
             "car_numberplate": inv.car_numberplate,
         }
 
-        items = []
-        for it in inv.items:
-            items.append({
-                "idx": it.idx,
-                "cf_itemid": it.cf_itemid,
-                "cf_itemname": it.cf_itemname,
-                "quantity": float(it.quantity or 0),
-                "unit_price": float(it.cf_itempricelevel_price or 0),
-                "amount": float(it.amount or 0),
-            })
+        rows = db.query(models.InvoiceItem)\
+         .filter(cast(models.InvoiceItem.invoice_number, Integer) == inv_id)\
+         .order_by(models.InvoiceItem.cf_items_ordinary.asc())\
+         .all()
+
+        items = [{
+            "idx": it.idx,
+            "cf_itemid": it.cf_itemid,
+            "cf_itemname": it.cf_itemname,
+            "quantity": float(it.quantity or 0),
+            "unit_price": float(it.cf_itempricelevel_price or 0),
+            "amount": float(it.amount or 0),
+        } for it in rows]
+
         return {"invoice": head, "items": items}
     finally:
         db.close()
