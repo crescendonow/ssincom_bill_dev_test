@@ -313,11 +313,11 @@
             บริษัท เอส แอนด์ เอส อินคอม จำกัด
           </div>
           <div class="title">S &amp; S INCOM CO., LTD.</div>
-          <div class="muted">69 หมู่ 10 ตำบลพังตรุ อำเภอพนมทวน จังหวัดกาญจนบุรี 71140</div>
-          <div class="muted">โทร. (035) 589 274, (081) 880 8840, (092) 265 9156</div>
+          <div class="muted"><b>69 หมู่ 10 ตำบลพังตรุ อำเภอพนมทวน จังหวัดกาญจนบุรี 71140</b></div>
+          <div class="muted"><b>โทร. (035) 589 274, (081) 880 8840, (092) 265 9156</b></div>
           <!-- ✅ ใส่ id ที่บรรทัดอีเมล -->
           <div class="muted" id="company-email" style="font-size:12pt;">
-            website: www.ssincom.com Email: mailtossincom@gmail.com
+            website: www.ssincom.com <br> Email: mailtossincom@gmail.com
           </div>
         </div>
       </div>
@@ -364,7 +364,14 @@
         <div>เลขที่: <b>{{ invoice.invoice_number }}</b></div>
         <div class="mt6">วันที่: <b>{{ invoice.invoice_date | thaidate }}</b></div>
         <div class="mt6">เลขที่ใบสั่งซื้อ: <b>{{ invoice.po_number }}</b></div>
-        <div class="mt6">เงื่อนไขการชำระเงิน: <b>{{ invoice.fmlpaymentcreditday }}</b></div>
+        <div class="mt6">
+          เงื่อนไขการชำระเงิน:
+          <b>
+            {{ invoice.fmlpaymentcreditday | default('', true) }}
+            {% if invoice.fmlpaymentcreditday %}&nbsp;วัน{% endif %}
+          </b>
+        </div>
+
         <div class="mt6">วันครบกำหนดชำระเงิน: <b>{{ invoice.due_date | default(invoice.invoice_date, true) | thaidate
             }}</b></div>
         <div class="mt6">เลขที่ใบรับสินค้า: <b>{{ invoice.grn_number }}</b></div>
@@ -422,7 +429,7 @@
       <div class="col box-light col-left">
         <div class="muted"><b>หมายเหตุ</b></div>
         <div class="muted" style="line-height:1.25;">
-          โปรดโอเนเงินในนาม <b>“บริษัท เอส แอนด์ เอส อินคอม จำกัด”</b> เท่านั้น
+          โปรดโอนเงินในนาม <b>“บริษัท เอส แอนด์ เอส อินคอม จำกัด”</b> เท่านั้น
           เมื่อพ้นกำหนดการชำระเงิน บริษัทฯ ขอสงวนสิทธิ์คิดดอกเบี้ยอัตราร้อยละ 1.5 ต่อเดือน
           สินค้าที่ยังมิได้ชำระเงินยังเป็นกรรมสิทธิ์ของบริษัท เอส แอนด์ เอส อินคอม จำกัด
           จนกว่าผู้ซื้อจะชำระค่าสินค้าเรียบร้อยแล้ว
