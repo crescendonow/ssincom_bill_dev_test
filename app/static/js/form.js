@@ -679,6 +679,5 @@ window.selectCustomer = selectCustomer;
 window.previewInvoice = previewInvoice;
 window.saveInvoice = saveInvoice;
 window.filterProducts = filterProducts;
-window.location.href = '/summary_invoices.html';
 
 
