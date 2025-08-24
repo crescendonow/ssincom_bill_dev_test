@@ -28,28 +28,32 @@ function bindEvents() {
   const btnReload = document.getElementById('btnReload');
   const prevPage = document.getElementById('prevPage');
   const nextPage = document.getElementById('nextPage');
+  const tbody = document.getElementById('carsTableBody');
 
   // Autocomplete bindings (สำหรับฟอร์มด้านบน)
   const brandInput = document.getElementById('car_brand');
+  if (brandInput) {
+    brandInput.addEventListener('input', debounce(suggestBrands));
+    brandInput.addEventListener('focus', () => brandInput.value && suggestBrands());
+  }
   const provInput = document.getElementById('province');
-  brandInput.addEventListener('input', debounce(suggestBrands));
-  brandInput.addEventListener('focus', () => brandInput.value && suggestBrands());
-  provInput.addEventListener('input', debounce(suggestProvinces));
-  provInput.addEventListener('focus', () => provInput.value && suggestProvinces());
+  if (provInput) {
+    provInput.addEventListener('input', debounce(suggestProvinces));
+    provInput.addEventListener('focus', () => provInput.value && suggestProvinces());
+  }
 
   // ฟอร์มเพิ่มใหม่
-  form.addEventListener('submit', onCreateSubmit);
-  btnReset.addEventListener('click', resetForm);
+  if (form) form.addEventListener('submit', onCreateSubmit);
+  if (btnReset) btnReset.addEventListener('click', resetForm);
 
   // ค้นหา/รีโหลด/เพจจิ้ง
-  btnSearch.addEventListener('click', () => { currentPage = 1; loadCars(); });
-  btnReload.addEventListener('click', () => { document.getElementById('searchText').value = ''; currentPage = 1; loadCars(); });
-  prevPage.addEventListener('click', () => { if (currentPage > 1) { currentPage--; loadCars(); } });
-  nextPage.addEventListener('click', () => { currentPage++; loadCars(true); });
+  if (btnSearch) btnSearch.addEventListener('click', () => { currentPage = 1; loadCars(); });
+  if (btnReload) btnReload.addEventListener('click', () => { document.getElementById('searchText').value = ''; currentPage = 1; loadCars(); });
+  if (prevPage) prevPage.addEventListener('click', () => { if (currentPage > 1) { currentPage--; loadCars(); } });
+  if (nextPage) nextPage.addEventListener('click', () => { currentPage++; loadCars(true); });
 
   // ใช้ event delegation สำหรับปุ่มในตาราง
-  const tbody = document.getElementById('carsTableBody');
-  tbody.addEventListener('click', onTableClick);
+   if (tbody) tbody.addEventListener('click', onTableClick);
 }
 
 // ====== Suggest: car_brand ======
