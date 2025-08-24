@@ -475,10 +475,12 @@ def api_update_invoice(inv_id: int, payload: InvoiceUpdate):
             if val is not None:
                 setattr(inv, field, val)
 
-        if payload.invoice_date is not None:
-            inv.invoice_date = _parse_ymd(payload.invoice_date)
-        if payload.due_date is not None:
-            inv.due_date = _parse_ymd(payload.due_date)
+        d = _parse_ymd(payload.invoice_date) if payload.invoice_date is not None else None
+        if d:
+            inv.invoice_date = d
+        d = _parse_ymd(payload.due_date) if payload.due_date is not None else None  
+        if d:
+            inv.due_date = d
 
         # ถ้ามี items → ลบของเดิม แล้วใส่ใหม่ทั้งหมด (ง่ายและปลอดภัย)
         if payload.items is not None:
