@@ -292,12 +292,17 @@
 
       <!-- ฝั่งขวา -->
       <div id="header-right" style="flex:0 0 auto; text-align:right; align-self:flex-start;">
-        <div class="title" style="font-size:18pt; white-space:nowrap;">
-          ต้นฉบับใบกำกับภาษี/ใบส่งของ/ใบแจ้งหนี้
-        </div>
-        <div class="title" style="font-size:14pt; white-space:nowrap;">
-          TAX INVOICE/DELIVERY ORDER /INVOICE ORIGINAL
-        </div>
+        {% set variant = (invoice.variant if invoice and invoice.variant is defined else 'invoice_original') %}
+        {% set HEADERS = {
+        'invoice_original': ['ต้นฉบับใบกำกับภาษี/ใบส่งของ/ใบแจ้งหนี้', 'TAX INVOICE/DELIVERY ORDER /INVOICE ORIGINAL'],
+        'invoice_copy': ['สำเนาใบกำกับภาษี/ใบส่งของ/ใบแจ้งหนี้', 'COPY TAX INVOICE/DELIVERY ORDER /INVOICE'],
+        'receipt_original': ['ต้นฉบับใบเสร็จรับเงิน', 'RECEIPT ORIGINAL'],
+        'receipt_copy': ['สำเนาใบเสร็จรับเงิน', 'RECEIPT COPY']
+        } %}
+        {% set h = HEADERS.get(variant, HEADERS['invoice_original']) %}
+
+        <div class="title" style="font-size:18pt; white-space:nowrap;">{{ h[0] }}</div>
+        <div class="title" style="font-size:14pt; white-space:nowrap;">{{ h[1] }}</div>
 
         <!-- ✅ เว้นจากบรรทัด TAX... -->
         <div id="tax-label" class="muted" style="margin-top:12px;">เลขประจำตัวผู้เสียภาษีอากร</div>

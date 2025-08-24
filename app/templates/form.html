@@ -182,6 +182,13 @@
 
         <!-- 🔽 Submit close page -->
         <div class="flex gap-3 pt-4">
+          <label for="variant" class="block text-sm mb-1">ชนิดเอกสาร</label>
+          <select id="variant" class="bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
+            <option value="invoice_original">ใบกำกับ/ส่งของ/แจ้งหนี้ (ต้นฉบับ)</option>
+            <option value="invoice_copy">ใบกำกับ/ส่งของ/แจ้งหนี้ (สำเนา)</option>
+            <option value="receipt_original">ใบเสร็จรับเงิน (ต้นฉบับ)</option>
+            <option value="receipt_copy">ใบเสร็จรับเงิน (สำเนา)</option>
+          </select>
           <button type="button" onclick="previewInvoice(event)" class="px-4 py-2 rounded bg-gray-600 text-white">🔍
             Preview</button>
           <button type="button" onclick="saveInvoice()" class="px-4 py-2 rounded bg-blue-600 text-white">✅ Save</button>

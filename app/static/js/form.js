@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // พยายามอ่านจาก sessionStorage ก่อน (เร็วกว่า)
   let data = null;
-  try { data = JSON.parse(sessionStorage.getItem("invoice_edit_data") || "null"); } catch {}
+  try { data = JSON.parse(sessionStorage.getItem("invoice_edit_data") || "null"); } catch { }
   if (!data) {
     const res = await fetch(`/api/invoices/${editId}/detail`);
     if (!res.ok) { alert("โหลดรายละเอียดบิลไม่สำเร็จ"); return; }
@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   fillInvoiceItems(data.items);
 });
 
-function setVal(id, v){ const el = document.getElementById(id); if (el) el.value = v ?? ""; }
+function setVal(id, v) { const el = document.getElementById(id); if (el) el.value = v ?? ""; }
 
 function fillInvoiceForm(h) {
   setVal("invoice_number", h.invoice_number);
@@ -282,6 +282,9 @@ function collectFormData() {
 async function previewInvoice(evt) {
   if (evt) evt.preventDefault();
   const payload = collectFormData();
+
+  // variant fetch('/preview', ...)
+  invoice.variant = document.getElementById('variant')?.value || 'invoice_original';
 
   const res = await fetch('/preview', {
     method: 'POST',
