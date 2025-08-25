@@ -1,106 +1,213 @@
-@page { size: A4; margin: 8mm; }
-
-* { box-sizing: border-box; }
-body {
-  font-family: "TH Sarabun New","Tahoma",sans-serif;
-  font-size: 12pt;
-  color: #0F3F7F;
-  line-height: 1.2;
+@page {
+    size: A4;
+    margin: 8mm;
 }
 
-.row { display:flex; gap:12px; }
-.col { flex:1; }
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "TH Sarabun New", "Tahoma", sans-serif;
+    font-size: 12pt;
+    color: #0F3F7F;
+    line-height: 1.2;
+}
+
+.row {
+    display: flex;
+    gap: 12px;
+}
+
+.col {
+    flex: 1;
+}
 
 .doc {
-  border: 2px solid #0F3F7F;
-  border-radius: 10px;
-  padding: 12px;
-  background: #fff;
+    border: 2px solid #0F3F7F;
+    border-radius: 10px;
+    padding: 12px;
+    background: #fff;
 }
 
 .box {
-  border: 2px solid #0F3F7F;
-  border-radius: 10px;
-  padding: 10px;
-  background: #fff;
+    border: 2px solid #0F3F7F;
+    border-radius: 10px;
+    padding: 10px;
+    background: #fff;
 }
 
 .box-light {
-  border: 1.5px solid #0F3F7F;
-  border-radius: 10px;
-  padding: 8px;
-  background: #fff;
+    border: 1.5px solid #0F3F7F;
+    border-radius: 10px;
+    padding: 8px;
+    background: #fff;
 }
 
 /* ทำให้กล่องซ้าย/ขวาสูงเท่ากัน */
-.align-cols { align-items: stretch; }
-.align-cols .box, .align-cols .box-light { height: 100%; }
+.align-cols {
+    align-items: stretch;
+}
 
-.title { font-weight:700; font-size:16pt; }
-.sub { font-size:11pt; color:#1c5ca5; }
-.right { text-align:right; }
-.center { text-align:center; }
-.muted { color:#1c5ca5; font-size:10pt; }
-.mt6 { margin-top:3px; }
-.mt10 { margin-top:6px; }
-.mt14 { margin-top:8px; }
-.mb6 { margin-bottom:6px; }
-.mb8 { margin-bottom:8px; }
-.mb10 { margin-bottom:10px; }
-.logo { height:70px; }
+.align-cols .box,
+.align-cols .box-light {
+    height: 100%;
+}
+
+.title {
+    font-weight: 700;
+    font-size: 16pt;
+}
+
+.sub {
+    font-size: 11pt;
+    color: #1c5ca5;
+}
+
+.right {
+    text-align: right;
+}
+
+.center {
+    text-align: center;
+}
+
+.muted {
+    color: #1c5ca5;
+    font-size: 10pt;
+}
+
+.mt6 {
+    margin-top: 3px;
+}
+
+.mt10 {
+    margin-top: 6px;
+}
+
+.mt14 {
+    margin-top: 8px;
+}
+
+.mb6 {
+    margin-bottom: 6px;
+}
+
+.mb8 {
+    margin-bottom: 8px;
+}
+
+.mb10 {
+    margin-bottom: 10px;
+}
+
+.logo {
+    height: 70px;
+}
 
 /* ตารางสินค้า */
-.table-frame{
-  border: 1.5px solid #0F3F7F;
-  border-radius: 10px;
-  overflow: hidden; /* ครอบหัวตารางโค้ง */
-  background: #fff;
+.table-frame {
+    border: 1.5px solid #0F3F7F;
+    border-radius: 10px;
+    overflow: hidden;
+    /* ครอบหัวตารางโค้ง */
+    background: #fff;
 }
-.table-frame .items { margin-top: 0 !important; }
 
-table.items { width:100%; border-collapse: collapse; }
-table.items thead th{
-  background:#eef5ff;
-  font-weight:700;
-  padding:6px 8px;
-  text-align:center;
-  white-space:nowrap;
-  border-top:none; /* ให้กรอบเป็นคนวาดเส้นบน */
-  border-bottom:1.5px solid #0F3F7F;
+.table-frame .items {
+    margin-top: 0 !important;
 }
-table.items thead th + th { border-left:1.5px solid #0F3F7F; }
 
-table.items tbody td{
-  padding:8px;
-  vertical-align:top;
-  border-bottom:1px solid #c9d7ef;
+table.items {
+    width: 100%;
+    border-collapse: collapse;
 }
-table.items tbody td + td{ border-left:1px solid #c9d7ef; }
 
-.sumtable { border-collapse: collapse; }
-.sumtable td{
-  border:none;
-  padding:1px 4px;
-  line-height:1.1;
+table.items thead th {
+    background: #eef5ff;
+    font-weight: 700;
+    padding: 6px 8px;
+    text-align: center;
+    white-space: nowrap;
+    border-top: none;
+    /* ให้กรอบเป็นคนวาดเส้นบน */
+    border-bottom: 1.5px solid #0F3F7F;
 }
-.sumtable tr td:first-child { padding-right:14px; }
-.big-amount{ font-size:14pt; font-weight:700; }
+
+table.items thead th+th {
+    border-left: 1.5px solid #0F3F7F;
+}
+
+/* เอาเส้นระหว่างแถวออก */
+table.items tbody td {
+    border-bottom: none !important;
+}
+
+/* ทำเส้นคั่นคอลัมน์ให้หนาขึ้น และใช้สีแบรนด์ */
+table.items thead th+th,
+table.items tbody td+td {
+    border-left: 1.5px solid #0F3F7F !important;
+}
+
+table.items tbody td+td {
+    border-left: 1px solid #c9d7ef;
+}
+
+.sumtable {
+    border-collapse: collapse;
+}
+
+.sumtable td {
+    border: none;
+    padding: 1px 4px;
+    line-height: 1.1;
+}
+
+.sumtable tr td:first-child {
+    padding-right: 14px;
+}
+
+.big-amount {
+    font-size: 14pt;
+    font-weight: 700;
+}
 
 /* ปุ่มพิมพ์ */
-.print-btn{
-  padding:8px 14px;
-  background:#0F3F7F;
-  color:#fff;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
+.print-btn {
+    padding: 8px 14px;
+    background: #0F3F7F;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
 }
 
 /* พิมพ์: ซ่อนปุ่ม ฯลฯ */
-@media print{
-  .noprint, .noprint * { display:none !important; }
-  body { font-size:13pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .doc { padding:6mm; box-shadow:none; }
-  th, td { padding:4px 6px; }
-  .box, .box-light { padding:6px; }
+@media print {
+
+    .noprint,
+    .noprint * {
+        display: none !important;
+    }
+
+    body {
+        font-size: 13pt;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .doc {
+        padding: 6mm;
+        box-shadow: none;
+    }
+
+    th,
+    td {
+        padding: 4px 6px;
+    }
+
+    .box,
+    .box-light {
+        padding: 6px;
+    }
 }
