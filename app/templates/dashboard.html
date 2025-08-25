@@ -11,7 +11,20 @@
   <div class="max-w-6xl mx-auto px-6 py-8">
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-3xl font-bold text-white">Dashboard</h1>
-      <div class="space-x-2">
+
+      <!-- เปลี่ยนเป็น flex + gap เพื่อวางปุ่มรวมกัน -->
+      <div class="flex items-center gap-2">
+        {% if user %}
+        <span class="hidden sm:inline text-sm text-white/90">
+          สวัสดี, <b>{{ user.name }}</b>
+        </span>
+        {% endif %}
+
+        <!-- ✅ ปุ่มออกจากระบบ -->
+        <a href="/logout" class="bg-white text-blue-700 px-4 py-2 rounded hover:bg-gray-100">
+          ออกจากระบบ
+        </a>
+
         <button class="bg-white text-blue-700 px-4 py-2 rounded hover:bg-gray-100">ตัวกรอง</button>
         <button class="bg-white text-blue-700 px-4 py-2 rounded hover:bg-gray-100">ส่งออก</button>
         <a href="/form" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
@@ -19,80 +32,80 @@
         </a>
       </div>
     </div>
+  </div>
 
-    <!-- Summary cards -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-      <div class="bg-white rounded-lg p-4 shadow">
-        <div class="text-sm text-gray-500">ใบกำกับภาษีทั้งหมด</div>
-        <div class="text-2xl font-bold">0</div>
-        <div class="text-green-500 text-sm">+2.5% จากเดือนที่แล้ว</div>
-      </div>
-      <div class="bg-white rounded-lg p-4 shadow">
-        <div class="text-sm text-gray-500">ลูกค้าทั้งหมด</div>
-        <div class="text-2xl font-bold">0</div>
-        <div class="text-green-500 text-sm">+5.2% จากเดือนที่แล้ว</div>
-      </div>
-      <div class="bg-white rounded-lg p-4 shadow">
-        <div class="text-sm text-gray-500">สินค้า/บริการ</div>
-        <div class="text-2xl font-bold">0</div>
-        <div class="text-green-500 text-sm">+3 รายการใหม่</div>
-      </div>
-      <div class="bg-white rounded-lg p-4 shadow">
-        <div class="text-sm text-gray-500">รายได้เดือนนี้</div>
-        <div class="text-2xl font-bold text-blue-600">฿0</div>
-        <div class="text-green-500 text-sm">+12.5% จากเดือนที่แล้ว</div>
+  <!-- Summary cards -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white rounded-lg p-4 shadow">
+      <div class="text-sm text-gray-500">ใบกำกับภาษีทั้งหมด</div>
+      <div class="text-2xl font-bold">0</div>
+      <div class="text-green-500 text-sm">+2.5% จากเดือนที่แล้ว</div>
+    </div>
+    <div class="bg-white rounded-lg p-4 shadow">
+      <div class="text-sm text-gray-500">ลูกค้าทั้งหมด</div>
+      <div class="text-2xl font-bold">0</div>
+      <div class="text-green-500 text-sm">+5.2% จากเดือนที่แล้ว</div>
+    </div>
+    <div class="bg-white rounded-lg p-4 shadow">
+      <div class="text-sm text-gray-500">สินค้า/บริการ</div>
+      <div class="text-2xl font-bold">0</div>
+      <div class="text-green-500 text-sm">+3 รายการใหม่</div>
+    </div>
+    <div class="bg-white rounded-lg p-4 shadow">
+      <div class="text-sm text-gray-500">รายได้เดือนนี้</div>
+      <div class="text-2xl font-bold text-blue-600">฿0</div>
+      <div class="text-green-500 text-sm">+12.5% จากเดือนที่แล้ว</div>
+    </div>
+  </div>
+
+  <!-- Latest invoices -->
+  <div class="bg-white rounded-lg p-6 shadow mb-8">
+    <h2 class="text-lg font-bold mb-2">ใบกำกับภาษีล่าสุด</h2>
+
+    <div class="text-center text-gray-500">
+      <p class="text-base">ยังไม่มีใบกำกับภาษี</p>
+      <p class="mt-2 text-sm">เริ่มสร้างใบกำกับภาษีแรกของคุณ</p>
+
+      <!-- ปุ่มแบบแยกบรรทัด -->
+      <div class="mt-6">
+        <a href="/form"
+          class="inline-block bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 whitespace-nowrap">
+          + สร้างใบกำกับภาษี
+        </a>
       </div>
     </div>
+  </div>
 
-    <!-- Latest invoices -->
-    <div class="bg-white rounded-lg p-6 shadow mb-8">
-      <h2 class="text-lg font-bold mb-2">ใบกำกับภาษีล่าสุด</h2>
+  <!-- Quick actions -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <!-- link to summary -->
+    <a href="/summary_invoices.html"
+      class="bg-white text-center p-6 rounded-lg shadow hover:shadow-md transition block">
+      <div class="text-2xl text-blue-600 mb-2">📃</div>
+      <div class="font-bold">ดูรายการใบกำกับภาษีที่ออก</div>
+      <p class="text-sm text-gray-500">ดูสรุปรายวัน / รายเดือน / รายปี</p>
+    </a>
 
-      <div class="text-center text-gray-500">
-        <p class="text-base">ยังไม่มีใบกำกับภาษี</p>
-        <p class="mt-2 text-sm">เริ่มสร้างใบกำกับภาษีแรกของคุณ</p>
+    <a href="/car_numberplate.html" class="block bg-white text-center p-6 rounded-lg shadow hover:shadow-md transition">
+      <div class="text-2xl text-blue-600 mb-2">🚗</div>
+      <div class="font-bold">ทะเบียนรถ</div>
+      <p class="text-sm text-gray-500">บันทึก/ค้นหา ทะเบียนรถ</p>
+    </a>
 
-        <!-- ปุ่มแบบแยกบรรทัด -->
-        <div class="mt-6">
-          <a href="/form"
-            class="inline-block bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 whitespace-nowrap">
-            + สร้างใบกำกับภาษี
-          </a>
-        </div>
-      </div>
-    </div>
-
-    <!-- Quick actions -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <!-- link to summary -->
-      <a href="/summary_invoices.html"
-        class="bg-white text-center p-6 rounded-lg shadow hover:shadow-md transition block">
-        <div class="text-2xl text-blue-600 mb-2">📃</div>
-        <div class="font-bold">ดูรายการใบกำกับภาษีที่ออก</div>
-        <p class="text-sm text-gray-500">ดูสรุปรายวัน / รายเดือน / รายปี</p>
-      </a>
-
-      <a href="/car_numberplate.html"
-        class="block bg-white text-center p-6 rounded-lg shadow hover:shadow-md transition">
-        <div class="text-2xl text-blue-600 mb-2">🚗</div>
-        <div class="font-bold">ทะเบียนรถ</div>
-        <p class="text-sm text-gray-500">บันทึก/ค้นหา ทะเบียนรถ</p>
-      </a>
-
-      <a href="/customers" class="block bg-white text-center p-6 rounded-lg shadow hover:shadow-md transition">
-        <div class="text-2xl text-blue-600 mb-2">👤</div>
-        <div class="font-bold">จัดการลูกค้า</div>
-        <p class="text-sm text-gray-500">เพิ่ม/แก้ไข/ลบ ข้อมูลลูกค้า</p>
-      </a>
+    <a href="/customers" class="block bg-white text-center p-6 rounded-lg shadow hover:shadow-md transition">
+      <div class="text-2xl text-blue-600 mb-2">👤</div>
+      <div class="font-bold">จัดการลูกค้า</div>
+      <p class="text-sm text-gray-500">เพิ่ม/แก้ไข/ลบ ข้อมูลลูกค้า</p>
+    </a>
 
 
-      <a href="/products" class="block bg-white text-center p-6 rounded-lg shadow hover:shadow-md transition">
-        <div class="text-2xl text-blue-600 mb-2">📦</div>
-        <div class="font-bold">จัดการสินค้า</div>
-        <p class="text-sm text-gray-500">เพิ่ม/แก้ไข/ลบ สินค้า</p>
-      </a>
+    <a href="/products" class="block bg-white text-center p-6 rounded-lg shadow hover:shadow-md transition">
+      <div class="text-2xl text-blue-600 mb-2">📦</div>
+      <div class="font-bold">จัดการสินค้า</div>
+      <p class="text-sm text-gray-500">เพิ่ม/แก้ไข/ลบ สินค้า</p>
+    </a>
 
-    </div>
+  </div>
   </div>
 </body>
 
