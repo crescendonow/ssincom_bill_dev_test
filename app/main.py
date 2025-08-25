@@ -16,18 +16,50 @@ from pathlib import Path
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional
 import re
+import os
+from urllib.parse import quote
+from starlette.middleware.sessions import SessionMiddleware
 
 app = FastAPI()
 #models.Base.metadata.create_all(bind=database.engine)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("SESSION_SECRET", "ymB4BaVZOwDSM1UhXu7uh"),
+    max_age=60*60*8,  # 8 ชั่วโมง
+)
+
 
 BASE_DIR = Path(__file__).resolve().parent
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
-@app.get("/", response_class=HTMLResponse)
-async def dashboard(request: Request):
-    return templates.TemplateResponse("dashboard.html", {"request": request})
+@app.get("/login", response_class=HTMLResponse)
+def login_page(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
 
+@app.post("/login")
+async def do_login(request: Request, username: str = Form(...), password: str = Form(...), next: str = Form("/dashboard")):
+    VALID_USER = os.getenv("APP_USER", "admin")
+    VALID_PASS = os.getenv("APP_PASS", "1234")
+    if username == VALID_USER and password == VALID_PASS:
+        request.session["user"] = {"name": username}
+        return RedirectResponse(url=next or "/dashboard", status_code=303)
+    return RedirectResponse(url=f"/login?error=1&next={quote(next or '/dashboard')}", status_code=303)
+
+@app.get("/logout")
+def logout(request: Request):
+    request.session.clear()
+    return RedirectResponse(url="/login", status_code=303)
+
+@app.get("/", response_class=HTMLResponse)
+@app.get("/dashboard", response_class=HTMLResponse)
+@app.get("/dashboard.html", response_class=HTMLResponse)
+
+async def dashboard(request: Request):
+    if not request.session.get("user"):
+        # พาไปล็อกอินก่อน
+        return RedirectResponse(url="/login", status_code=303)
+    return templates.TemplateResponse("dashboard.html", {"request": request, "user": request.session.get("user")})
 
 @app.get("/form", response_class=HTMLResponse)
 @app.get("/form.html", response_class=HTMLResponse)
