@@ -6,6 +6,7 @@ from jinja2 import TemplateNotFound
 from . import models, database, pdf_generator
 from .database import SessionLocal
 from .form import router as form_router
+from .summary_invoices import router as summary_router
 from .customers import router as customers_router
 from .products import router as products_router
 from .cars import router as cars_router
@@ -59,6 +60,7 @@ async def dashboard(request: Request):
 
 # install router 
 app.include_router(form_router)
+app.include_router(summary_router)
 app.include_router(customers_router)
 app.include_router(products_router)
 app.include_router(cars_router)
