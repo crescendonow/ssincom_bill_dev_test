@@ -1,34 +1,65 @@
 // /static/js/customer_form.js
-let all = [];          // เก็บรายการลูกค้าทั้งหมด
-let editing = null;    // idx ที่กำลังแก้ไขอยู่ (ถ้ามี)
+let all = [];            // ข้อมูลทั้งหมดจากเซิร์ฟเวอร์
+let filtered = [];       // ผลลัพธ์ที่กรองด้วยช่องค้นหา
+let editing = null;      // idx ที่กำลังแก้ไข
+let currentPage = 1;
+const PAGE_SIZE = 20;
 
 const $ = (id) => document.getElementById(id);
+const norm = (s) => (s ?? '').toString().trim().toLowerCase();
 
-// รวมชื่อให้สวย ๆ ถ้ามีคำนำหน้า/นามสกุล
 function displayName(c) {
   const parts = [c.prename, c.fname, c.lname].filter(Boolean);
   return parts.join(' ').trim() || c.fname || '';
 }
-
-// เบอร์โทร: เอาอันที่มีก่อน
 function displayPhone(c) {
+  // เรียงลำดับตามที่อยากแสดง
   return c.mobile || c.tel || c.cf_personaddress_mobile || '';
 }
 
-// ===== โหลดและเรนเดอร์ =====
+// ===== โหลดทั้งหมด =====
 async function loadAll() {
   try {
     const res = await fetch('/api/customers/all');
     if (!res.ok) throw new Error('โหลดรายการลูกค้าไม่สำเร็จ');
     all = await res.json();
-    renderTable(all);
+    filtered = all.slice();
+    currentPage = 1;
+    renderPage();
   } catch (e) {
     console.error(e);
-    all = [];
-    renderTable(all);
+    all = []; filtered = [];
+    renderPage();
   }
 }
 
+// ===== แสดงหน้าปัจจุบัน =====
+function renderPage() {
+  const total = filtered.length;
+  const maxPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  if (currentPage > maxPage) currentPage = maxPage;
+
+  const startIdx = (currentPage - 1) * PAGE_SIZE;
+  const endIdx = Math.min(total, startIdx + PAGE_SIZE);
+  const pageRows = filtered.slice(startIdx, endIdx);
+
+  renderTable(pageRows);
+
+  // info + ปุ่มเปลี่ยนหน้า
+  const resultInfo = $('resultInfo');
+  if (resultInfo) {
+    const from = total === 0 ? 0 : startIdx + 1;
+    resultInfo.textContent = `แสดง ${from}-${endIdx} จากทั้งหมด ${total} รายการ`;
+  }
+  const pageInfo = $('pageInfo');
+  if (pageInfo) pageInfo.textContent = `หน้า ${currentPage} / ${maxPage}`;
+
+  const prevBtn = $('prevPage'), nextBtn = $('nextPage');
+  if (prevBtn) prevBtn.disabled = currentPage <= 1;
+  if (nextBtn) nextBtn.disabled = currentPage >= maxPage;
+}
+
+// ===== เรนเดอร์ตารางของหน้า =====
 function renderTable(rows) {
   const tb = $('tbody');
   if (!tb) return;
@@ -47,11 +78,11 @@ function renderTable(rows) {
 
     tr.innerHTML = `
       <td class="p-2">${displayName(c)}</td>
-      <td class="p-2">${c.personid || ''}</td>
-      <td class="p-2">${c.cf_taxid || ''}</td>
+      <td class="p-2 hidden sm:table-cell">${c.personid || ''}</td>
+      <td class="p-2 hidden lg:table-cell">${c.cf_taxid || ''}</td>
       <td class="p-2">${displayPhone(c)}</td>
-      <td class="p-2">${c.cf_provincename || ''}</td>
-      <td class="p-2">
+      <td class="p-2 hidden md:table-cell">${c.cf_provincename || ''}</td>
+      <td class="p-2 w-24">
         <button type="button" class="text-blue-600 hover:underline btn-edit" data-idx="${c.idx}">แก้ไข</button>
       </td>
     `;
@@ -59,143 +90,106 @@ function renderTable(rows) {
   });
 }
 
-// ===== ค้นหา =====
+// ===== ค้นหา (ชื่อ / รหัสลูกค้า / เลขภาษี / เบอร์ / จังหวัด) =====
 function doSearch() {
-  const q = ($('search')?.value || '').toLowerCase().trim();
-  const filtered = all.filter((c) =>
-    (displayName(c).toLowerCase().includes(q)) ||
-    ((c.personid || '').toLowerCase().includes(q)) ||
-    ((c.cf_taxid || '').toLowerCase().includes(q)) ||
-    (displayPhone(c).toLowerCase().includes(q)) ||
-    ((c.cf_provincename || '').toLowerCase().includes(q))
-  );
-  renderTable(filtered);
+  const q = norm($('search')?.value);
+  if (!q) {
+    filtered = all.slice();
+  } else {
+    filtered = all.filter((c) =>
+      displayName(c).toLowerCase().includes(q) ||
+      (c.personid || '').toLowerCase().includes(q) ||
+      (c.cf_taxid || '').toLowerCase().includes(q) ||
+      displayPhone(c).toLowerCase().includes(q) ||
+      (c.cf_provincename || '').toLowerCase().includes(q)
+    );
+  }
+  currentPage = 1;
+  renderPage();
 }
 
 // ===== ฟอร์ม =====
 function resetForm() {
   editing = null;
-  const form = $('customerForm');
-  form?.reset();
-
-  const idxEl = $('idx');
-  if (idxEl) idxEl.value = '';
-
+  $('customerForm')?.reset();
+  const idxEl = $('idx'); if (idxEl) idxEl.value = '';
   $('btnDelete')?.classList.add('hidden');
   $('dupWarn')?.classList.add('hidden');
 }
-
 function fillForm(c) {
-  // ใส่ค่าลงทุกช่องที่ id ตรงกับ key
-  Object.keys(c || {}).forEach((k) => {
-    const el = $(k);
-    if (el) el.value = c[k] ?? '';
-  });
-  // เผื่อชื่อแยกฟิลด์ (ถ้าฟอร์มมีเฉพาะ fname ก็พอแล้ว)
+  Object.keys(c || {}).forEach((k) => { const el = $(k); if (el) el.value = c[k] ?? ''; });
   if ($('fname') && !$('fname').value) $('fname').value = displayName(c);
 }
-
 async function isDuplicate(payload, ignoreIdx = null) {
   const fd = new FormData();
   fd.append('fname', payload.fname || '');
   fd.append('personid', payload.personid || '');
   fd.append('cf_taxid', payload.cf_taxid || '');
   if (ignoreIdx) fd.append('ignore_idx', ignoreIdx);
-
   const res = await fetch('/api/customers/check-duplicate', { method: 'POST', body: fd });
   const data = await res.json().catch(() => ({}));
   return !!data.duplicate;
 }
-
 async function saveCustomer(e) {
   e.preventDefault();
-
-  const form = $('customerForm');
-  const f = new FormData(form);
+  const f = new FormData($('customerForm'));
   const payload = Object.fromEntries(f.entries());
 
   const duplicate = await isDuplicate(payload, payload.idx || null);
   const warn = $('dupWarn');
-  if (duplicate) {
-    warn?.classList.remove('hidden');
-    return;
-  } else {
-    warn?.classList.add('hidden');
-  }
+  if (duplicate) { warn?.classList.remove('hidden'); return; }
+  warn?.classList.add('hidden');
 
   const toDash = $('redirectDash')?.checked ? '1' : null;
-
-  let url = '/api/customers';
-  let method = 'POST';
-  if (payload.idx) {
-    url = `/api/customers/${payload.idx}`;
-    method = 'POST'; // ฝั่ง backend รับเป็น POST update อยู่แล้ว
-  }
+  let url = '/api/customers', method = 'POST';
+  if (payload.idx) url = `/api/customers/${payload.idx}`;
 
   const fd = new FormData();
   for (const [k, v] of Object.entries(payload)) if (k !== 'idx') fd.append(k, v);
   if (toDash) fd.append('redirect_to_dashboard', '1');
 
   const res = await fetch(url, { method, body: fd });
-
-  // ถ้ามี redirect (เช่น บันทึกแล้วกลับ dashboard)
-  if (res.redirected) {
-    window.location.href = res.url;
-    return;
-  }
-
-  if (!res.ok) {
-    const t = await res.text();
-    alert('บันทึกล้มเหลว: ' + t);
-    return;
-  }
+  if (res.redirected) { window.location.href = res.url; return; }
+  if (!res.ok) { alert('บันทึกล้มเหลว'); return; }
 
   await loadAll();
   if (!payload.idx) resetForm();
   alert('บันทึกเรียบร้อย');
 }
-
 function editRowByIdx(idx) {
   const c = all.find((it) => String(it.idx) === String(idx));
   if (!c) return;
   editing = c.idx;
   fillForm(c);
-
-  const idxEl = $('idx');
-  if (idxEl) idxEl.value = c.idx;
-
+  const idxEl = $('idx'); if (idxEl) idxEl.value = c.idx;
   $('btnDelete')?.classList.remove('hidden');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-
 async function deleteCustomer() {
   if (!editing) return;
   if (!confirm('ยืนยันลบลูกค้ารายนี้?')) return;
   const res = await fetch(`/api/customers/${editing}`, { method: 'DELETE' });
-  if (!res.ok) {
-    alert('ลบไม่สำเร็จ');
-    return;
-  }
-  await loadAll();
-  resetForm();
-  alert('ลบเรียบร้อย');
+  if (!res.ok) { alert('ลบไม่สำเร็จ'); return; }
+  await loadAll(); resetForm(); alert('ลบเรียบร้อย');
 }
 
-// ===== บูตสคริปต์ =====
+// ===== Events =====
 function initCustomerForm() {
   $('customerForm')?.addEventListener('submit', saveCustomer);
-  // รองรับทั้ง id เดิมและใหม่ (btnReset / btnNew)
   const resetBtn = $('btnReset') || $('btnNew');
   resetBtn?.addEventListener('click', resetForm);
   $('btnDelete')?.addEventListener('click', deleteCustomer);
+
   $('search')?.addEventListener('input', doSearch);
 
-  // Event delegation สำหรับปุ่มแก้ไขในตาราง
+  // เปลี่ยนหน้า
+  $('prevPage')?.addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderPage(); } });
+  $('nextPage')?.addEventListener('click', () => { currentPage++; renderPage(); });
+
+  // แก้ไข (delegation)
   $('tbody')?.addEventListener('click', (e) => {
     const btn = e.target.closest('.btn-edit');
-    if (btn && btn.dataset.idx) {
-      editRowByIdx(btn.dataset.idx);
-    }
+    if (btn && btn.dataset.idx) editRowByIdx(btn.dataset.idx);
   });
 
   loadAll();

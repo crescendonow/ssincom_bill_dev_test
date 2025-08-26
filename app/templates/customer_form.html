@@ -1,11 +1,13 @@
 <!-- templates/customer_form.html -->
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
   <meta charset="UTF-8">
   <title>จัดการลูกค้า</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
+
 <body class="bg-blue-50 min-h-screen">
   <div class="max-w-6xl mx-auto py-8 px-4">
     <div class="mb-4">
@@ -83,15 +85,17 @@
         <div class="flex gap-3">
           <button type="submit" class="px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">💾 บันทึก</button>
           <button type="button" id="btnReset" class="px-5 py-2 border rounded hover:bg-gray-50">♻️ รีเซ็ต</button>
-          <button type="button" id="btnDelete" class="px-5 py-2 bg-red-600 text-white rounded hover:bg-red-700 hidden">🗑️ ลบ</button>
+          <button type="button" id="btnDelete"
+            class="px-5 py-2 bg-red-600 text-white rounded hover:bg-red-700 hidden">🗑️ ลบ</button>
         </div>
       </form>
     </div>
 
     <div class="bg-white rounded-xl shadow p-6">
-      <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center justify-between mb-3 gap-2 flex-wrap">
         <h3 class="font-semibold">ข้อมูลลูกค้า</h3>
-       <input id="search" placeholder="ค้นหา (ชื่อ / รหัสลูกค้า / จังหวัด)" class="input w-64">
+        <input id="search" placeholder="ค้นหา (ชื่อ / รหัสลูกค้า / จังหวัด / เบอร์ / เลขภาษี)"
+          class="input w-full sm:w-64">
       </div>
 
       <div class="overflow-x-auto">
@@ -99,25 +103,44 @@
           <thead>
             <tr class="bg-blue-100 text-left">
               <th class="p-2">ชื่อ</th>
-              <th class="p-2">รหัสลูกค้า</th>
-              <th class="p-2">เลขภาษี</th>
+              <th class="p-2 hidden sm:table-cell">รหัสลูกค้า</th>
+              <th class="p-2 hidden lg:table-cell">เลขภาษี</th>
               <th class="p-2">มือถือ</th>
-              <th class="p-2">จังหวัด</th>
+              <th class="p-2 hidden md:table-cell">จังหวัด</th>
               <th class="p-2 w-24">แก้ไข</th>
             </tr>
           </thead>
           <tbody id="tbody"></tbody>
         </table>
       </div>
+
+      <!-- แถบเปลี่ยนหน้า -->
+      <div class="flex items-center justify-between mt-3 flex-wrap gap-2">
+        <div id="resultInfo" class="text-sm text-gray-500">—</div>
+        <div class="flex items-center gap-2">
+          <button id="prevPage" class="px-3 py-1 border rounded hover:bg-gray-50">ก่อนหน้า</button>
+          <span id="pageInfo" class="text-sm text-gray-700">หน้า 1 / 1</span>
+          <button id="nextPage" class="px-3 py-1 border rounded hover:bg-gray-50">ถัดไป</button>
+        </div>
+      </div>
     </div>
-  </div>
+    
+    <style>
+      .input {
+        width: 100%;
+        padding: .6rem;
+        border: 1px solid #ccc;
+        border-radius: .5rem;
+        background: #fff;
+      }
 
-  <style>
-    .input { width:100%; padding:.6rem; border:1px solid #ccc; border-radius:.5rem; background:#fff; }
-    .row:hover { background:#f7fbff; }
-  </style>
+      .row:hover {
+        background: #f7fbff;
+      }
+    </style>
 
-  <script src="/static/js/customer_form.js" defer></script>
+    <script src="/static/js/customer_form.js" defer></script>
 
 </body>
+
 </html>
