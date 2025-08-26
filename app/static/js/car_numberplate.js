@@ -8,7 +8,7 @@ const ENDPOINT_CARS           = '/api/cars';
 
 let currentPage = 1;
 const PAGE_SIZE = 10;
-let editingIdx = null; // idx แถวที่กำลังแก้ไขแบบ inline
+let editingIdx = null; // idx line edit inline
 
 // ====== Helpers ======
 function debounce(fn, delay = 250) {
@@ -23,7 +23,7 @@ function setFormMsg(msg, isError = false) {
   el.className = 'text-sm ml-2 ' + (isError ? 'text-red-600' : 'text-green-600');
 }
 
-// ====== Search box autocomplete (รวม ทะเบียน/ยี่ห้อ/จังหวัด) ======
+// ====== Search box autocomplete (ทะเบียน/ยี่ห้อ/จังหวัด) ======
 async function suggestSearch() {
   const input = $('searchText');
   const list  = document.getElementById('search_datalist');
@@ -222,7 +222,7 @@ async function onSaveRow(tr) {
     });
     if (!res.ok) throw new Error(await res.text() || 'บันทึกไม่สำเร็จ');
 
-    // อัปเดต dataset + เปลี่ยนกลับเป็นโหมดดู
+    // update dataset + cheange to view mode
     tr.dataset.plate = np; tr.dataset.brand = br; tr.dataset.province = pv;
     cancelEditRow(tr);
   } catch (err) {
@@ -261,7 +261,7 @@ function onTableClick(e) {
   }
 }
 
-// ====== Bind events (รวมไว้ที่เดียว ป้องกันซ้ำ) ======
+// ====== Bind events ======
 function bindEvents() {
   const form      = $('carForm');
   const btnReset  = $('btnReset');

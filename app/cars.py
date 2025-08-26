@@ -85,7 +85,7 @@ def create_car(data: CarIn, db: Session = Depends(get_db)):
 def update_car(idx: int, data: CarIn, db: Session = Depends(get_db)):
     car = db.query(models.Car).filter(models.Car.idx == idx).first()
     if not car: raise HTTPException(status_code=404, detail="not found")
-    # กันการชนทะเบียนกับคันอื่น
+    # protect duplicate car number plate 
     dup = db.query(models.Car).filter(models.Car.number_plate == data.number_plate, models.Car.idx != idx).first()
     if dup: raise HTTPException(status_code=409, detail="duplicate number_plate")
     car.number_plate = data.number_plate
