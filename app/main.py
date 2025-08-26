@@ -89,11 +89,12 @@ def customers_page(request: Request):
 
 # หน้า: จัดการสินค้า (ถ้ามี products.html)
 @app.get("/products", response_class=HTMLResponse)
+@app.get("/products.html", response_class=HTMLResponse)
 def products_page(request: Request):
     try:
-        return templates.TemplateResponse("products.html", {"request": request})
+        return templates.TemplateResponse("product_form.html", {"request": request})
     except TemplateNotFound:
-        return HTMLResponse("<h3>templates/products.html not found</h3>", status_code=200)
+        return HTMLResponse("<h3>templates/product_form.html not found</h3>", status_code=200)
 
 # ========= (ตัวอย่าง) export-pdf ใช้ ORM แทน crud =========
 @app.get("/export-pdf/{invoice_id}")
