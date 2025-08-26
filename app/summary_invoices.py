@@ -1,14 +1,14 @@
 # app/summary_invoices.py
-from typing import Optional, List, Dict, Any
+from typing import Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, Body
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 from sqlalchemy import func, or_
 from .database import SessionLocal
 from . import models
 
 router = APIRouter()
 
-VAT_RATE = 0.07  # ใช้ 7% เป็นค่าเริ่มต้น
+VAT_RATE = 0.07  # ค่าเริ่มต้น 7%
 
 def get_db():
     db = SessionLocal()
@@ -17,14 +17,19 @@ def get_db():
     finally:
         db.close()
 
-# ---------- Helpers ----------
 def _money(v) -> float:
-    return float(v or 0)
+    try:
+        return float(v or 0)
+    except:
+        return 0.0
 
 def _iso(d) -> Optional[str]:
     return d.isoformat() if d else None
 
-# ---------- 1) SUMMARY: /api/invoices/summary ----------
+# ------------------------------------------------------------
+# 1) SUMMARY: /api/invoices/summary
+#   * แก้ JOIN: invoice_items.invoice_number == invoices.invoice_number (string == string)
+# ------------------------------------------------------------
 @router.get("/api/invoices/summary")
 def api_invoice_summary(
     granularity: str = Query("day", pattern="^(day|month|year)$"),
@@ -37,7 +42,7 @@ def api_invoice_summary(
     inv = models.Invoice
     itm = models.InvoiceItem
 
-    # label ช่วงเวลา
+    # label ตามช่วง
     if granularity == "day":
         label_expr = func.to_char(inv.invoice_date, 'YYYY-MM-DD')
     elif granularity == "month":
@@ -51,33 +56,33 @@ def api_invoice_summary(
             func.count(inv.idx).label("count"),
             func.coalesce(func.sum(itm.amount), 0).label("amount"),
         )
-        .outerjoin(itm, itm.invoice_number == inv.idx)
+        # JOIN ด้วย "เลขที่ใบกำกับ" (string) ไม่ใช่ idx
+        .outerjoin(itm, itm.invoice_number == inv.invoice_number)
     )
 
-    # เงื่อนไขเวลา
+    # เงื่อนไขช่วงเวลา
     if granularity == "day":
         if start:
             q = q.filter(inv.invoice_date >= start)
         if end:
             q = q.filter(inv.invoice_date <= end)
     elif granularity == "month":
-        # month = 'YYYY-MM'
         if month and len(month) == 7:
             q = q.filter(func.to_char(inv.invoice_date, 'YYYY-MM') == month)
-    else:  # year
+    else:
         if year:
             q = q.filter(func.extract("year", inv.invoice_date) == year)
 
     q = q.group_by("period").order_by("period")
 
-    rows = []
+    out = []
     for period, count, amount in q.all():
         amount = _money(amount)
         discount = 0.0
         before_vat = amount - discount
         vat = before_vat * VAT_RATE
         grand = before_vat + vat
-        rows.append({
+        out.append({
             "period": period,
             "count": int(count or 0),
             "amount": round(amount, 2),
@@ -86,9 +91,12 @@ def api_invoice_summary(
             "vat": round(vat, 2),
             "grand": round(grand, 2),
         })
-    return rows
+    return out
 
-# ---------- 2) LIST: /api/invoices ----------
+# ------------------------------------------------------------
+# 2) LIST: /api/invoices  (พร้อมยอดต่อใบ)
+#   * แก้ subquery group by และ JOIN ด้วย invoice_number (string)
+# ------------------------------------------------------------
 @router.get("/api/invoices")
 def api_invoices_list(
     start: Optional[str] = Query(None, description="YYYY-MM-DD"),
@@ -99,10 +107,9 @@ def api_invoices_list(
     inv = models.Invoice
     itm = models.InvoiceItem
 
-    # สรุปยอดต่อใบ (subquery)
     sub = (
         db.query(
-            itm.invoice_number.label("inv_id"),
+            itm.invoice_number.label("inv_no"),
             func.coalesce(func.sum(itm.amount), 0).label("amount")
         )
         .group_by(itm.invoice_number)
@@ -114,7 +121,7 @@ def api_invoices_list(
             inv.idx, inv.invoice_date, inv.invoice_number, inv.fname, inv.po_number,
             func.coalesce(sub.c.amount, 0).label("amount")
         )
-        .outerjoin(sub, sub.c.inv_id == inv.idx)
+        .outerjoin(sub, sub.c.inv_no == inv.invoice_number)  # JOIN ด้วยเลขที่ใบกำกับ (string)
     )
 
     if start:
@@ -146,13 +153,20 @@ def api_invoices_list(
         })
     return out
 
-# ---------- 3) ITEMS: /api/invoices/{id}/items ----------
+# ------------------------------------------------------------
+# 3) ITEMS: /api/invoices/{id}/items
+#   * รับ id = idx (INTEGER) -> แปลงเป็นเลขที่บิล (STRING) แล้วค่อยดึง items
+# ------------------------------------------------------------
 @router.get("/api/invoices/{invoice_id}/items")
 def api_invoice_items(invoice_id: int, db: Session = Depends(get_db)):
+    inv = db.query(models.Invoice).filter(models.Invoice.idx == invoice_id).first()
+    if not inv:
+        raise HTTPException(status_code=404, detail="invoice not found")
+
     it = models.InvoiceItem
     rows = (
         db.query(it)
-        .filter(it.invoice_number == invoice_id)
+        .filter(it.invoice_number == inv.invoice_number)  # เทียบด้วยเลขที่บิล (string)
         .order_by(it.idx.asc())
         .all()
     )
@@ -167,15 +181,14 @@ def api_invoice_items(invoice_id: int, db: Session = Depends(get_db)):
         for r in rows
     ]
 
-# ---------- 4) DETAIL: /api/invoices/{id}/detail ----------
+# ------------------------------------------------------------
+# 4) DETAIL: /api/invoices/{id}/detail
+#   * เลิกใช้ joinedload ความสัมพันธ์ที่ผิดชนิด FK
+#   * ดึงหัวบิล (idx) -> แล้วดึงรายการด้วยเลขที่บิล (string)
+# ------------------------------------------------------------
 @router.get("/api/invoices/{invoice_id}/detail")
 def api_invoice_detail(invoice_id: int, db: Session = Depends(get_db)):
-    inv = (
-        db.query(models.Invoice)
-        .options(joinedload(models.Invoice.items))
-        .filter(models.Invoice.idx == invoice_id)
-        .first()
-    )
+    inv = db.query(models.Invoice).filter(models.Invoice.idx == invoice_id).first()
     if not inv:
         raise HTTPException(status_code=404, detail="invoice not found")
 
@@ -198,6 +211,14 @@ def api_invoice_detail(invoice_id: int, db: Session = Depends(get_db)):
         "due_date": _iso(inv.due_date),
         "car_numberplate": inv.car_numberplate,
     }
+
+    it = models.InvoiceItem
+    items_q = (
+        db.query(it)
+        .filter(it.invoice_number == inv.invoice_number)  # เทียบด้วยเลขที่บิล (string)
+        .order_by(it.idx.asc())
+        .all()
+    )
     items = [
         {
             "cf_itemid": r.cf_itemid,
@@ -206,18 +227,21 @@ def api_invoice_detail(invoice_id: int, db: Session = Depends(get_db)):
             "unit_price": _money(r.cf_itempricelevel_price),
             "amount": _money(r.amount),
         }
-        for r in (inv.items or [])
+        for r in items_q
     ]
     return {"invoice": invoice, "items": items}
 
-# ---------- 5) UPDATE: /api/invoices/{id} (PUT) ----------
+# ------------------------------------------------------------
+# 5) UPDATE: /api/invoices/{id} (PUT)
+#   * แทนที่ทุกรายการ ด้วยการใช้ "เลขที่บิล (string)" เป็นกุญแจใน invoice_items
+# ------------------------------------------------------------
 @router.put("/api/invoices/{invoice_id}")
 def api_invoice_update(invoice_id: int, payload: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
     inv = db.query(models.Invoice).filter(models.Invoice.idx == invoice_id).first()
     if not inv:
         raise HTTPException(status_code=404, detail="invoice not found")
 
-    # อัปเดตหัวบิล (อัปเดตเฉพาะ key ที่ส่งมา)
+    # อัปเดตหัวบิล
     head_fields = [
         "invoice_number", "invoice_date", "grn_number", "dn_number", "po_number",
         "fname", "personid", "tel", "mobile", "cf_personaddress", "cf_personzipcode",
@@ -227,16 +251,18 @@ def api_invoice_update(invoice_id: int, payload: Dict[str, Any] = Body(...), db:
         if k in payload:
             setattr(inv, k, payload[k])
 
-    # จัดการรายการสินค้าใหม่ (แทนที่ทั้งหมด)
+    # แทนที่รายการสินค้าใหม่ (ใช้เลขที่บิล string)
     if "items" in payload and isinstance(payload["items"], list):
-        # ลบทุกรายการเดิมของใบนี้
-        db.query(models.InvoiceItem).filter(models.InvoiceItem.invoice_number == invoice_id).delete(synchronize_session=False)
-        # เพิ่มรายการใหม่
+        inv_no = inv.invoice_number  # string
+        # ลบของเดิมทั้งหมดของเลขที่บิลนี้
+        db.query(models.InvoiceItem).filter(models.InvoiceItem.invoice_number == inv_no).delete(synchronize_session=False)
+
+        # เพิ่มใหม่
         for it in payload["items"]:
             qty = float(it.get("quantity") or 0)
             price = float(it.get("unit_price") or 0)
             row = models.InvoiceItem(
-                invoice_number=invoice_id,
+                invoice_number=inv_no,              # << สำคัญ: ใช้เลขที่บิล (string)
                 personid=inv.personid or None,
                 cf_itemid=it.get("cf_itemid"),
                 cf_itemname=it.get("cf_itemname"),
