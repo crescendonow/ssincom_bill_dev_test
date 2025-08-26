@@ -2,10 +2,9 @@
 
 // ====== Endpoints ======
 const ENDPOINT_BRANDS_SUGGEST = '/api/suggest/car_brand';
-const ENDPOINT_PROV_SUGGEST = '/api/suggest/province';
-const ENDPOINT_CARS = '/api/cars';
-const ENDPOINT_PLATE_SUGGEST = '/api/suggest/number_plate';
-
+const ENDPOINT_PROV_SUGGEST   = '/api/suggest/province';
+const ENDPOINT_PLATE_SUGGEST  = '/api/suggest/number_plate';
+const ENDPOINT_CARS           = '/api/cars';
 
 let currentPage = 1;
 const PAGE_SIZE = 10;
@@ -16,17 +15,18 @@ function debounce(fn, delay = 250) {
   let t = null;
   return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); };
 }
-function escapeHtml(s = '') { return s.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m])); }
-function $(id) { return document.getElementById(id); }
+function escapeHtml(s=''){ return s.replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m])); }
+function $(id){ return document.getElementById(id); }
 function setFormMsg(msg, isError = false) {
   const el = $('formMsg'); if (!el) return;
   el.textContent = msg || '';
   el.className = 'text-sm ml-2 ' + (isError ? 'text-red-600' : 'text-green-600');
 }
 
+// ====== Search box autocomplete (รวม ทะเบียน/ยี่ห้อ/จังหวัด) ======
 async function suggestSearch() {
   const input = $('searchText');
-  const list = document.getElementById('search_datalist');
+  const list  = document.getElementById('search_datalist');
   if (!input || !list) return;
 
   const q = (input.value || '').trim();
@@ -36,30 +36,26 @@ async function suggestSearch() {
   try {
     const qs = encodeURIComponent(q);
     const [plates, brands, provs] = await Promise.all([
-      fetch(`${ENDPOINT_PLATE_SUGGEST}?q=${qs}`).then(r => r.ok ? r.json() : []).catch(() => []),
-      fetch(`${ENDPOINT_BRANDS_SUGGEST}?q=${qs}`).then(r => r.ok ? r.json() : []).catch(() => []),
-      fetch(`${ENDPOINT_PROV_SUGGEST}?q=${qs}`).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch(`${ENDPOINT_PLATE_SUGGEST}?q=${qs}`).then(r => r.ok ? r.json() : []).catch(()=>[]),
+      fetch(`${ENDPOINT_BRANDS_SUGGEST}?q=${qs}`).then(r => r.ok ? r.json() : []).catch(()=>[]),
+      fetch(`${ENDPOINT_PROV_SUGGEST}?q=${qs}`).then(r => r.ok ? r.json() : []).catch(()=>[]),
     ]);
 
     const values = [];
     plates.forEach(p => values.push(p.number_plate));
     brands.forEach(b => values.push(b.brand_name));
-    provs.forEach(p => values.push(p.prov_nam_t));
+    provs.forEach (p => values.push(p.prov_nam_t));
 
     const seen = new Set();
-    values.filter(v => v && !seen.has(v) && seen.add(v)).slice(0, 20).forEach(v => {
-      const opt = document.createElement('option');
-      opt.value = v;
-      list.appendChild(opt);
-    });
-  } catch (e) {
-    console.error('suggestSearch error', e);
-  }
+    values.filter(v => v && !seen.has(v) && seen.add(v))
+          .slice(0, 20)
+          .forEach(v => { const opt = document.createElement('option'); opt.value = v; list.appendChild(opt); });
+  } catch (e) { console.error('suggestSearch error', e); }
 }
 
 // ====== Suggest: car brand ======
 async function suggestBrands() {
-  const q = ($('car_brand')?.value || '').trim();
+  const q  = ($('car_brand')?.value || '').trim();
   const dl = $('brand_datalist'); const msg = $('brandMsg');
   if (!dl) return;
   dl.innerHTML = ''; if (msg) msg.textContent = '';
@@ -76,7 +72,7 @@ async function suggestBrands() {
 
 // ====== Suggest: province ======
 async function suggestProvinces() {
-  const q = ($('province')?.value || '').trim();
+  const q  = ($('province')?.value || '').trim();
   const dl = $('province_datalist'); const msg = $('provMsg');
   if (!dl) return;
   dl.innerHTML = ''; if (msg) msg.textContent = '';
@@ -152,8 +148,8 @@ async function onCreateSubmit(e) {
   setFormMsg('');
 
   const number_plate = ($('number_plate')?.value || '').trim();
-  const car_brand = ($('car_brand')?.value || '').trim();
-  const province = ($('province')?.value || '').trim();
+  const car_brand    = ($('car_brand')?.value || '').trim();
+  const province     = ($('province')?.value || '').trim();
 
   if (!number_plate) { setFormMsg('กรุณากรอกเลขทะเบียนรถ', true); return; }
 
@@ -184,13 +180,13 @@ function beginEditRow(tr) {
 
   const plateVal = tr.dataset.plate || '';
   const brandVal = tr.dataset.brand || '';
-  const provVal = tr.dataset.province || '';
+  const provVal  = tr.dataset.province || '';
 
-  tr.querySelector('.cell-plate').innerHTML =
+  tr.querySelector('.cell-plate').innerHTML   =
     `<input data-field="number_plate" class="w-full border rounded px-2 py-1" value="${escapeHtml(plateVal)}">`;
-  tr.querySelector('.cell-brand').innerHTML =
+  tr.querySelector('.cell-brand').innerHTML   =
     `<input data-field="car_brand" class="w-full border rounded px-2 py-1" value="${escapeHtml(brandVal)}">`;
-  tr.querySelector('.cell-province').innerHTML =
+  tr.querySelector('.cell-province').innerHTML=
     `<input data-field="province" class="w-full border rounded px-2 py-1" value="${escapeHtml(provVal)}">`;
 
   tr.querySelector('.cell-actions').innerHTML = `
@@ -202,8 +198,8 @@ function beginEditRow(tr) {
 function cancelEditRow(tr) {
   if (!tr) return;
   editingIdx = null;
-  tr.querySelector('.cell-plate').textContent = tr.dataset.plate || '';
-  tr.querySelector('.cell-brand').textContent = tr.dataset.brand || '';
+  tr.querySelector('.cell-plate').textContent    = tr.dataset.plate || '';
+  tr.querySelector('.cell-brand').textContent    = tr.dataset.brand || '';
   tr.querySelector('.cell-province').textContent = tr.dataset.province || '';
   tr.querySelector('.cell-actions').innerHTML = `
     <button class="btn-edit bg-white border px-2 py-1 rounded hover:bg-gray-50">แก้ไข</button>
@@ -213,9 +209,9 @@ function cancelEditRow(tr) {
 
 async function onSaveRow(tr) {
   const idx = parseInt(tr.dataset.idx, 10);
-  const np = tr.querySelector('input[data-field="number_plate"]')?.value.trim() || '';
-  const br = tr.querySelector('input[data-field="car_brand"]')?.value.trim() || '';
-  const pv = tr.querySelector('input[data-field="province"]')?.value.trim() || '';
+  const np  = tr.querySelector('input[data-field="number_plate"]')?.value.trim() || '';
+  const br  = tr.querySelector('input[data-field="car_brand"]')?.value.trim() || '';
+  const pv  = tr.querySelector('input[data-field="province"]')?.value.trim() || '';
   if (!np) { alert('กรุณากรอกเลขทะเบียนรถ'); return; }
 
   try {
@@ -234,31 +230,6 @@ async function onSaveRow(tr) {
   }
 }
 
-// ช่องค้นหา: autocomplete + Enter เพื่อค้นหา
-const searchInput = $('searchText');
-if (searchInput) {
-  const deb = debounce(suggestSearch, 200);
-  searchInput.addEventListener('input', deb);
-  searchInput.addEventListener('focus', () => searchInput.value && suggestSearch());
-  searchInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { currentPage = 1; loadCars(); }
-  });
-}
-
-// ปุ่มค้นหา: ถ้ายังไม่ได้พิมพ์ ให้โฟกัสและโชว์คำแนะนำ; ถ้าพิมพ์แล้วให้ค้นหาเลย
-if (btnSearch) {
-  btnSearch.addEventListener('click', () => {
-    const v = (searchInput?.value || '').trim();
-    if (!v) {
-      searchInput?.focus();
-      suggestSearch();
-    } else {
-      currentPage = 1;
-      loadCars();
-    }
-  });
-}
-
 async function onDeleteRow(tr) {
   const idx = parseInt(tr.dataset.idx, 10);
   if (!idx) return;
@@ -273,11 +244,10 @@ async function onDeleteRow(tr) {
 
 function onTableClick(e) {
   const btn = e.target.closest('button'); if (!btn) return;
-  const tr = e.target.closest('tr'); if (!tr) return;
+  const tr  = e.target.closest('tr'); if (!tr) return;
 
   if (btn.classList.contains('btn-edit')) {
     if (editingIdx && editingIdx !== parseInt(tr.dataset.idx, 10)) {
-      // ยกเลิกแถวที่กำลังแก้ไขก่อน
       const editingRow = document.querySelector(`tr[data-idx="${editingIdx}"]`);
       if (editingRow) cancelEditRow(editingRow);
     }
@@ -291,25 +261,28 @@ function onTableClick(e) {
   }
 }
 
-// ====== Bind events ======
+// ====== Bind events (รวมไว้ที่เดียว ป้องกันซ้ำ) ======
 function bindEvents() {
-  const form = $('carForm');
-  const btnReset = $('btnReset');
+  const form      = $('carForm');
+  const btnReset  = $('btnReset');
   const btnSearch = $('btnSearch');
   const btnReload = $('btnReload');
-  const prevPage = $('prevPage');
-  const nextPage = $('nextPage');
-  const tbody = $('carsTableBody');
+  const prevPage  = $('prevPage');
+  const nextPage  = $('nextPage');
+  const tbody     = $('carsTableBody');
+  const searchInp = $('searchText');
 
   // brand/province autocomplete
   const brandInput = $('car_brand');
   if (brandInput) {
-    brandInput.addEventListener('input', debounce(suggestBrands, 200));
+    const deb = debounce(suggestBrands, 200);
+    brandInput.addEventListener('input', deb);
     brandInput.addEventListener('focus', () => brandInput.value && suggestBrands());
   }
   const provInput = $('province');
   if (provInput) {
-    provInput.addEventListener('input', debounce(suggestProvinces, 200));
+    const deb = debounce(suggestProvinces, 200);
+    provInput.addEventListener('input', deb);
     provInput.addEventListener('focus', () => provInput.value && suggestProvinces());
   }
 
@@ -317,11 +290,23 @@ function bindEvents() {
   if (form) form.addEventListener('submit', onCreateSubmit);
   if (btnReset) btnReset.addEventListener('click', resetForm);
 
+  // search box autocomplete + Enter
+  if (searchInp) {
+    const deb = debounce(suggestSearch, 200);
+    searchInp.addEventListener('input', deb);
+    searchInp.addEventListener('focus', () => searchInp.value && suggestSearch());
+    searchInp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { currentPage = 1; loadCars(); } });
+  }
+
   // search / reload / paging
-  if (btnSearch) btnSearch.addEventListener('click', () => { currentPage = 1; loadCars(); });
-  if (btnReload) btnReload.addEventListener('click', () => { if ($('searchText')) $('searchText').value = ''; currentPage = 1; loadCars(); });
-  if (prevPage) prevPage.addEventListener('click', () => { if (currentPage > 1) { currentPage--; loadCars(); } });
-  if (nextPage) nextPage.addEventListener('click', () => { currentPage++; loadCars(true); });
+  if (btnSearch) btnSearch.addEventListener('click', () => {
+    const v = (searchInp?.value || '').trim();
+    if (!v) { searchInp?.focus(); suggestSearch(); }
+    else { currentPage = 1; loadCars(); }
+  });
+  if (btnReload) btnReload.addEventListener('click', () => { if (searchInp) searchInp.value = ''; currentPage = 1; loadCars(); });
+  if (prevPage)  prevPage.addEventListener('click', () => { if (currentPage > 1) { currentPage--; loadCars(); } });
+  if (nextPage)  nextPage.addEventListener('click', () => { currentPage++; loadCars(true); });
 
   // table actions
   if (tbody) tbody.addEventListener('click', onTableClick);
