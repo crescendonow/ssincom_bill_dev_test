@@ -1,27 +1,17 @@
-from fastapi import FastAPI, Form, Request, HTTPException, Query
-from pydantic import BaseModel
-from sqlalchemy import text
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy import or_, and_, func, cast, Integer, Date
-from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, RedirectResponse
+from fastapi import FastAPI, Form, Request, HTTPException
+from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from fastapi.encoders import jsonable_encoder
+from jinja2 import TemplateNotFound 
 from . import models, database, pdf_generator
-from .models import CustomerList, ProductList
 from .database import SessionLocal
-# app/main.py
 from .form import router as form_router
 from .customers import router as customers_router
 from .products import router as products_router
 from .cars import router as cars_router
+from sqlalchemy.orm import joinedload
 
-from datetime import date, datetime, timedelta
-from typing import List
 from pathlib import Path
-from decimal import Decimal, ROUND_HALF_UP
-from typing import Optional
-import re
 import os
 from urllib.parse import quote
 from starlette.middleware.sessions import SessionMiddleware
@@ -72,6 +62,38 @@ app.include_router(form_router)
 app.include_router(customers_router)
 app.include_router(products_router)
 app.include_router(cars_router)
+
+# หน้า: รายการใบกำกับภาษี
+@app.get("/summary_invoices.html", response_class=HTMLResponse)
+def summary_invoices_page(request: Request):
+    try:
+        return templates.TemplateResponse("summary_invoices.html", {"request": request})
+    except TemplateNotFound:
+        return HTMLResponse("<h3>templates/summary_invoices.html not found</h3>", status_code=200)
+
+# หน้า: จัดการทะเบียนรถ
+@app.get("/car_numberplate.html", response_class=HTMLResponse)
+def car_numberplate_page(request: Request):
+    try:
+        return templates.TemplateResponse("car_numberplate.html", {"request": request})
+    except TemplateNotFound:
+        return HTMLResponse("<h3>templates/car_numberplate.html not found</h3>", status_code=200)
+
+# หน้า: จัดการลูกค้า (ใช้ customer_form.html เดิม)
+@app.get("/customers", response_class=HTMLResponse)
+def customers_page(request: Request):
+    try:
+        return templates.TemplateResponse("customer_form.html", {"request": request})
+    except TemplateNotFound:
+        return HTMLResponse("<h3>templates/customer_form.html not found</h3>", status_code=200)
+
+# หน้า: จัดการสินค้า (ถ้ามี products.html)
+@app.get("/products", response_class=HTMLResponse)
+def products_page(request: Request):
+    try:
+        return templates.TemplateResponse("products.html", {"request": request})
+    except TemplateNotFound:
+        return HTMLResponse("<h3>templates/products.html not found</h3>", status_code=200)
 
 # ========= (ตัวอย่าง) export-pdf ใช้ ORM แทน crud =========
 @app.get("/export-pdf/{invoice_id}")

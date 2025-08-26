@@ -79,24 +79,54 @@ function normalize(str) {
   return (str || '').normalize("NFC").trim();
 }
 
-function selectCustomer() {
-  const name = normalize(document.getElementById("customer_name").value);
-  const match = customers.find(c => normalize(c.fname) === name);
-  if (!match) return;
+const _customerCache = new Map(); // map จาก label => object เต็ม
 
-  // Basic fields
-  document.getElementById("customer_address").value = match.cf_personaddress || '';
-  document.getElementById("customer_taxid").value = match.cf_taxid || '';
-
-  // Extra customer details (if your form.html has these inputs)
-  const fill = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
-  fill("personid", match.personid);
-  fill("tel", match.cf_personaddress_tel || match.tel);
-  fill("mobile", match.cf_personaddress_mobile || match.mobile);
-  fill("cf_personzipcode", match.cf_personzipcode);
-  fill("cf_provincename", match.cf_provincename);
-  fill("fmlpaymentcreditday", match.fmlpaymentcreditday);
+async function searchCustomers(q) {
+  const res = await fetch(`/api/customers/suggest?q=${encodeURIComponent(q)}`);
+  if (!res.ok) return [];
+  return await res.json(); // [{personid, customer_name, taxid, province, address, tel, mobile}]
 }
+
+function bindCustomerAutocomplete() {
+  const input = document.getElementById('customer_name');
+  const list  = document.getElementById('customerList');
+  if (!input || !list) return;
+
+  const deb = (fn, t=250)=>{ let h; return (...a)=>{clearTimeout(h); h=setTimeout(()=>fn(...a),t)}};
+
+  async function suggest() {
+    const q = (input.value || '').trim();
+    list.innerHTML = '';
+    _customerCache.clear();
+    if (!q) return;
+    const items = await searchCustomers(q);
+    items.forEach(c => {
+      const label = `${c.customer_name}${c.personid ? ' ('+c.personid+')' : ''}`;
+      const opt = document.createElement('option');
+      opt.value = label;
+      list.appendChild(opt);
+      _customerCache.set(label, c);
+    });
+  }
+
+  input.addEventListener('input', deb(suggest, 250));
+  input.addEventListener('change', () => fillCustomerFromSelected(input.value));
+}
+
+function fillCustomerFromSelected(label) {
+  const c = _customerCache.get(label);
+  if (!c) return;
+  const set = (id,v)=>{ const el=document.getElementById(id); if(el) el.value = v ?? ''; };
+  set('personid', c.personid);
+  set('customer_name', c.customer_name);
+  set('customer_taxid', c.taxid);
+  set('customer_address', c.address);
+  set('cf_provincename', c.province);
+  set('tel', c.tel);
+  set('mobile', c.mobile);
+
+}
+document.addEventListener('DOMContentLoaded', bindCustomerAutocomplete);
 
 // ------- Items / Products -------
 let selectedRow = null;
@@ -165,19 +195,39 @@ function filterProducts() {
   });
 }
 
-function selectProduct(p) {
-  if (!selectedRow) return;
-  selectedRow.querySelector('.product_code').value = p.code;
-  selectedRow.querySelector('.description').value = p.name;
-  selectedRow.querySelector('.unit_price').value = p.price;
-  updateTotal();
-  closeProductModal();
+async function searchProducts(q) {
+  const res = await fetch(`/api/products/suggest?q=${encodeURIComponent(q)}`);
+  if (!res.ok) return [];
+  return await res.json(); // [{product_code, description, avg_unit_price, used}]
 }
 
-// preload products
-fetch('/api/products')
-  .then(res => res.json())
-  .then(data => { products = data; });
+async function filterProducts() {
+  const keyword = (document.getElementById("productSearch").value || "").trim();
+  const listDiv = document.getElementById("productList");
+  listDiv.innerHTML = '<div class="p-2 text-gray-500">กำลังค้นหา...</div>';
+
+  const items = await searchProducts(keyword);
+  if (!items.length) {
+    listDiv.innerHTML = `<div class="p-2 text-gray-500">ไม่พบสินค้า</div>`;
+    return;
+  }
+
+  listDiv.innerHTML = '';
+  items.forEach(p => {
+    const div = document.createElement("div");
+    div.className = "p-2 hover:bg-blue-50 cursor-pointer flex items-center justify-between";
+    div.innerHTML = `
+      <div><strong>${p.product_code}</strong> - ${p.description}</div>
+      <div class="text-gray-600">฿${(p.avg_unit_price||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+    `;
+    div.onclick = () => selectProduct({
+      code: p.product_code,
+      name: p.description,
+      price: p.avg_unit_price || 0
+    });
+    listDiv.appendChild(div);
+  });
+}
 
 // ------- Duplicate check: invoice number -------
 function debounce(fn, ms = 400) {
@@ -613,46 +663,33 @@ document.addEventListener('DOMContentLoaded', () => {
 window.addEventListener("load", computeAndFillDueDate);
 
 // ===== Autocomplete: ทะเบียนรถจาก products.ss_car =====
+async function searchCarPlates(q) {
+  const res = await fetch(`/api/suggest/number_plate?q=${encodeURIComponent(q)}`);
+  if (!res.ok) return [];
+  return await res.json(); // [{number_plate}]
+}
+
 (function setupCarPlateAutocomplete() {
-  const plateInput = document.getElementById('car_numberplate');
-  const plateMsg = document.getElementById('car_plate_msg');
-  const datalist = document.getElementById('car_plate_datalist');
+  const input = document.getElementById('car_numberplate');
+  const list  = document.getElementById('car_plate_datalist');
+  const msg   = document.getElementById('car_plate_msg');
+  if (!input || !list) return;
 
-  if (!plateInput || !datalist) return;
-
-  const debounce = (fn, delay = 250) => {
-    let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); };
-  };
-
-  const suggest = async () => {
-    const q = (plateInput.value || '').trim();
-
-    datalist.innerHTML = '';
-    if (plateMsg) plateMsg.textContent = '';
-
-    if (q.length < 1) return;
-
-    try {
-      const url = new URL('/api/suggest/number_plate', window.location.origin);
-      url.searchParams.set('q', q);
-      const res = await fetch(url.toString());
-      if (!res.ok) throw new Error('โหลดคำแนะนำไม่สำเร็จ');
-      const data = await res.json(); // [{number_plate:'1กก 1234'}, ...]
-      data.forEach(row => {
-        const opt = document.createElement('option');
-        opt.value = row.number_plate;
-        datalist.appendChild(opt);
-      });
-      if (plateMsg) plateMsg.textContent = `พบ ${data.length} รายการ`;
-    } catch (e) {
-      console.error(e);
-      if (plateMsg) plateMsg.textContent = 'โหลดคำแนะนำล้มเหลว';
-    }
-  };
-
-  const debouncedSuggest = debounce(suggest, 250);
-  plateInput.addEventListener('input', debouncedSuggest);
-  plateInput.addEventListener('focus', () => plateInput.value && suggest());
+  const deb = (fn, t=200)=>{ let h; return (...a)=>{clearTimeout(h); h=setTimeout(()=>fn(...a),t)}};
+  async function suggest() {
+    const q = (input.value || '').trim();
+    list.innerHTML = ''; if (msg) msg.textContent = '';
+    if (!q) return;
+    const items = await searchCarPlates(q);
+    items.forEach(it => {
+      const opt = document.createElement('option');
+      opt.value = it.number_plate;
+      list.appendChild(opt);
+    });
+    if (msg) msg.textContent = `พบ ${items.length} รายการ`;
+  }
+  input.addEventListener('input', deb(suggest, 200));
+  input.addEventListener('focus', () => input.value && suggest());
 })();
 
 // ===== Align TAX ID with company email on invoice header =====
