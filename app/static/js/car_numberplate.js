@@ -2,8 +2,10 @@
 
 // ====== Endpoints ======
 const ENDPOINT_BRANDS_SUGGEST = '/api/suggest/car_brand';
-const ENDPOINT_PROV_SUGGEST   = '/api/suggest/province';
-const ENDPOINT_CARS           = '/api/cars';
+const ENDPOINT_PROV_SUGGEST = '/api/suggest/province';
+const ENDPOINT_CARS = '/api/cars';
+const ENDPOINT_PLATE_SUGGEST = '/api/suggest/number_plate';
+
 
 let currentPage = 1;
 const PAGE_SIZE = 10;
@@ -14,12 +16,45 @@ function debounce(fn, delay = 250) {
   let t = null;
   return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); };
 }
-function escapeHtml(s=''){ return s.replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m])); }
-function $(id){ return document.getElementById(id); }
+function escapeHtml(s = '') { return s.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m])); }
+function $(id) { return document.getElementById(id); }
 function setFormMsg(msg, isError = false) {
   const el = $('formMsg'); if (!el) return;
   el.textContent = msg || '';
   el.className = 'text-sm ml-2 ' + (isError ? 'text-red-600' : 'text-green-600');
+}
+
+async function suggestSearch() {
+  const input = $('searchText');
+  const list = document.getElementById('search_datalist');
+  if (!input || !list) return;
+
+  const q = (input.value || '').trim();
+  list.innerHTML = '';
+  if (q.length < 1) return;
+
+  try {
+    const qs = encodeURIComponent(q);
+    const [plates, brands, provs] = await Promise.all([
+      fetch(`${ENDPOINT_PLATE_SUGGEST}?q=${qs}`).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch(`${ENDPOINT_BRANDS_SUGGEST}?q=${qs}`).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch(`${ENDPOINT_PROV_SUGGEST}?q=${qs}`).then(r => r.ok ? r.json() : []).catch(() => []),
+    ]);
+
+    const values = [];
+    plates.forEach(p => values.push(p.number_plate));
+    brands.forEach(b => values.push(b.brand_name));
+    provs.forEach(p => values.push(p.prov_nam_t));
+
+    const seen = new Set();
+    values.filter(v => v && !seen.has(v) && seen.add(v)).slice(0, 20).forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v;
+      list.appendChild(opt);
+    });
+  } catch (e) {
+    console.error('suggestSearch error', e);
+  }
 }
 
 // ====== Suggest: car brand ======
@@ -117,8 +152,8 @@ async function onCreateSubmit(e) {
   setFormMsg('');
 
   const number_plate = ($('number_plate')?.value || '').trim();
-  const car_brand    = ($('car_brand')?.value || '').trim();
-  const province     = ($('province')?.value || '').trim();
+  const car_brand = ($('car_brand')?.value || '').trim();
+  const province = ($('province')?.value || '').trim();
 
   if (!number_plate) { setFormMsg('กรุณากรอกเลขทะเบียนรถ', true); return; }
 
@@ -149,13 +184,13 @@ function beginEditRow(tr) {
 
   const plateVal = tr.dataset.plate || '';
   const brandVal = tr.dataset.brand || '';
-  const provVal  = tr.dataset.province || '';
+  const provVal = tr.dataset.province || '';
 
-  tr.querySelector('.cell-plate').innerHTML   =
+  tr.querySelector('.cell-plate').innerHTML =
     `<input data-field="number_plate" class="w-full border rounded px-2 py-1" value="${escapeHtml(plateVal)}">`;
-  tr.querySelector('.cell-brand').innerHTML   =
+  tr.querySelector('.cell-brand').innerHTML =
     `<input data-field="car_brand" class="w-full border rounded px-2 py-1" value="${escapeHtml(brandVal)}">`;
-  tr.querySelector('.cell-province').innerHTML=
+  tr.querySelector('.cell-province').innerHTML =
     `<input data-field="province" class="w-full border rounded px-2 py-1" value="${escapeHtml(provVal)}">`;
 
   tr.querySelector('.cell-actions').innerHTML = `
@@ -167,8 +202,8 @@ function beginEditRow(tr) {
 function cancelEditRow(tr) {
   if (!tr) return;
   editingIdx = null;
-  tr.querySelector('.cell-plate').textContent    = tr.dataset.plate || '';
-  tr.querySelector('.cell-brand').textContent    = tr.dataset.brand || '';
+  tr.querySelector('.cell-plate').textContent = tr.dataset.plate || '';
+  tr.querySelector('.cell-brand').textContent = tr.dataset.brand || '';
   tr.querySelector('.cell-province').textContent = tr.dataset.province || '';
   tr.querySelector('.cell-actions').innerHTML = `
     <button class="btn-edit bg-white border px-2 py-1 rounded hover:bg-gray-50">แก้ไข</button>
@@ -178,9 +213,9 @@ function cancelEditRow(tr) {
 
 async function onSaveRow(tr) {
   const idx = parseInt(tr.dataset.idx, 10);
-  const np  = tr.querySelector('input[data-field="number_plate"]')?.value.trim() || '';
-  const br  = tr.querySelector('input[data-field="car_brand"]')?.value.trim() || '';
-  const pv  = tr.querySelector('input[data-field="province"]')?.value.trim() || '';
+  const np = tr.querySelector('input[data-field="number_plate"]')?.value.trim() || '';
+  const br = tr.querySelector('input[data-field="car_brand"]')?.value.trim() || '';
+  const pv = tr.querySelector('input[data-field="province"]')?.value.trim() || '';
   if (!np) { alert('กรุณากรอกเลขทะเบียนรถ'); return; }
 
   try {
@@ -199,6 +234,31 @@ async function onSaveRow(tr) {
   }
 }
 
+// ช่องค้นหา: autocomplete + Enter เพื่อค้นหา
+const searchInput = $('searchText');
+if (searchInput) {
+  const deb = debounce(suggestSearch, 200);
+  searchInput.addEventListener('input', deb);
+  searchInput.addEventListener('focus', () => searchInput.value && suggestSearch());
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { currentPage = 1; loadCars(); }
+  });
+}
+
+// ปุ่มค้นหา: ถ้ายังไม่ได้พิมพ์ ให้โฟกัสและโชว์คำแนะนำ; ถ้าพิมพ์แล้วให้ค้นหาเลย
+if (btnSearch) {
+  btnSearch.addEventListener('click', () => {
+    const v = (searchInput?.value || '').trim();
+    if (!v) {
+      searchInput?.focus();
+      suggestSearch();
+    } else {
+      currentPage = 1;
+      loadCars();
+    }
+  });
+}
+
 async function onDeleteRow(tr) {
   const idx = parseInt(tr.dataset.idx, 10);
   if (!idx) return;
@@ -213,7 +273,7 @@ async function onDeleteRow(tr) {
 
 function onTableClick(e) {
   const btn = e.target.closest('button'); if (!btn) return;
-  const tr  = e.target.closest('tr'); if (!tr) return;
+  const tr = e.target.closest('tr'); if (!tr) return;
 
   if (btn.classList.contains('btn-edit')) {
     if (editingIdx && editingIdx !== parseInt(tr.dataset.idx, 10)) {
