@@ -1,295 +1,280 @@
 <!DOCTYPE html>
 <html lang="th">
-
 <head>
-    <meta charset="UTF-8" />
-    <title>สรุปรายการใบกำกับภาษี</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8" />
+  <title>สรุปรายการใบกำกับภาษี</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-
 <body class="bg-gradient-to-b from-blue-500 to-blue-200 min-h-screen font-sans text-gray-800">
-
-    <div class="max-w-7xl mx-auto px-6 py-8">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-            <h1 class="text-2xl font-bold text-white">ดูรายการใบกำกับภาษีที่ออก</h1>
-            <div class="flex gap-2">
-                <a href="/" class="bg-white text-blue-700 px-4 py-2 rounded hover:bg-gray-100">กลับแดชบอร์ด</a>
-                <button id="btnExportCsv" class="bg-white text-blue-700 px-4 py-2 rounded hover:bg-gray-100">ส่งออก
-                    CSV</button>
-            </div>
-        </div>
-
-        <!-- Tabs -->
-        <div class="bg-white rounded-lg p-2 shadow mb-4">
-            <div class="flex">
-                <button id="tabSummary"
-                    class="px-4 py-2 text-sm font-medium rounded bg-blue-600 text-white">สรุปตามช่วงเวลา</button>
-                <button id="tabAll"
-                    class="px-4 py-2 text-sm font-medium rounded text-blue-700 hover:bg-gray-100 ml-2">รายการใบกำกับภาษีทั้งหมด</button>
-            </div>
-        </div>
-
-        <!-- แพเนล: สรุปตามช่วงเวลา (เดิม) -->
-        <div id="panelSummary">
-            <!-- แถบตัวกรอง -->
-            <div class="bg-white rounded-lg p-4 shadow mb-6">
-                <div class="flex flex-wrap items-center gap-3">
-                    <!-- ระดับเวลา -->
-                    <div class="inline-flex rounded-md shadow-sm" role="group" aria-label="Granularity">
-                        <button type="button" data-granularity="day"
-                            class="btn-gran px-4 py-2 text-sm font-medium border border-gray-300 rounded-l-md bg-blue-600 text-white">
-                            รายวัน
-                        </button>
-                        <button type="button" data-granularity="month"
-                            class="btn-gran px-4 py-2 text-sm font-medium border border-gray-300 bg-white hover:bg-gray-50">
-                            รายเดือน
-                        </button>
-                        <button type="button" data-granularity="year"
-                            class="btn-gran px-4 py-2 text-sm font-medium border border-gray-300 rounded-r-md bg-white hover:bg-gray-50">
-                            รายปี
-                        </button>
-                    </div>
-
-                    <!-- ฟิลเตอร์ (สลับแสดงตาม granularity) -->
-                    <div id="filter-day" class="flex items-center gap-2">
-                        <label class="text-sm text-gray-600">วันที่</label>
-                        <input id="dayFrom" type="date" class="border rounded px-2 py-1">
-                        <span class="text-sm text-gray-400">ถึง</span>
-                        <input id="dayTo" type="date" class="border rounded px-2 py-1">
-                    </div>
-
-                    <div id="filter-month" class="hidden items-center gap-2">
-                        <label class="text-sm text-gray-600">เดือน</label>
-                        <input id="monthPick" type="month" class="border rounded px-2 py-1">
-                    </div>
-
-                    <div id="filter-year" class="hidden items-center gap-2">
-                        <label class="text-sm text-gray-600">ปี</label>
-                        <input id="yearPick" type="number" class="border rounded px-2 py-1 w-28" step="1" min="2000"
-                            max="2100">
-                    </div>
-
-                    <button id="btnApply" class="ml-auto bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                        ใช้ตัวกรอง
-                    </button>
-                </div>
-            </div>
-
-            <!-- ตารางสรุป -->
-            <div class="bg-white rounded-lg p-6 shadow">
-                <div class="flex items-center justify-between mb-3">
-                    <h2 class="text-lg font-bold">สรุปรายการ</h2>
-                    <div id="currentFilter" class="text-sm text-gray-500">—</div>
-                </div>
-
-                <div class="overflow-auto">
-                    <table class="min-w-full border border-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-3 py-2 text-left text-sm font-semibold text-gray-700 border-b">ช่วงเวลา
-                                </th>
-                                <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">
-                                    จำนวนใบกำกับ</th>
-                                <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">
-                                    ยอดก่อนส่วนลด</th>
-                                <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">ส่วนลด
-                                </th>
-                                <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">ก่อน VAT
-                                </th>
-                                <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">VAT</th>
-                                <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">รวมสุทธิ
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody id="summaryBody"></tbody>
-                        <tfoot class="bg-gray-50">
-                            <tr>
-                                <td class="px-3 py-2 text-right font-semibold border-t">รวมทั้งหมด</td>
-                                <td class="px-3 py-2 text-right font-semibold border-t" id="sum_count">0</td>
-                                <td class="px-3 py-2 text-right font-semibold border-t" id="sum_amount">0.00</td>
-                                <td class="px-3 py-2 text-right font-semibold border-t" id="sum_discount">0.00</td>
-                                <td class="px-3 py-2 text-right font-semibold border-t" id="sum_before_vat">0.00</td>
-                                <td class="px-3 py-2 text-right font-semibold border-t" id="sum_vat">0.00</td>
-                                <td class="px-3 py-2 text-right font-semibold border-t" id="sum_grand">0.00</td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- แพเนล: รายการใบกำกับภาษีทั้งหมด -->
-        <div id="panelAll" class="hidden">
-            <div class="bg-white rounded-lg p-4 shadow mb-4">
-                <div class="flex flex-wrap items-center gap-2">
-                    <label class="text-sm text-gray-600">วันที่</label>
-                    <input id="allFrom" type="date" class="border rounded px-2 py-1">
-                    <span class="text-sm text-gray-400">ถึง</span>
-                    <input id="allTo" type="date" class="border rounded px-2 py-1">
-
-                    <input id="allQ" type="text" placeholder="ค้นหา (เลขที่ใบกำกับ / ชื่อลูกค้า / PO)"
-                        class="border rounded px-2 py-1 w-64">
-
-                    <button id="btnAllApply" class="ml-auto bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                        ค้นหา
-                    </button>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-lg p-6 shadow">
-                <div class="overflow-auto">
-                    <table class="min-w-full border border-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-3 py-2 text-left text-sm font-semibold text-gray-700 border-b">วันที่</th>
-                                <th class="px-3 py-2 text-left text-sm font-semibold text-gray-700 border-b">เลขที่</th>
-                                <th class="px-3 py-2 text-left text-sm font-semibold text-gray-700 border-b">ลูกค้า</th>
-                                <th class="px-3 py-2 text-left text-sm font-semibold text-gray-700 border-b">PO</th>
-                                <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">
-                                    ยอดก่อนส่วนลด</th>
-                                <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">VAT</th>
-                                <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">สุทธิ</th>
-                                <th class="px-3 py-2 text-center text-sm font-semibold text-gray-700 border-b">สินค้า
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody id="allBody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+  <div class="max-w-7xl mx-auto px-6 py-8">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+      <h1 class="text-2xl font-bold text-white">ดูรายการใบกำกับภาษีที่ออก</h1>
+      <div class="flex gap-2">
+        <a href="/" class="bg-white text-blue-700 px-4 py-2 rounded hover:bg-gray-100">กลับแดชบอร์ด</a>
+        <button id="btnExportCsv" class="bg-white text-blue-700 px-4 py-2 rounded hover:bg-gray-100">ส่งออก CSV</button>
+      </div>
     </div>
 
-    <!-- Modal แสดงสินค้าในใบกำกับ -->
-    <div id="itemsModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
-        <div class="bg-white rounded-lg shadow max-w-3xl w-full mx-4">
-            <div class="flex items-center justify-between p-4 border-b">
-                <h3 class="font-bold">รายการสินค้า</h3>
-                <button id="modalClose" class="px-2 py-1 text-gray-600 hover:bg-gray-100 rounded">ปิด</button>
-            </div>
-            <div class="p-4 overflow-auto max-h-[70vh]">
-                <table class="min-w-full border border-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-3 py-2 text-left text-sm font-semibold text-gray-700 border-b">รหัส</th>
-                            <th class="px-3 py-2 text-left text-sm font-semibold text-gray-700 border-b">รายละเอียด</th>
-                            <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">จำนวน</th>
-                            <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">ราคา/หน่วย
-                            </th>
-                            <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">จำนวนเงิน</th>
-                        </tr>
-                    </thead>
-                    <tbody id="modalItemsBody"></tbody>
-                </table>
-            </div>
-        </div>
+    <!-- Tabs -->
+    <div class="bg-white rounded-lg p-2 shadow mb-4">
+      <div class="flex">
+        <button id="tabSummary" class="px-4 py-2 text-sm font-medium rounded bg-blue-600 text-white">สรุปตามช่วงเวลา</button>
+        <button id="tabAll" class="px-4 py-2 text-sm font-medium rounded text-blue-700 hover:bg-gray-100 ml-2">รายการใบกำกับภาษีทั้งหมด</button>
+      </div>
     </div>
 
-    <!-- Modal แก้ไข/ดูใบกำกับ -->
-    <div id="editModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
-        <div class="bg-white rounded-lg shadow max-w-5xl w-full mx-4">
-            <div class="flex items-center justify-between p-4 border-b">
-                <h3 class="font-bold">แก้ไข/ดู ใบกำกับ</h3>
-                <button id="editClose" class="px-2 py-1 text-gray-600 hover:bg-gray-100 rounded">ปิด</button>
-            </div>
+    <!-- แพเนล: สรุปตามช่วงเวลา -->
+    <div id="panelSummary">
+      <!-- แถบตัวกรอง -->
+      <div class="bg-white rounded-lg p-4 shadow mb-6">
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="inline-flex rounded-md shadow-sm" role="group" aria-label="Granularity">
+            <button type="button" data-granularity="day" class="btn-gran px-4 py-2 text-sm font-medium border border-gray-300 rounded-l-md bg-blue-600 text-white">
+              รายวัน
+            </button>
+            <button type="button" data-granularity="month" class="btn-gran px-4 py-2 text-sm font-medium border border-gray-300 bg-white hover:bg-gray-50">
+              รายเดือน
+            </button>
+            <button type="button" data-granularity="year" class="btn-gran px-4 py-2 text-sm font-medium border border-gray-300 rounded-r-md bg-white hover:bg-gray-50">
+              รายปี
+            </button>
+          </div>
 
-            <div class="p-4 space-y-4">
-                <!-- หัวบิล -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div>
-                        <label class="text-sm text-gray-600">เลขที่</label>
-                        <input id="em_invoice_number" class="border rounded px-2 py-1 w-full">
-                    </div>
-                    <div>
-                        <label class="text-sm text-gray-600">วันที่</label>
-                        <input id="em_invoice_date" type="date" class="border rounded px-2 py-1 w-full">
-                    </div>
-                    <div>
-                        <label class="text-sm text-gray-600">PO</label>
-                        <input id="em_po_number" class="border rounded px-2 py-1 w-full">
-                    </div>
-                    <div>
-                        <label class="text-sm text-gray-600">ลูกค้า</label>
-                        <input id="em_fname" class="border rounded px-2 py-1 w-full">
-                    </div>
-                    <div>
-                        <label class="text-sm text-gray-600">รหัสลูกค้า</label>
-                        <input id="em_personid" class="border rounded px-2 py-1 w-full">
-                    </div>
-                    <div>
-                        <label class="text-sm text-gray-600">เลขผู้เสียภาษี</label>
-                        <input id="em_taxid" class="border rounded px-2 py-1 w-full">
-                    </div>
-                    <div class="md:col-span-3">
-                        <label class="text-sm text-gray-600">ที่อยู่</label>
-                        <input id="em_address" class="border rounded px-2 py-1 w-full">
-                    </div>
-                    <div>
-                        <label class="text-sm text-gray-600">รหัสไปรษณีย์</label>
-                        <input id="em_zipcode" class="border rounded px-2 py-1 w-full">
-                    </div>
-                    <div>
-                        <label class="text-sm text-gray-600">จังหวัด</label>
-                        <input id="em_province" class="border rounded px-2 py-1 w-full">
-                    </div>
-                    <div>
-                        <label class="text-sm text-gray-600">โทรศัพท์</label>
-                        <input id="em_tel" class="border rounded px-2 py-1 w-full">
-                    </div>
-                    <div>
-                        <label class="text-sm text-gray-600">มือถือ</label>
-                        <input id="em_mobile" class="border rounded px-2 py-1 w-full">
-                    </div>
-                    <div>
-                        <label class="text-sm text-gray-600">เครดิต (วัน)</label>
-                        <input id="em_creditday" type="number" class="border rounded px-2 py-1 w-full">
-                    </div>
-                    <div>
-                        <label class="text-sm text-gray-600">ครบกำหนด</label>
-                        <input id="em_due_date" type="date" class="border rounded px-2 py-1 w-full">
-                    </div>
-                    <div>
-                        <label class="text-sm text-gray-600">ทะเบียนรถจัดส่ง</label>
-                        <input id="em_car_plate" class="border rounded px-2 py-1 w-full">
-                    </div>
-                </div>
+          <div id="filter-day" class="flex items-center gap-2">
+            <label class="text-sm text-gray-600">วันที่</label>
+            <input id="dayFrom" type="date" class="border rounded px-2 py-1">
+            <span class="text-sm text-gray-400">ถึง</span>
+            <input id="dayTo" type="date" class="border rounded px-2 py-1">
+          </div>
 
-                <!-- รายการสินค้า -->
-                <div>
-                    <div class="flex items-center justify-between mb-2">
-                        <h4 class="font-semibold">รายการสินค้า</h4>
-                        <button id="em_addItem"
-                            class="px-3 py-1 rounded bg-gray-100 hover:bg-gray-200">เพิ่มแถว</button>
-                    </div>
-                    <div class="overflow-auto">
-                        <table class="min-w-full border border-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-2 py-1 text-left border-b">รหัส</th>
-                                    <th class="px-2 py-1 text-left border-b">ชื่อ</th>
-                                    <th class="px-2 py-1 text-right border-b">จำนวน</th>
-                                    <th class="px-2 py-1 text-right border-b">ราคา/หน่วย</th>
-                                    <th class="px-2 py-1 text-right border-b">เป็นเงิน</th>
-                                    <th class="px-2 py-1 text-center border-b">ลบ</th>
-                                </tr>
-                            </thead>
-                            <tbody id="em_itemsBody"></tbody>
-                        </table>
-                    </div>
-                </div>
+          <div id="filter-month" class="hidden items-center gap-2">
+            <label class="text-sm text-gray-600">เดือน</label>
+            <input id="monthPick" type="month" class="border rounded px-2 py-1">
+          </div>
 
-                <div class="flex justify-end gap-2">
-                    <button id="em_save"
-                        class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">บันทึก</button>
-                    <button id="em_close2" class="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200">ยกเลิก</button>
-                </div>
-            </div>
+          <div id="filter-year" class="hidden items-center gap-2">
+            <label class="text-sm text-gray-600">ปี</label>
+            <input id="yearPick" type="number" class="border rounded px-2 py-1 w-28" step="1" min="2000" max="2100">
+          </div>
+
+          <button id="btnApply" class="ml-auto bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            ใช้ตัวกรอง
+          </button>
         </div>
+      </div>
+
+      <!-- ตารางสรุป -->
+      <div class="bg-white rounded-lg p-6 shadow">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-lg font-bold">สรุปรายการ</h2>
+          <div id="currentFilter" class="text-sm text-gray-500">—</div>
+        </div>
+
+        <div class="overflow-auto">
+          <table class="min-w-full border border-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-3 py-2 text-left text-sm font-semibold text-gray-700 border-b">ช่วงเวลา</th>
+                <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">จำนวนใบกำกับ</th>
+                <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">ยอดก่อนส่วนลด</th>
+                <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">ส่วนลด</th>
+                <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">ก่อน VAT</th>
+                <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">VAT</th>
+                <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">รวมสุทธิ</th>
+              </tr>
+            </thead>
+            <tbody id="summaryBody"></tbody>
+            <tfoot class="bg-gray-50">
+              <tr>
+                <td class="px-3 py-2 text-right font-semibold border-t">รวมทั้งหมด</td>
+                <td class="px-3 py-2 text-right font-semibold border-t" id="sum_count">0</td>
+                <td class="px-3 py-2 text-right font-semibold border-t" id="sum_amount">0.00</td>
+                <td class="px-3 py-2 text-right font-semibold border-t" id="sum_discount">0.00</td>
+                <td class="px-3 py-2 text-right font-semibold border-t" id="sum_before_vat">0.00</td>
+                <td class="px-3 py-2 text-right font-semibold border-t" id="sum_vat">0.00</td>
+                <td class="px-3 py-2 text-right font-semibold border-t" id="sum_grand">0.00</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
     </div>
 
+    <!-- แพเนล: รายการใบกำกับภาษีทั้งหมด -->
+    <div id="panelAll" class="hidden">
+      <div class="bg-white rounded-lg p-4 shadow mb-4">
+        <div class="flex flex-wrap items-center gap-2">
+          <label class="text-sm text-gray-600">วันที่</label>
+          <input id="allFrom" type="date" class="border rounded px-2 py-1">
+          <span class="text-sm text-gray-400">ถึง</span>
+          <input id="allTo" type="date" class="border rounded px-2 py-1">
 
-    <script src="/static/js/summary_invoices.js"></script>
+          <input id="allQ" type="text" placeholder="ค้นหา (เลขที่ใบกำกับ / ชื่อลูกค้า / PO)"
+                 class="border rounded px-2 py-1 w-full sm:w-64">
+
+          <button id="btnAllApply" class="ml-auto bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            ค้นหา
+          </button>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg p-6">
+        <div class="overflow-auto">
+          <table class="min-w-full border border-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-3 py-2 text-left text-sm font-semibold text-gray-700 border-b">วันที่</th>
+                <th class="px-3 py-2 text-left text-sm font-semibold text-gray-700 border-b">เลขที่</th>
+                <th class="px-3 py-2 text-left text-sm font-semibold text-gray-700 border-b">ลูกค้า</th>
+                <th class="px-3 py-2 text-left text-sm font-semibold text-gray-700 border-b hidden md:table-cell">PO</th>
+                <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b hidden sm:table-cell">ยอดก่อนส่วนลด</th>
+                <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b hidden lg:table-cell">VAT</th>
+                <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">สุทธิ</th>
+                <th class="px-3 py-2 text-center text-sm font-semibold text-gray-700 border-b">สินค้า</th>
+              </tr>
+            </thead>
+            <tbody id="allBody"></tbody>
+          </table>
+        </div>
+
+        <!-- แถบเปลี่ยนหน้า -->
+        <div class="flex items-center justify-between mt-3 flex-wrap gap-2">
+          <div id="allResultInfo" class="text-sm text-gray-500">—</div>
+          <div class="flex items-center gap-2">
+            <button id="allPrevPage" class="px-3 py-1 border rounded hover:bg-gray-50">ก่อนหน้า</button>
+            <span id="allPageInfo" class="text-sm text-gray-700">หน้า 1 / 1</span>
+            <button id="allNextPage" class="px-3 py-1 border rounded hover:bg-gray-50">ถัดไป</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: สินค้า -->
+  <div id="itemsModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow max-w-3xl w-full mx-4">
+      <div class="flex items-center justify-between p-4 border-b">
+        <h3 class="font-bold">รายการสินค้า</h3>
+        <button id="modalClose" class="px-2 py-1 text-gray-600 hover:bg-gray-100 rounded">ปิด</button>
+      </div>
+      <div class="p-4 overflow-auto max-h-[70vh]">
+        <table class="min-w-full border border-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-3 py-2 text-left text-sm font-semibold text-gray-700 border-b">รหัส</th>
+              <th class="px-3 py-2 text-left text-sm font-semibold text-gray-700 border-b">รายละเอียด</th>
+              <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">จำนวน</th>
+              <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">ราคา/หน่วย</th>
+              <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">จำนวนเงิน</th>
+            </tr>
+          </thead>
+          <tbody id="modalItemsBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: แก้ไข/ดูใบกำกับ -->
+  <div id="editModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow max-w-5xl w-full mx-4">
+      <div class="flex items-center justify-between p-4 border-b">
+        <h3 class="font-bold">แก้ไข/ดู ใบกำกับ</h3>
+        <button id="editClose" class="px-2 py-1 text-gray-600 hover:bg-gray-100 rounded">ปิด</button>
+      </div>
+
+      <div class="p-4 space-y-4">
+        <!-- หัวบิล -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label class="text-sm text-gray-600">เลขที่</label>
+            <input id="em_invoice_number" class="border rounded px-2 py-1 w-full">
+          </div>
+          <div>
+            <label class="text-sm text-gray-600">วันที่</label>
+            <input id="em_invoice_date" type="date" class="border rounded px-2 py-1 w-full">
+          </div>
+          <div>
+            <label class="text-sm text-gray-600">PO</label>
+            <input id="em_po_number" class="border rounded px-2 py-1 w-full">
+          </div>
+          <div>
+            <label class="text-sm text-gray-600">ลูกค้า</label>
+            <input id="em_fname" class="border rounded px-2 py-1 w-full">
+          </div>
+          <div>
+            <label class="text-sm text-gray-600">รหัสลูกค้า</label>
+            <input id="em_personid" class="border rounded px-2 py-1 w-full">
+          </div>
+          <div>
+            <label class="text-sm text-gray-600">เลขผู้เสียภาษี</label>
+            <input id="em_taxid" class="border rounded px-2 py-1 w-full">
+          </div>
+          <div class="md:col-span-3">
+            <label class="text-sm text-gray-600">ที่อยู่</label>
+            <input id="em_address" class="border rounded px-2 py-1 w-full">
+          </div>
+          <div>
+            <label class="text-sm text-gray-600">รหัสไปรษณีย์</label>
+            <input id="em_zipcode" class="border rounded px-2 py-1 w-full">
+          </div>
+          <div>
+            <label class="text-sm text-gray-600">จังหวัด</label>
+            <input id="em_province" class="border rounded px-2 py-1 w-full">
+          </div>
+          <div>
+            <label class="text-sm text-gray-600">โทรศัพท์</label>
+            <input id="em_tel" class="border rounded px-2 py-1 w-full">
+          </div>
+          <div>
+            <label class="text-sm text-gray-600">มือถือ</label>
+            <input id="em_mobile" class="border rounded px-2 py-1 w-full">
+          </div>
+          <div>
+            <label class="text-sm text-gray-600">เครดิต (วัน)</label>
+            <input id="em_creditday" type="number" class="border rounded px-2 py-1 w-full">
+          </div>
+          <div>
+            <label class="text-sm text-gray-600">ครบกำหนด</label>
+            <input id="em_due_date" type="date" class="border rounded px-2 py-1 w-full">
+          </div>
+          <div>
+            <label class="text-sm text-gray-600">ทะเบียนรถจัดส่ง</label>
+            <input id="em_car_plate" class="border rounded px-2 py-1 w-full">
+          </div>
+        </div>
+
+        <!-- รายการสินค้า -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="font-semibold">รายการสินค้า</h4>
+            <button id="em_addItem" class="px-3 py-1 rounded bg-gray-100 hover:bg-gray-200">เพิ่มแถว</button>
+          </div>
+          <div class="overflow-auto">
+            <table class="min-w-full border border-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-2 py-1 text-left border-b">รหัส</th>
+                  <th class="px-2 py-1 text-left border-b">ชื่อ</th>
+                  <th class="px-2 py-1 text-right border-b">จำนวน</th>
+                  <th class="px-2 py-1 text-right border-b">ราคา/หน่วย</th>
+                  <th class="px-2 py-1 text-right border-b">เป็นเงิน</th>
+                  <th class="px-2 py-1 text-center border-b">ลบ</th>
+                </tr>
+              </thead>
+              <tbody id="em_itemsBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2">
+          <button id="em_save" class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">บันทึก</button>
+          <button id="em_close2" class="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200">ยกเลิก</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/summary_invoices.js"></script>
 </body>
-
 </html>
