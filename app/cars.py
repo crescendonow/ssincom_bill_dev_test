@@ -101,3 +101,37 @@ def delete_car(idx: int, db: Session = Depends(get_db)):
     if not car: raise HTTPException(status_code=404, detail="not found")
     db.delete(car); db.commit()
     return
+
+# --------- Suggest: car brand ----------
+@router.get("/api/suggest/car_brand")
+def suggest_car_brand(
+    q: str = Query("", min_length=1),
+    limit: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    pat = f"%{q.strip()}%"
+    rows = (
+        db.query(models.CarBrand.brand_name)
+        .filter(models.CarBrand.brand_name.ilike(pat))
+        .order_by(models.CarBrand.brand_name.asc())
+        .limit(limit)
+        .all()
+    )
+    return [{"brand_name": r[0]} for r in rows]
+
+# --------- Suggest: province ----------
+@router.get("/api/suggest/province")
+def suggest_province(
+    q: str = Query("", min_length=1),
+    limit: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    pat = f"%{q.strip()}%"
+    rows = (
+        db.query(models.ProvinceNostra.prov_nam_t)
+        .filter(models.ProvinceNostra.prov_nam_t.ilike(pat))
+        .order_by(models.ProvinceNostra.prov_nam_t.asc())
+        .limit(limit)
+        .all()
+    )
+    return [{"prov_nam_t": r[0]} for r in rows]

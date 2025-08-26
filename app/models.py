@@ -82,4 +82,32 @@ class ProductList(Base):
     cf_unitname = Column(String(20))        # unit
     cf_itempricelevel_price = Column(Float) # price
     cf_items_ordinary = Column(Integer)     # order/status
+
+#--------------------- car numberplate data ---------------------
+# ===== รถ (schema products.ss_car) =====
+class Car(Base):
+    __tablename__ = "ss_car"
+    __table_args__ = {"schema": "products"}
+
+    idx = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    number_plate = Column(String, unique=True, index=True)  # ทะเบียนรถ
+    car_brand = Column(String)                               # ยี่ห้อ
+    province = Column(String)                                # จังหวัดที่จดทะเบียน
+
+# ===== ยี่ห้อรถ (schema public.car_brand) =====
+class CarBrand(Base):
+    __tablename__ = "car_brand"
+    __table_args__ = {"schema": "public"}
+
+    # ใช้ brand_name เป็น PK ไปก่อน (ถ้าฐานข้อมูลมีคอลัมน์ idx ก็ปรับให้เป็น PK ได้)
+    brand_name = Column(String, primary_key=True)
+
+# ===== จังหวัด (schema public.province_nostra) =====
+class ProvinceNostra(Base):
+    __tablename__ = "province_nostra"
+    __table_args__ = {"schema": "public"}
+
+    # ใช้ prov_nam_t เป็น PK ไปก่อน
+    prov_nam_t = Column(String, primary_key=True)
+
    
