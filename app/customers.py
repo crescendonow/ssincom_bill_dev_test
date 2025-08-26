@@ -34,13 +34,13 @@ def customer_to_dict(c: models.CustomerList) -> dict:
         "fmlpaymentcreditday": c.fmlpaymentcreditday,
     }
 
-# ========== NEW: โหลดรายการทั้งหมดให้ customer_form.js ==========
+# ========== NEW: load all serve to customer_form.js ==========
 @router.get("/api/customers/all")
 def api_customers_all(db: Session = Depends(get_db)):
     rows = db.query(models.CustomerList).order_by(models.CustomerList.idx.desc()).all()
     return [customer_to_dict(r) for r in rows]
 
-# ========== NEW: ตรวจข้อมูลซ้ำ (ชื่อ/รหัส/เลขภาษี) ==========
+# ========== NEW: check duplicate (ชื่อ/รหัส/เลขภาษี) ==========
 @router.post("/api/customers/check-duplicate")
 def api_customers_check_duplicate(
     fname: str = Form(""),
@@ -63,7 +63,7 @@ def api_customers_check_duplicate(
     exists = db.query(q.exists()).scalar()
     return {"duplicate": bool(exists)}
 
-# ========== NEW: สร้างลูกค้า ==========
+# ========== NEW: create customer ==========
 @router.post("/api/customers")
 def api_customers_create(
     prename: Optional[str] = Form(None),
@@ -98,7 +98,7 @@ def api_customers_create(
         return RedirectResponse(url="/dashboard?msg=customer_saved", status_code=303)
     return {"ok": True, "idx": row.idx, "customer": customer_to_dict(row)}
 
-# ========== NEW: แก้ไขลูกค้า (ตามที่ JS ใช้ method POST) ==========
+# ========== NEW: update customer (ตามที่ JS ใช้ method POST) ==========
 @router.post("/api/customers/{idx}")
 def api_customers_update(
     idx: int,
@@ -120,7 +120,7 @@ def api_customers_update(
     if not row:
         raise HTTPException(status_code=404, detail="customer not found")
 
-    # อัปเดตเฉพาะค่าส่งมา
+    # update only the sent values
     mapping = {
         "prename": prename, "fname": fname, "lname": lname, "personid": personid,
         "cf_taxid": cf_taxid, "cf_personaddress_tel": cf_personaddress_tel,
@@ -236,7 +236,12 @@ def list_customers(
     )
     if search.strip():
         pat = f"%{search.strip()}%"
-        q = q.filter(or_(inv.fname.ilike(pat), inv.personid.ilike(pat), inv.cf_taxid.ilike(pat)))
+        q = q.filter(or_(
+    inv.fname.ilike(pat),
+    inv.personid.ilike(pat),
+    inv.cf_taxid.ilike(pat),
+    inv.cf_provincename.ilike(pat)   # add province
+))
 
     q = q.group_by(inv.personid, inv.fname, inv.cf_taxid, inv.cf_provincename, inv.cf_personaddress, inv.tel, inv.mobile)
     total = q.count()
