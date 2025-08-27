@@ -1,72 +1,68 @@
-// static/js/invoice.js
-
-(() => {
-  // จัดตำแหน่งเลขประจำตัวผู้เสียภาษีให้ตรงบรรทัดเดียวกับอีเมลฝั่งซ้าย
-  function alignTaxIdWithEmail() {
+// ===== จัดตำแหน่ง TAX ID ให้ตรงกับบรรทัดอีเมลฝั่งซ้าย =====
+(function alignTaxIdWithEmail() {
+  function run() {
     const emailEl = document.getElementById('company-email');
     const rightCol = document.getElementById('header-right');
-    const taxIdEl  = document.getElementById('tax-id');
+    const taxIdEl = document.getElementById('tax-id');
     if (!emailEl || !rightCol || !taxIdEl) return;
 
+    // เผื่อ margin label น้อยเกินไป
     const taxLabel = document.getElementById('tax-label');
-    if (taxLabel) {
-      const mt = parseFloat(getComputedStyle(taxLabel).marginTop || '0');
-      if (mt < 12) taxLabel.style.marginTop = '12px';
+    if (taxLabel && parseFloat(getComputedStyle(taxLabel).marginTop || 0) < 8) {
+      taxLabel.style.marginTop = '12px';
     }
 
+    // ปรับระยะให้เลขภาษีตรงบรรทัดเดียวกับอีเมล
     const rightTop = rightCol.getBoundingClientRect().top + window.scrollY;
     const emailTop = emailEl.getBoundingClientRect().top + window.scrollY;
     const taxTop   = taxIdEl.getBoundingClientRect().top + window.scrollY;
 
     const delta = (emailTop - rightTop) - (taxTop - rightTop);
-    const currentMt = parseFloat(getComputedStyle(taxIdEl).marginTop || '0');
+    const currentMt = parseFloat(getComputedStyle(taxIdEl).marginTop || 0);
     taxIdEl.style.marginTop = (currentMt + delta) + 'px';
   }
 
-  function onReady(fn) {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', fn);
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(run, 0);
+  } else {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(run, 0));
+  }
+  window.addEventListener('load', run);
+  window.addEventListener('resize', run);
+})();
+
+// ===== ปรับสเกลให้พอดี A4 ก่อนพิมพ์ (กันเนื้อหาเลยหน้า) =====
+(function fitToA4() {
+  const mmToPx = mm => (mm / 25.4) * 96;
+
+  function fitToA4Once() {
+    const doc = document.querySelector('.doc');
+    if (!doc) return;
+
+    // @page margin: 8mm (บน+ล่าง = 16mm)
+    const printableHeightPx = mmToPx(297 - 16); // ความสูง A4 - margin
+
+    const actual = doc.getBoundingClientRect().height;
+    const scale = Math.min(1, printableHeightPx / actual);
+
+    if (scale < 1) {
+      doc.style.transform = `scale(${scale})`;
+      const scaledHeight = actual * scale;
+      const spare = printableHeightPx - scaledHeight;
+      doc.style.marginBottom = spare > 0 ? `${spare}px` : '0';
+      doc.style.transformOrigin = 'top left';
     } else {
-      fn();
+      doc.style.transform = '';
+      doc.style.marginBottom = '';
     }
   }
 
-  onReady(() => {
-    alignTaxIdWithEmail();
-    window.addEventListener('load', alignTaxIdWithEmail);
-    window.addEventListener('resize', alignTaxIdWithEmail);
+  window.addEventListener('beforeprint', fitToA4Once);
+  window.addEventListener('afterprint', () => {
+    const doc = document.querySelector('.doc');
+    if (doc) { doc.style.transform = ''; doc.style.marginBottom = ''; }
   });
 
-  // ----- PRINT LOCK -----
-  function addPrintLock() {
-    document.documentElement.classList.add('printing');
-    document.body.classList.add('printing');
-  }
-  function removePrintLock() {
-    document.documentElement.classList.remove('printing');
-    document.body.classList.remove('printing');
-  }
-
-  // ให้ iOS บางเวอร์ชันที่ไม่ยิง afterprint ก็ยังถอดล็อกได้
-  function removeLockWithFallback() {
-    removePrintLock();
-    // Fallback ถ้า afterprint ไม่มา ให้ถอดซ้ำหลัง 3 วิ
-    setTimeout(removePrintLock, 3000);
-  }
-
-  // เรียกใช้จากปุ่มพิมพ์
-  window.startPrint = function () {
-    addPrintLock();
-    // เว้นจังหวะสั้น ๆ ให้ reflow ตามกฎ printing ก่อน
-    setTimeout(() => {
-      window.print();
-      // ถอดล็อกด้วย afterprint + เผื่อ fallback
-      // (บาง iOS จะไม่ยิง afterprint จากปุ่มแชร์)
-      setTimeout(removePrintLock, 1500);
-    }, 50);
-  };
-
-  // เผื่อเบราว์เซอร์ที่รองรับอีเวนต์เหล่านี้
-  window.addEventListener('beforeprint', addPrintLock);
-  window.addEventListener('afterprint', removeLockWithFallback);
+  // อยากลองให้ scale บนหน้าจอก่อนพิมพ์ เปิดบรรทัดนี้ได้
+  // window.addEventListener('load', fitToA4Once);
 })();
