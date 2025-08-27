@@ -1,160 +1,288 @@
-/* ===== Base: ยึดขนาด A4 เสมอ ===== */
-@page {
-  size: A4;
-  margin: 8mm;
-}
+    @page {
+        size: A4;
+        margin: 8mm;
+    }
 
-/* ป้องกัน text reflow/zoom ฝั่ง iOS */
-html, body {
-  -webkit-text-size-adjust: 100%;
-  print-color-adjust: exact;
-  -webkit-print-color-adjust: exact;
-}
+    * {
+        box-sizing: border-box;
+    }
 
-/* ฟอนต์: ใช้ชุดเดิม แต่ลดการแตกบรรทัด */
-* {
-  box-sizing: border-box;
-  word-break: break-word;
-}
+    body {
+        font-family: "TH Sarabun New", "Tahoma", sans-serif;
+        font-size: 12pt;
+        /* เดิม 15pt */
+        color: #0F3F7F;
+        line-height: 1.2;
+        /* เพิ่ม ลดช่องไฟแนวตั้ง */
+    }
 
-body {
-  font-family: "TH Sarabun New", "Tahoma", sans-serif;
-  font-size: 12pt;
-  color: #0F3F7F;
-  line-height: 1.2;
-  margin: 0;
-  background: #fff;
-}
+    /* ให้ขอบคำนวณรวมความกว้างเสมอ */
+    .col,
+    .box,
+    .box-light {
+        box-sizing: border-box;
+    }
 
-/* กรอบเอกสาร: ยึดความกว้าง “พื้นที่พิมพ์” ของ A4 */
-.doc {
-  /* 210mm - 2*8mm margin = 194mm */
-  width: 194mm;
-  margin: 0 auto;
-  border: 2px solid #0F3F7F;
-  border-radius: 10px;
-  padding: 12px;
-  background: #fff;
-}
+    /* กรอบมนเหมือนเดิม */
+    .box-light {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        /* ✅ มน */
+        padding: 8px 10px;
+        background: #fff;
+    }
 
-/* โครง layout ทั่วไป */
-.row {
-  display: flex;
-  gap: 12px;
-}
+    /* จัดกริดให้คอลัมน์ขวากว้างเท่ากับกล่องสรุปยอด */
+    .row.align-cols {
+        --gap: 10px;
+        --side-w: 380px;
+        display: flex;
+        align-items: stretch;
+        justify-content: space-between;
+    }
 
-.col {
-  flex: 1 1 0;
-}
+    .row.align-cols .col-left {
+        flex: 1;
+        margin-right: var(--gap);
+    }
 
-.box {
-  border: 2px solid #0F3F7F;
-  border-radius: 10px;
-  padding: 10px;
-  background: #fff;
-}
+    .row.align-cols .col-right {
+        .row.align-cols .col-right {
+            display: flex;
+        }
 
-.box-light {
-  border: 1.5px solid #0F3F7F;
-  border-radius: 10px;
-  padding: 8px;
-  background: #fff;
-}
+        .row.align-cols .col-right>.box {
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
+        }
+    }
 
-.title { font-weight: 700; font-size: 16pt; }
-.sub   { font-size: 11pt; color: #1c5ca5; }
-.right { text-align: right; }
-.center{ text-align: center; }
-.muted { color: #1c5ca5; font-size: 10pt; }
+    /* (ตัวเลือก) ทำให้ .box กับ .box-light ดูหนาเส้นขอบเท่ากัน */
+    .box,
+    .box-light {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 8px 10px;
+    }
 
-.mt6  { margin-top: 3px; }
-.mt8  { margin-top: 4px; }
-.mt10 { margin-top: 6px; }
-.mt14 { margin-top: 8px; }
-.mb8  { margin-bottom: 8px; }
-.mb10 { margin-bottom: 10px; }
+    .doc {
+        border: 2px solid #0F3F7F;
+        border-radius: 10px;
+        padding: 12px;
+    }
 
-.logo { height: 18mm; width: auto; }
+    .row {
+        display: flex;
+        gap: 12px;
+    }
 
-/* จัดคอลัมน์ซ้าย-ขวาให้สูงเท่ากัน */
-.row.align-cols {
-  --gap: 10px;
-  --side-w: 380px;
-  align-items: stretch;
-  justify-content: space-between;
-}
-.row.align-cols .col-left  { flex: 1; margin-right: var(--gap); }
-.row.align-cols .col-right { flex: 0 0 var(--side-w); }
+    .col {
+        flex: 1;
+    }
 
-/* ตารางสินค้า (ตายตัว ไม่ยืดตามจอ) */
-.table-frame {
-  border: 1.5px solid #0F3F7F;
-  border-radius: 10px;
-  overflow: hidden;
-}
+    .box {
+        border: 2px solid #0F3F7F;
+        border-radius: 10px;
+        padding: 10px;
+    }
 
-table.items {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed; /* บังคับความกว้างตามคอลัมน์ */
-}
+    .box-light {
+        border: 1.5px solid #0F3F7F;
+        border-radius: 10px;
+        padding: 8px;
+    }
 
-table.items thead th {
-  background: #eef5ff;
-  font-weight: 700;
-  padding: 6px 8px;
-  text-align: center;
-  border-top: 1.5px solid #0F3F7F;
-  border-bottom: 1.5px solid #0F3F7F;
-}
+    .title {
+        font-weight: 700;
+        font-size: 16pt;
+    }
 
-table.items thead th + th { border-left: 1.5px solid #0F3F7F; }
+    .sub {
+        font-size: 11pt;
+        color: #1c5ca5;
+    }
 
-table.items td {
-  padding: 6px 8px;
-  vertical-align: top;
-  border: none;
-}
-table.items td + td { border-left: 1.5px solid #0F3F7F; }
+    .right {
+        text-align: right;
+    }
 
-/* ตารางสรุป */
-.sumtable {
-  width: 100%;
-  border-collapse: collapse;
-}
-.sumtable td {
-  border: none;
-  padding: 1px 4px;
-  line-height: 1.1;
-}
-.sumtable tr td:first-child { padding-right: 14px; }
-.big-amount { font-size: 14pt; font-weight: 700; }
+    .center {
+        text-align: center;
+    }
 
-/* ป้องกันตัดหน้า/คอลัมน์ผิดตำแหน่ง */
-.box, .box-light, .table-frame, .row, .doc, table, thead, tbody, tr, td, th {
-  break-inside: avoid;
-  page-break-inside: avoid;
-}
+    .muted {
+        color: #1c5ca5;
+        font-size: 10pt;
+    }
 
-/* ===== PRINT RULES: ใช้เฉพาะตอนพิมพ์ / export PDF ===== */
-@media print {
-  /* ตัดสิ่งที่ไม่ต้องพิมพ์ */
-  .noprint, .noprint * { display: none !important; }
+    .mt6 {
+        margin-top: 3px;
+    }
 
-  html, body {
-    width: 210mm;    /* ให้เบราว์เซอร์รู้ว่าหน้านี้คือ A4 */
-    height: auto;
-    background: #fff;
-  }
+    .mt10 {
+        margin-top: 6px;
+    }
 
-  .doc {
-    width: 194mm;    /* เท่าพื้นที่พิมพ์ */
-    margin: 0;
-    border-color: #0F3F7F;
-    box-shadow: none;
-    transform: none !important; /* กันสคริปต์มาปรับ scale */
-  }
+    .mt14 {
+        margin-top: 8px;
+    }
 
-  th, td { padding: 4px 6px; }
-  .box, .box-light { padding: 6px; }
-}
+    .mb6 {
+        margin-bottom: 6px;
+    }
+
+    .mb8 {
+        margin-bottom: 8px;
+    }
+
+    .mb10 {
+        margin-bottom: 10px;
+    }
+
+    /* กันไว้ เผื่อมี mt6 บนตารางจากของเดิม */
+    .table-frame .items {
+        margin-top: 0 !important;
+    }
+
+    .logo {
+        height: 70px;
+    }
+
+    /* กรอบนอกตารางสินค้า: ไม่มีเส้นบน */
+    .table-frame {
+        border: 1.5px solid #0F3F7F;
+        border-radius: 10px;
+        /* เดิมมีแค่มุมล่าง */
+        overflow: hidden;
+        /* ให้หัวตารางถูกครอบตามมุมโค้ง */
+    }
+
+    table.items thead th {
+        background: #eef5ff;
+        font-weight: 700;
+        padding: 6px 8px;
+        text-align: center;
+        border-top: none;
+        /* เดิมมีเส้นบน */
+        border-bottom: 1.5px solid #0F3F7F;
+        /* มุมบนไม่ต้องโค้ง ปล่อยให้กรอบจัดการ */
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+    }
+
+    /* ตารางภายใน */
+    table.items {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    /* หัวตาราง: สร้างเส้นบน + มุมโค้ง */
+    table.items th {
+        background: #eef5ff;
+        font-weight: 700;
+        padding: 6px 8px;
+        text-align: center;
+
+        /* เส้นบนหัวตาราง = เส้นบนของกรอบ */
+        border-top: 1.5px solid #0F3F7F;
+        border-bottom: 1.5px solid #0F3F7F;
+        /* เส้นใต้หัวตาราง */
+    }
+
+    /* เส้นแนวตั้งแบ่งคอลัมน์ในหัวตาราง */
+    table.items th+th {
+        border-left: 1.5px solid #0F3F7F;
+    }
+
+    .table-frame .items {
+        margin-top: 0 !important;
+    }
+
+    /* มุมโค้งบน */
+    table.items th:first-child {
+        border-top-left-radius: 10px;
+    }
+
+    table.items th:last-child {
+        border-top-right-radius: 10px;
+    }
+
+    /* ข้อมูล: ไม่มีเส้นบน/ล่าง แต่มีเส้นแนวตั้ง */
+    table.items td {
+        padding: 6px 8px;
+        vertical-align: top;
+        border: none;
+    }
+
+    table.items td+td {
+        border-left: 1.5px solid #0F3F7F;
+    }
+
+    th {
+        background: #eef5ff;
+        font-weight: 700;
+    }
+
+    .no-border {
+        border: none !important;
+    }
+
+    .sumtable td {
+        padding: 2px 6px;
+        /* ปรับ padding แนวตั้ง/แนวนอน */
+        line-height: 1.2;
+        /* ลดความสูงบรรทัด */
+    }
+
+    .sumtable {
+        border-collapse: collapse;
+    }
+
+    /* แยก selector ปกติ (ห้ามซ้อนใน CSS ปกติ) */
+    .sumtable td {
+        border: none;
+        padding: 1px 4px;
+        /* เดิม 2px 6px */
+        line-height: 1.1;
+        /* เดิม 1.2 */
+    }
+
+    .sumtable tr td:first-child {
+        padding-right: 14px;
+    }
+
+    .big-amount {
+        font-size: 14pt;
+        font-weight: 700;
+    }
+
+    /* ไม่พิมพ์ปุ่มและทุกอย่างภายใน .noprint */
+    @media print {
+
+        .noprint,
+        .noprint * {
+            display: none !important;
+        }
+
+        body {
+            font-size: 13pt;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .doc {
+            padding: 6mm;
+            box-shadow: none;
+        }
+
+        th,
+        td {
+            padding: 4px 6px;
+        }
+
+        .box,
+        .box-light {
+            padding: 6px;
+        }
+    }
