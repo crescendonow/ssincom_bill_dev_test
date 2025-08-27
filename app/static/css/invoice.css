@@ -1,56 +1,24 @@
-/* === Noto Sans Thai @font-face === */
-/* วางไฟล์ฟอนต์ที่ /static/fonts/ */
-@font-face {
-  font-family: "Noto Sans Thai";
-  src:
-    local("Noto Sans Thai Regular"),
-    url("/static/fonts/NotoSansThai-Regular.woff2") format("woff2"),
-    url("/static/fonts/NotoSansThai-Regular.woff") format("woff");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Noto Sans Thai";
-  src:
-    local("Noto Sans Thai Medium"),
-    url("/static/fonts/NotoSansThai-Medium.woff2") format("woff2"),
-    url("/static/fonts/NotoSansThai-Medium.woff") format("woff");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Noto Sans Thai";
-  src:
-    local("Noto Sans Thai Bold"),
-    url("/static/fonts/NotoSansThai-Bold.woff2") format("woff2"),
-    url("/static/fonts/NotoSansThai-Bold.woff") format("woff");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-/* ===== A4 & บัฟเฟอร์ขอบกระดาษ ===== */
+/* ===== Base: ยึดขนาด A4 เสมอ ===== */
 @page {
   size: A4;
   margin: 8mm;
 }
 
-/* ป้องกันการปรับขนาดตัวอักษรอัตโนมัติบน iOS */
+/* ป้องกัน text reflow/zoom ฝั่ง iOS */
 html, body {
   -webkit-text-size-adjust: 100%;
   print-color-adjust: exact;
   -webkit-print-color-adjust: exact;
 }
 
+/* ฟอนต์: ใช้ชุดเดิม แต่ลดการแตกบรรทัด */
 * {
   box-sizing: border-box;
   word-break: break-word;
 }
 
 body {
-  font-family: "Noto Sans Thai", "TH Sarabun New", "Tahoma", sans-serif;
+  font-family: "TH Sarabun New", "Tahoma", sans-serif;
   font-size: 12pt;
   color: #0F3F7F;
   line-height: 1.2;
@@ -58,9 +26,9 @@ body {
   background: #fff;
 }
 
-/* ===== กรอบเอกสารยึดพื้นที่พิมพ์ A4 ===== */
-/* 210mm - 2*8mm margin = 194mm */
+/* กรอบเอกสาร: ยึดความกว้าง “พื้นที่พิมพ์” ของ A4 */
 .doc {
+  /* 210mm - 2*8mm margin = 194mm */
   width: 194mm;
   margin: 0 auto;
   border: 2px solid #0F3F7F;
@@ -69,11 +37,12 @@ body {
   background: #fff;
 }
 
-/* ===== Utilities / Layout ===== */
+/* โครง layout ทั่วไป */
 .row {
   display: flex;
   gap: 12px;
 }
+
 .col {
   flex: 1 1 0;
 }
@@ -84,6 +53,7 @@ body {
   padding: 10px;
   background: #fff;
 }
+
 .box-light {
   border: 1.5px solid #0F3F7F;
   border-radius: 10px;
@@ -106,7 +76,7 @@ body {
 
 .logo { height: 18mm; width: auto; }
 
-/* จัดคอลัมน์ซ้าย-ขวาให้สูงเท่ากัน/ตรงกัน */
+/* จัดคอลัมน์ซ้าย-ขวาให้สูงเท่ากัน */
 .row.align-cols {
   --gap: 10px;
   --side-w: 380px;
@@ -116,7 +86,7 @@ body {
 .row.align-cols .col-left  { flex: 1; margin-right: var(--gap); }
 .row.align-cols .col-right { flex: 0 0 var(--side-w); }
 
-/* ===== ตารางสินค้า ===== */
+/* ตารางสินค้า (ตายตัว ไม่ยืดตามจอ) */
 .table-frame {
   border: 1.5px solid #0F3F7F;
   border-radius: 10px;
@@ -126,7 +96,7 @@ body {
 table.items {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed; /* บังคับความกว้างตามคอลัมน์ให้คงที่ */
+  table-layout: fixed; /* บังคับความกว้างตามคอลัมน์ */
 }
 
 table.items thead th {
@@ -137,21 +107,17 @@ table.items thead th {
   border-top: 1.5px solid #0F3F7F;
   border-bottom: 1.5px solid #0F3F7F;
 }
-table.items thead th + th {
-  border-left: 1.5px solid #0F3F7F;
-}
 
-/* ไม่มีเส้นแนวนอนระหว่างแถวเนื้อหา ให้เน้นเส้นแนวตั้งของคอลัมน์แทน */
+table.items thead th + th { border-left: 1.5px solid #0F3F7F; }
+
 table.items td {
   padding: 6px 8px;
   vertical-align: top;
-  border: none; /* ไม่วาดเส้นแนวนอน */
+  border: none;
 }
-table.items td + td {
-  border-left: 1.5px solid #0F3F7F; /* เส้นคอลัมน์หนาขึ้น */
-}
+table.items td + td { border-left: 1.5px solid #0F3F7F; }
 
-/* ===== ตารางสรุปยอด ===== */
+/* ตารางสรุป */
 .sumtable {
   width: 100%;
   border-collapse: collapse;
@@ -164,30 +130,29 @@ table.items td + td {
 .sumtable tr td:first-child { padding-right: 14px; }
 .big-amount { font-size: 14pt; font-weight: 700; }
 
-/* ===== ป้องกันตัดหน้า/แตกบรรทัดผิดตำแหน่งตอนพิมพ์ ===== */
+/* ป้องกันตัดหน้า/คอลัมน์ผิดตำแหน่ง */
 .box, .box-light, .table-frame, .row, .doc, table, thead, tbody, tr, td, th {
   break-inside: avoid;
   page-break-inside: avoid;
 }
 
-/* ===== โซนพิมพ์/Export PDF ===== */
+/* ===== PRINT RULES: ใช้เฉพาะตอนพิมพ์ / export PDF ===== */
 @media print {
-  /* ซ่อนองค์ประกอบที่ไม่ต้องพิมพ์ */
+  /* ตัดสิ่งที่ไม่ต้องพิมพ์ */
   .noprint, .noprint * { display: none !important; }
 
   html, body {
-    width: 210mm; /* บอกเบราว์เซอร์ให้เรนเดอร์เป็นหน้า A4 */
+    width: 210mm;    /* ให้เบราว์เซอร์รู้ว่าหน้านี้คือ A4 */
     height: auto;
     background: #fff;
-    font-family: "Noto Sans Thai", "TH Sarabun New", "Tahoma", sans-serif;
   }
 
   .doc {
-    width: 194mm;  /* เท่าพื้นที่พิมพ์หลังหัก margin @page */
+    width: 194mm;    /* เท่าพื้นที่พิมพ์ */
     margin: 0;
     border-color: #0F3F7F;
     box-shadow: none;
-    transform: none !important; /* ป้องกัน JS/เบราว์เซอร์ปรับ scale เอง */
+    transform: none !important; /* กันสคริปต์มาปรับ scale */
   }
 
   th, td { padding: 4px 6px; }
