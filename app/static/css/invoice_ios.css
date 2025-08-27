@@ -1,0 +1,86 @@
+/* /static/css/invoice.ios.css */
+/* ปรับแต่งเฉพาะ iOS/iPhone สำหรับ "การแสดงผลบนจอ" ให้เข้ากับหน้าจอเล็ก
+   โดยไม่กระทบการพิมพ์/Export PDF ที่คุมด้วย invoice.css (@media print) */
+
+/* ตรวจจับ Safari/WebView บน iOS ด้วย feature query */
+@supports (-webkit-touch-callout: none) {
+  :root { color-scheme: light; } /* กัน dark mode invert */
+
+  /* ---- Safe area (notch / home indicator) ---- */
+  @media screen {
+    html, body {
+      background: #ffffff;
+    }
+    body {
+      padding-top: env(safe-area-inset-top);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  }
+
+  /* ---- เฉพาะ iPhone (กว้างไม่เกิน ~430px) ---- */
+  @media screen and (max-width: 430px) {
+    /* แสดงเอกสารเต็มจอมากขึ้น (เฉพาะการดูบนจอ) */
+    .doc {
+      width: auto;             /* ให้เต็มจอมือถือ */
+      margin: 0 8px;           /* เว้นขอบเล็กน้อย */
+      border-width: 2px;       /* ให้เส้นชัดบนจอ retina */
+      padding: 10px;
+    }
+
+    .row { gap: 10px; }
+    .box { padding: 8px; }
+    .box-light { padding: 7px; }
+
+    .logo { height: 60px; }        /* โลโก้เล็กลงบนจอมือถือ */
+    .title { font-size: 15pt; }     /* หัวใหญ่ลงเล็กน้อย */
+    .big-amount { font-size: 13pt; }
+
+    /* ตารางสินค้า: ให้เลื่อนแนวนอนลื่นบน iOS */
+    .table-frame {
+      -webkit-overflow-scrolling: touch;
+      overflow: auto;
+    }
+
+    /* หัวตาราง/ตัวอักษรบนจอเล็ก */
+    table.items thead th {
+      padding: 6px 6px;
+      font-size: 11pt;
+    }
+    table.items td {
+      padding: 6px 6px;
+      font-size: 11pt;
+    }
+
+    /* ช่องเว้นบรรทัดเล็กลงรวมๆ ให้พอดีพื้นที่จอ */
+    .mt10 { margin-top: 5px; }
+    .mt14 { margin-top: 7px; }
+    .mb10 { margin-bottom: 7px; }
+  }
+
+  /* ---- แนวนอน (landscape) บน iPhone ---- */
+  @media screen and (max-width: 932px) and (orientation: landscape) {
+    .doc {
+      margin: 6px 10px;
+    }
+  }
+
+  /* ---- ตอนพิมพ์บน iOS ให้ยึดกฎจาก invoice.css เป็นหลัก ---- */
+  @media print {
+    html, body { 
+      width: 210mm !important; 
+      background: #ffffff !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      font-family: "Noto Sans Thai", "TH Sarabun New", Tahoma, sans-serif;
+    }
+    .doc { 
+      width: 194mm !important; 
+      transform: none !important; 
+      margin: 0 !important;
+      box-shadow: none !important;
+    }
+  }
+}
+

@@ -15,7 +15,7 @@
     // ปรับระยะให้เลขภาษีตรงบรรทัดเดียวกับอีเมล
     const rightTop = rightCol.getBoundingClientRect().top + window.scrollY;
     const emailTop = emailEl.getBoundingClientRect().top + window.scrollY;
-    const taxTop   = taxIdEl.getBoundingClientRect().top + window.scrollY;
+    const taxTop = taxIdEl.getBoundingClientRect().top + window.scrollY;
 
     const delta = (emailTop - rightTop) - (taxTop - rightTop);
     const currentMt = parseFloat(getComputedStyle(taxIdEl).marginTop || 0);
@@ -56,6 +56,17 @@
       doc.style.marginBottom = '';
     }
   }
+
+  (function () {
+  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // iPadOS
+  if (isIOS) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = '/static/css/invoice_ios.css';
+    document.head.appendChild(link);
+  }
+})();
 
   window.addEventListener('beforeprint', fitToA4Once);
   window.addEventListener('afterprint', () => {
