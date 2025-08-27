@@ -286,3 +286,29 @@
             padding: 6px;
         }
     }
+
+    /* ===== PRINT LOCK (กัน iOS ใช้สไตล์จอ screen ตอน Export PDF) ===== */
+    /* เมื่อติดคลาส printing จะบังคับขนาด A4 ไม่ว่าอยู่ media ไหน */
+    html.printing,
+    body.printing {
+        width: 210mm !important;
+        background: #fff !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    body.printing .doc {
+        width: 194mm !important;
+        /* 210mm - margin@page(8mm*2) */
+        margin: 0 !important;
+        transform: none !important;
+        box-shadow: none !important;
+        border-color: #0F3F7F !important;
+    }
+
+    /* กันกฎบนจอ iPhone ที่ตั้ง .doc เป็น width:auto มาทับตอนพิมพ์ */
+    @supports (-webkit-touch-callout: none) {
+        body.printing .doc {
+            width: 194mm !important;
+        }
+    }
