@@ -1,7 +1,11 @@
 # app/customers.py
-from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, Form
-from fastapi.responses import JSONResponse, RedirectResponse
+from __future__ import annotations
+import os
+from math import ceil
+from typing import List, Optional, Dict, Any
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import FileResponse, HTMLResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
 
@@ -10,6 +14,8 @@ from . import models
 
 router = APIRouter()
 
+
+# ---------------- DB Session ----------------
 def get_db():
     db = SessionLocal()
     try:
@@ -17,248 +23,151 @@ def get_db():
     finally:
         db.close()
 
-# ========== Utils ==========
-def customer_to_dict(c: models.CustomerList) -> dict:
+
+# -------------- Helpers ---------------------
+def _row_to_dict(c: models.CustomerList) -> Dict[str, Any]:
+    """แปลง ORM -> dict ให้สอดคล้องกับฝั่ง Frontend"""
     return {
         "idx": c.idx,
-        "prename": c.prename,
-        "fname": c.fname,
-        "lname": c.lname,
         "personid": c.personid,
-        "cf_taxid": c.cf_taxid,
-        "cf_personaddress_tel": c.cf_personaddress_tel,
-        "cf_personaddress_mobile": c.cf_personaddress_mobile,
-        "cf_personaddress": c.cf_personaddress,
-        "cf_provincename": c.cf_provincename,
-        "cf_personzipcode": c.cf_personzipcode,
+        "customer_name": c.fname,
+        "prename": c.prename,
+        "taxid": c.cf_taxid,
+        "address": c.cf_personaddress,
+        "province": c.cf_provincename,
+        "zipcode": c.cf_personzipcode,
+        "tel": c.tel,
+        "mobile": c.mobile,
         "fmlpaymentcreditday": c.fmlpaymentcreditday,
     }
 
-# ========== NEW: load all serve to customer_form.js ==========
+
+def _find_template(filename: str) -> Optional[str]:
+    """พยายามหาไฟล์ HTML หลาย ๆ path ยอดนิยมของโปรเจกต์นี้"""
+    here = os.path.dirname(os.path.abspath(__file__))
+    candidates = [
+        os.path.join(here, filename),                          # app/customer_form.html
+        os.path.join(here, "templates", filename),             # app/templates/customer_form.html
+        os.path.join(os.getcwd(), filename),                   # ./customer_form.html
+        os.path.join(os.getcwd(), "templates", filename),      # ./templates/customer_form.html
+    ]
+    for p in candidates:
+        if os.path.isfile(p):
+            return p
+    return None
+
+
+# -------------- Pages (optional) -------------
+@router.get("/customers", response_class=HTMLResponse)
+def customers_page():
+    """เสิร์ฟหน้า customer_form.html (ถ้าไม่พบไฟล์จะ 404)"""
+    path = _find_template("customer_form.html")
+    if not path:
+        raise HTTPException(status_code=404, detail="templates/customer_form.html not found")
+    return FileResponse(path)
+
+
+# -------------- APIs ------------------------
+
 @router.get("/api/customers/all")
-def api_customers_all(db: Session = Depends(get_db)):
-    rows = db.query(models.CustomerList).order_by(models.CustomerList.idx.desc()).all()
-    return [customer_to_dict(r) for r in rows]
-
-# ========== NEW: check duplicate (ชื่อ/รหัส/เลขภาษี) ==========
-@router.post("/api/customers/check-duplicate")
-def api_customers_check_duplicate(
-    fname: str = Form(""),
-    personid: str = Form(""),
-    cf_taxid: str = Form(""),
-    ignore_idx: Optional[int] = Form(None),
-    db: Session = Depends(get_db),
-):
-    q = db.query(models.CustomerList)
-    cond = []
-    if fname: cond.append(models.CustomerList.fname == fname)
-    if personid: cond.append(models.CustomerList.personid == personid)
-    if cf_taxid: cond.append(models.CustomerList.cf_taxid == cf_taxid)
-    if cond:
-        q = q.filter(or_(*cond))
-    else:
-        return {"duplicate": False}
-    if ignore_idx:
-        q = q.filter(models.CustomerList.idx != ignore_idx)
-    exists = db.query(q.exists()).scalar()
-    return {"duplicate": bool(exists)}
-
-# ========== NEW: create customer ==========
-@router.post("/api/customers")
-def api_customers_create(
-    prename: Optional[str] = Form(None),
-    fname: str = Form(...),
-    lname: Optional[str] = Form(None),
-    personid: Optional[str] = Form(None),
-    cf_taxid: Optional[str] = Form(None),
-    cf_personaddress_tel: Optional[str] = Form(None),
-    cf_personaddress_mobile: Optional[str] = Form(None),
-    cf_personaddress: Optional[str] = Form(None),
-    cf_provincename: Optional[str] = Form(None),
-    cf_personzipcode: Optional[str] = Form(None),
-    fmlpaymentcreditday: Optional[int] = Form(None),
-    redirect_to_dashboard: Optional[str] = Form(None),
-    db: Session = Depends(get_db),
-):
-    row = models.CustomerList(
-        prename=prename,
-        fname=fname,
-        lname=lname,
-        personid=personid,
-        cf_taxid=cf_taxid,
-        cf_personaddress_tel=cf_personaddress_tel,
-        cf_personaddress_mobile=cf_personaddress_mobile,
-        cf_personaddress=cf_personaddress,
-        cf_provincename=cf_provincename,
-        cf_personzipcode=cf_personzipcode,
-        fmlpaymentcreditday=fmlpaymentcreditday,
-    )
-    db.add(row); db.commit(); db.refresh(row)
-    if redirect_to_dashboard:
-        return RedirectResponse(url="/dashboard?msg=customer_saved", status_code=303)
-    return {"ok": True, "idx": row.idx, "customer": customer_to_dict(row)}
-
-# ========== NEW: update customer (ตามที่ JS ใช้ method POST) ==========
-@router.post("/api/customers/{idx}")
-def api_customers_update(
-    idx: int,
-    prename: Optional[str] = Form(None),
-    fname: Optional[str] = Form(None),
-    lname: Optional[str] = Form(None),
-    personid: Optional[str] = Form(None),
-    cf_taxid: Optional[str] = Form(None),
-    cf_personaddress_tel: Optional[str] = Form(None),
-    cf_personaddress_mobile: Optional[str] = Form(None),
-    cf_personaddress: Optional[str] = Form(None),
-    cf_provincename: Optional[str] = Form(None),
-    cf_personzipcode: Optional[str] = Form(None),
-    fmlpaymentcreditday: Optional[int] = Form(None),
-    redirect_to_dashboard: Optional[str] = Form(None),
-    db: Session = Depends(get_db),
-):
-    row = db.query(models.CustomerList).filter(models.CustomerList.idx == idx).first()
-    if not row:
-        raise HTTPException(status_code=404, detail="customer not found")
-
-    # update only the sent values
-    mapping = {
-        "prename": prename, "fname": fname, "lname": lname, "personid": personid,
-        "cf_taxid": cf_taxid, "cf_personaddress_tel": cf_personaddress_tel,
-        "cf_personaddress_mobile": cf_personaddress_mobile, "cf_personaddress": cf_personaddress,
-        "cf_provincename": cf_provincename, "cf_personzipcode": cf_personzipcode,
-        "fmlpaymentcreditday": fmlpaymentcreditday,
-    }
-    for k, v in mapping.items():
-        if v is not None:
-            setattr(row, k, v)
-
-    db.commit(); db.refresh(row)
-    if redirect_to_dashboard:
-        return RedirectResponse(url="/dashboard?msg=customer_saved", status_code=303)
-    return {"ok": True, "customer": customer_to_dict(row)}
-
-# ========== delete customer ==========
-@router.delete("/api/customers/{idx}")
-def api_customers_delete(idx: int, db: Session = Depends(get_db)):
-    row = db.query(models.CustomerList).filter(models.CustomerList.idx == idx).first()
-    if not row:
-        raise HTTPException(status_code=404, detail="customer not found")
-    db.delete(row); db.commit()
-    return JSONResponse(status_code=204, content=None)
-
-# ========= suggest from invoice history =========
-@router.get("/api/customers/suggest")
-def suggest_customers(
-    q: str = Query("", description="ค้นหาจากชื่อ/รหัสลูกค้า/เลขผู้เสียภาษี/โทร"),
-    limit: int = Query(15, ge=1, le=50),
-    db: Session = Depends(get_db),
-):
-    inv = models.Invoice
-    qpat = f"%{q.strip()}%"
+def api_customers_all(db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
+    """ดึงลูกค้าทั้งหมด (ไว้ใช้ทำ datalist/fallback)"""
     rows = (
-        db.query(
-            inv.personid,
-            inv.fname.label("customer_name"),
-            inv.cf_taxid,
-            inv.cf_provincename,
-            inv.cf_personaddress,
-            inv.tel,
-            inv.mobile,
-            func.max(inv.idx).label("last_idx"),
-        )
-        .filter(
-            or_(
-                inv.fname.ilike(qpat),
-                inv.personid.ilike(qpat),
-                inv.cf_taxid.ilike(qpat),
-                inv.tel.ilike(qpat),
-                inv.mobile.ilike(qpat),
-            )
-        )
-        .group_by(
-            inv.personid, inv.fname, inv.cf_taxid, inv.cf_provincename,
-            inv.cf_personaddress, inv.tel, inv.mobile
-        )
-        .order_by(func.max(inv.idx).desc())
+        db.query(models.CustomerList)
+        .order_by(models.CustomerList.idx.desc())
+        .all()
+    )
+    return [_row_to_dict(r) for r in rows]
+
+
+@router.get("/api/customers/suggest")
+def api_customers_suggest(
+    q: str = Query(..., min_length=1, description="ค้นหาจาก ชื่อ/รหัส/ภาษี/จังหวัด/โทร/มือถือ"),
+    db: Session = Depends(get_db),
+) -> List[Dict[str, Any]]:
+    """autocomplete ลูกค้า (ลิมิต 20)"""
+    q = q.strip()
+    CL = models.CustomerList
+    pat = f"%{q}%"
+    rows = (
+        db.query(CL)
+        .filter(or_(
+            CL.fname.ilike(pat),
+            CL.personid.ilike(pat),
+            CL.cf_taxid.ilike(pat),
+            CL.cf_provincename.ilike(pat),
+            CL.tel.ilike(pat),
+            CL.mobile.ilike(pat),
+        ))
+        .order_by(CL.fname.asc())
+        .limit(20)
+        .all()
+    )
+    return [_row_to_dict(r) for r in rows]
+
+
+@router.get("/api/customers/detail")
+def api_customer_detail(
+    personid: Optional[str] = Query(None),
+    name: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+) -> Dict[str, Any]:
+    """ดึงรายละเอียดลูกค้ารายเดียว (ใช้เติมเครดิตวัน/ที่อยู่ ฯลฯ ให้ชัวร์)"""
+    if not personid and not name:
+        raise HTTPException(status_code=400, detail="personid or name is required")
+
+    q = db.query(models.CustomerList)
+    if personid:
+        q = q.filter(models.CustomerList.personid == personid)
+    else:
+        q = q.filter(models.CustomerList.fname == name)
+
+    c = q.first()
+    if not c:
+        raise HTTPException(status_code=404, detail="customer not found")
+    return _row_to_dict(c)
+
+
+@router.get("/api/customers")
+def api_customers_list(
+    q: Optional[str] = Query(None, description="ค้นหาจาก ชื่อ/รหัส/ภาษี/จังหวัด/โทร/มือถือ"),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=200),
+    db: Session = Depends(get_db),
+) -> Dict[str, Any]:
+    """
+    ลิสต์ลูกค้าแบบแบ่งหน้า (ใช้กับตารางรายชื่อใน customer_form)
+    คืนค่า: { items: [...], total, page, pages, limit }
+    """
+    CL = models.CustomerList
+    base = db.query(CL)
+
+    if q and q.strip():
+        pat = f"%{q.strip()}%"
+        base = base.filter(or_(
+            CL.fname.ilike(pat),
+            CL.personid.ilike(pat),
+            CL.cf_taxid.ilike(pat),
+            CL.cf_provincename.ilike(pat),
+            CL.tel.ilike(pat),
+            CL.mobile.ilike(pat),
+        ))
+
+    total = base.with_entities(func.count(CL.idx)).scalar() or 0
+    pages = max(1, ceil(total / limit))
+    page = min(max(1, page), pages)
+
+    rows = (
+        base.order_by(CL.fname.asc())
+        .offset((page - 1) * limit)
         .limit(limit)
         .all()
     )
-    return [
-        {
-            "personid": r.personid,
-            "customer_name": r.customer_name,
-            "taxid": r.cf_taxid,
-            "province": r.cf_provincename,
-            "address": r.cf_personaddress,
-            "tel": r.tel, "mobile": r.mobile
-        }
-        for r in rows
-    ]
-
-# ========= get data from personid =========
-@router.get("/api/customers/{personid}")
-def get_customer(personid: str, db: Session = Depends(get_db)):
-    inv = models.Invoice
-    row = (
-        db.query(inv)
-        .filter(inv.personid == personid)
-        .order_by(inv.idx.desc())
-        .first()
-    )
-    if not row:
-        raise HTTPException(status_code=404, detail="customer not found")
-    return {
-        "personid": row.personid,
-        "customer_name": row.fname,
-        "taxid": row.cf_taxid,
-        "province": row.cf_provincename,
-        "address": row.cf_personaddress,
-        "tel": row.tel, "mobile": row.mobile,
-    }
-
-# ========= list of customers =========
-@router.get("/api/customers")
-def list_customers(
-    search: str = Query("", description="ค้นหาจากชื่อ/รหัส/เลขผู้เสียภาษี"),
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
-    db: Session = Depends(get_db),
-):
-    inv = models.Invoice
-    q = db.query(
-        inv.personid,
-        inv.fname.label("customer_name"),
-        inv.cf_taxid,
-        inv.cf_provincename,
-        inv.cf_personaddress,
-        inv.tel, inv.mobile,
-        func.max(inv.idx).label("last_idx")
-    )
-    if search.strip():
-        pat = f"%{search.strip()}%"
-        q = q.filter(or_(
-    inv.fname.ilike(pat),
-    inv.personid.ilike(pat),
-    inv.cf_taxid.ilike(pat),
-    inv.cf_provincename.ilike(pat)   # add province
-))
-
-    q = q.group_by(inv.personid, inv.fname, inv.cf_taxid, inv.cf_provincename, inv.cf_personaddress, inv.tel, inv.mobile)
-    total = q.count()
-    rows = q.order_by(func.max(inv.idx).desc()).offset((page-1)*page_size).limit(page_size).all()
 
     return {
+        "items": [_row_to_dict(r) for r in rows],
         "total": total,
         "page": page,
-        "page_size": page_size,
-        "items": [
-            {
-                "personid": r.personid,
-                "customer_name": r.customer_name,
-                "taxid": r.cf_taxid,
-                "province": r.cf_provincename,
-                "address": r.cf_personaddress,
-                "tel": r.tel, "mobile": r.mobile
-            } for r in rows
-        ]
+        "pages": pages,
+        "limit": limit,
     }
