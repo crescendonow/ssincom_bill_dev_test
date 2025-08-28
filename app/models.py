@@ -1,113 +1,302 @@
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey
-from sqlalchemy.orm import relationship
-from .database import Base
+# app/summary_invoices.py
+from __future__ import annotations
+from typing import Optional, Dict, Any, List
+from datetime import date
+from fastapi import APIRouter, Depends, HTTPException, Query, Body
+from sqlalchemy.orm import Session
+from sqlalchemy import func, or_
 
-# ===== invoices (schema ss_invoices) =====
-class Invoice(Base):
-    __tablename__ = "invoices"
-    __table_args__ = {"schema": "ss_invoices"}
+from .database import SessionLocal
+from . import models
 
-    idx = Column(Integer, primary_key=True)              # PK
-    invoice_number = Column(String)                      # เลขที่ใบกำกับ
-    invoice_date = Column(Date)                          # วันที่
-    grn_number = Column(String)                          # เลขที่ใบรับสินค้า
-    dn_number = Column(String)                           # เลขที่ใบส่งสินค้า
-    po_number = Column(String)                           # เลขที่ใบสั่งซื้อ 
-    fname = Column(String)                               # ชื่อลูกค้า
-    personid = Column(String)                            # รหัสลูกค้า (ถ้ายังไม่มี ส่งค่าว่างได้)
-    tel = Column(String)
-    mobile = Column(String)
-    cf_personaddress = Column(String)
-    cf_personzipcode = Column(String)
-    cf_provincename = Column(String)
-    cf_taxid = Column(String(13))
-    fmlpaymentcreditday = Column(Integer)
-    due_date = Column(Date)
-    car_numberplate = Column(String)
+router = APIRouter()
+VAT_RATE = 0.07
 
-    items = relationship("InvoiceItem", back_populates="invoice", cascade="all, delete-orphan")
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-# ===== invoice_items (schema ss_invoices) =====
-class InvoiceItem(Base):
-    __tablename__ = "invoice_items"
-    __table_args__ = {"schema": "ss_invoices"}
+def _money(v) -> float:
+    try:
+        return float(v or 0)
+    except Exception:
+        return 0.0
 
-    idx = Column(Integer, primary_key=True)  # PK
-    # FK -> ss_invoices.invoices(invoice_number)
-    invoice_number = Column(Integer, ForeignKey("ss_invoices.invoices.idx"), index=True)
+def _iso(d) -> Optional[str]:
+    try:
+        return d.isoformat() if d else None
+    except Exception:
+        return None
 
-    personid = Column(String)                     # รหัสลูกค้า (ถ้ามี)
-    cf_itemid = Column(String(6))                 # รหัสสินค้า
-    cf_itemname = Column(String(1000))            # ชื่อสินค้า
-    cf_unitname = Column(String(20))              # หน่วย (ยังไม่เก็บจากฟอร์มก็เว้นว่างได้)
-    cf_itempricelevel_price = Column(Float)     # ราคา/หน่วย
-    cf_items_ordinary = Column(Integer)           # ลำดับ
-    quantity = Column(Float)                      # จำนวน
-    amount = Column(Float)                        # จำนวนเงิน (qty * price)
+def _to_date(s: Optional[str]) -> Optional[date]:
+    if not s:
+        return None
+    try:
+        return date.fromisoformat(s)
+    except Exception:
+        return None
 
-    invoice = relationship("Invoice", back_populates="items")
-    
 
-#get data from customer_list
-class CustomerList(Base):
-    __tablename__ = "customer_list"
-    __table_args__ = {"schema": "products"}
+# --------- SUMMARY ---------
+@router.get("/api/invoices/summary")
+def api_invoice_summary(
+    granularity: str = Query("day", pattern="^(day|month|year)$"),
+    start: Optional[str] = Query(None, description="YYYY-MM-DD"),
+    end: Optional[str] = Query(None, description="YYYY-MM-DD"),
+    month: Optional[str] = Query(None, description="YYYY-MM"),
+    year: Optional[int] = Query(None, ge=2000, le=2100),
+    db: Session = Depends(get_db),
+):
+    inv = models.Invoice
+    itm = models.InvoiceItem
 
-    idx = Column(Integer, primary_key=True, index=True)
-    prename = Column(String)
-    sysprename = Column(String)
-    fname = Column(String)
-    personid = Column(String)
-    tel = Column(String)
-    mobile = Column(String)
-    syspersonid = Column(String)
-    sex = Column(String)
-    lname = Column(String)
-    cf_personaddress_tel = Column(String)
-    cf_personaddress_mobile = Column(String)
-    cf_personaddress = Column(String)
-    cf_personzipcode = Column(String)
-    cf_provincename = Column(String)
-    cf_taxid = Column(String(13))
-    fmlpaymentcreditday = Column(Integer)
- 
-#get data from product_list   
-class ProductList(Base):
-    __tablename__ = "product_list"
-    __table_args__ = {"schema": "products"}
+    if granularity == "day":
+        label_expr = func.to_char(inv.invoice_date, 'YYYY-MM-DD')
+    elif granularity == "month":
+        label_expr = func.to_char(inv.invoice_date, 'YYYY-MM')
+    else:
+        label_expr = func.to_char(inv.invoice_date, 'YYYY')
 
-    idx = Column(Integer, primary_key=True, index=True)
-    cf_itemid = Column(String(6))           # product id
-    cf_itemname = Column(String(1000))      # product name
-    cf_unitname = Column(String(20))        # unit
-    cf_itempricelevel_price = Column(Float) # price
-    cf_items_ordinary = Column(Integer)     # order/status
+    sum_amount = func.sum(
+        func.coalesce(
+            itm.amount,
+            func.coalesce(itm.quantity, 0) * func.coalesce(itm.cf_itempricelevel_price, 0)
+        )
+    )
 
-#--------------------- car numberplate data ---------------------
-# ===== รถ (schema products.ss_car) =====
-class Car(Base):
-    __tablename__ = "ss_car"
-    __table_args__ = {"schema": "products"}
+    q = (
+        db.query(
+            label_expr.label("period"),
+            func.count(inv.idx).label("count"),
+            func.coalesce(sum_amount, 0).label("amount"),
+        )
+        # << JOIN ที่ถูกต้อง: varchar กับ varchar
+        .outerjoin(itm, itm.invoice_number == inv.invoice_number)
+    )
 
-    idx = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    number_plate = Column(String, unique=True, index=True)  # ทะเบียนรถ
-    car_brand = Column(String)                               # ยี่ห้อ
-    province = Column(String)                                # จังหวัดที่จดทะเบียน
+    if granularity == "day":
+        d1 = _to_date(start)
+        d2 = _to_date(end)
+        if d1: q = q.filter(inv.invoice_date >= d1)
+        if d2: q = q.filter(inv.invoice_date <= d2)
+    elif granularity == "month":
+        if month and len(month) == 7:
+            q = q.filter(func.to_char(inv.invoice_date, 'YYYY-MM') == month)
+    else:
+        if year:
+            q = q.filter(func.extract("year", inv.invoice_date) == year)
 
-# ===== ยี่ห้อรถ (schema public.car_brand) =====
-class CarBrand(Base):
-    __tablename__ = "car_brand"
-    __table_args__ = {"schema": "public"}
+    q = q.group_by("period").order_by("period")
 
-    # ใช้ brand_name เป็น PK ไปก่อน (ถ้าฐานข้อมูลมีคอลัมน์ idx ก็ปรับให้เป็น PK ได้)
-    brand_name = Column(String, primary_key=True)
+    out: List[Dict[str, Any]] = []
+    for period, count, amount in q.all():
+        amount = _money(amount)
+        discount = 0.0
+        before_vat = amount - discount
+        vat = before_vat * VAT_RATE
+        grand = before_vat + vat
+        out.append({
+            "period": period,
+            "count": int(count or 0),
+            "amount": round(amount, 2),
+            "discount": round(discount, 2),
+            "before_vat": round(before_vat, 2),
+            "vat": round(vat, 2),
+            "grand": round(grand, 2),
+        })
+    return out
 
-# ===== จังหวัด (schema public.province_nostra) =====
-class ProvinceNostra(Base):
-    __tablename__ = "province_nostra"
-    __table_args__ = {"schema": "public"}
 
-    # ใช้ prov_nam_t เป็น PK ไปก่อน
-    prov_nam_t = Column(String, primary_key=True)
+# --------- LIST (All invoices) ---------
+@router.get("/api/invoices")
+def api_invoices_list(
+    start: Optional[str] = Query(None, description="YYYY-MM-DD"),
+    end: Optional[str] = Query(None, description="YYYY-MM-DD"),
+    qtext: Optional[str] = Query(None, alias="q"),
+    db: Session = Depends(get_db),
+):
+    inv = models.Invoice
+    itm = models.InvoiceItem
 
-   
+    sub_amount = func.sum(
+        func.coalesce(
+            itm.amount,
+            func.coalesce(itm.quantity, 0) * func.coalesce(itm.cf_itempricelevel_price, 0)
+        )
+    )
+
+    sub = (
+        db.query(
+            itm.invoice_number.label("inv_no"),
+            func.coalesce(sub_amount, 0).label("amount"),
+        )
+        .group_by(itm.invoice_number)
+        .subquery()
+    )
+
+    q = (
+        db.query(
+            inv.idx,
+            inv.invoice_date,
+            inv.invoice_number,
+            inv.fname,
+            inv.po_number,
+            func.coalesce(sub.c.amount, 0).label("amount"),
+        )
+        .outerjoin(sub, sub.c.inv_no == inv.invoice_number)
+    )
+
+    d1 = _to_date(start)
+    d2 = _to_date(end)
+    if d1: q = q.filter(inv.invoice_date >= d1)
+    if d2: q = q.filter(inv.invoice_date <= d2)
+
+    if qtext and qtext.strip():
+        pat = f"%{qtext.strip()}%"
+        q = q.filter(or_(
+            inv.invoice_number.ilike(pat),
+            inv.fname.ilike(pat),
+            inv.po_number.ilike(pat),
+        ))
+
+    q = q.order_by(inv.invoice_date.desc(), inv.idx.desc())
+
+    out: List[Dict[str, Any]] = []
+    for idx, invoice_date, invoice_number, fname, po_number, amount in q.all():
+        amount = _money(amount)
+        discount = 0.0
+        before_vat = amount - discount
+        vat = before_vat * VAT_RATE
+        grand = before_vat + vat
+        out.append({
+            "idx": idx,
+            "invoice_date": _iso(invoice_date),
+            "invoice_number": invoice_number,
+            "fname": fname,
+            "po_number": po_number,
+            "amount": round(amount, 2),
+            "vat": round(vat, 2),
+            "grand": round(grand, 2),
+        })
+    return out
+
+
+# --------- ITEMS ---------
+@router.get("/api/invoices/{invoice_id}/items")
+def api_invoice_items(invoice_id: int, db: Session = Depends(get_db)):
+    inv = db.query(models.Invoice).filter(models.Invoice.idx == invoice_id).first()
+    if not inv:
+        raise HTTPException(status_code=404, detail="invoice not found")
+
+    it = models.InvoiceItem
+    rows = (
+        db.query(it)
+        .filter(it.invoice_number == inv.invoice_number)
+        .order_by(it.idx.asc())
+        .all()
+    )
+    return [
+        {
+            "cf_itemid": r.cf_itemid,
+            "cf_itemname": r.cf_itemname,
+            "quantity": _money(r.quantity),
+            "unit_price": _money(r.cf_itempricelevel_price),
+            "amount": _money(r.amount if r.amount is not None else _money(r.quantity) * _money(r.cf_itempricelevel_price)),
+        }
+        for r in rows
+    ]
+
+
+# --------- DETAIL ---------
+@router.get("/api/invoices/{invoice_id}/detail")
+def api_invoice_detail(invoice_id: int, db: Session = Depends(get_db)):
+    inv = db.query(models.Invoice).filter(models.Invoice.idx == invoice_id).first()
+    if not inv:
+        raise HTTPException(status_code=404, detail="invoice not found")
+
+    it = models.InvoiceItem
+    items_q = (
+        db.query(it)
+        .filter(it.invoice_number == inv.invoice_number)
+        .order_by(it.idx.asc())
+        .all()
+    )
+    items = [
+        {
+            "cf_itemid": r.cf_itemid,
+            "cf_itemname": r.cf_itemname,
+            "quantity": _money(r.quantity),
+            "unit_price": _money(r.cf_itempricelevel_price),
+            "amount": _money(r.amount if r.amount is not None else _money(r.quantity) * _money(r.cf_itempricelevel_price)),
+        }
+        for r in items_q
+    ]
+
+    invoice = {
+        "idx": inv.idx,
+        "invoice_number": inv.invoice_number,
+        "invoice_date": _iso(inv.invoice_date),
+        "grn_number": inv.grn_number,
+        "dn_number": inv.dn_number,
+        "po_number": inv.po_number,
+        "fname": inv.fname,
+        "personid": inv.personid,
+        "tel": inv.tel,
+        "mobile": inv.mobile,
+        "cf_personaddress": inv.cf_personaddress,
+        "cf_personzipcode": inv.cf_personzipcode,
+        "cf_provincename": inv.cf_provincename,
+        "cf_taxid": inv.cf_taxid,
+        "fmlpaymentcreditday": inv.fmlpaymentcreditday,
+        "due_date": _iso(inv.due_date),
+        "car_numberplate": inv.car_numberplate,
+    }
+    return {"invoice": invoice, "items": items}
+
+
+# --------- UPDATE ---------
+@router.put("/api/invoices/{invoice_id}")
+def api_invoice_update(invoice_id: int, payload: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
+    inv = db.query(models.Invoice).filter(models.Invoice.idx == invoice_id).first()
+    if not inv:
+        raise HTTPException(status_code=404, detail="invoice not found")
+
+    old_inv_no = inv.invoice_number
+
+    head_fields = [
+        "invoice_number", "invoice_date", "grn_number", "dn_number", "po_number",
+        "fname", "personid", "tel", "mobile", "cf_personaddress", "cf_personzipcode",
+        "cf_provincename", "cf_taxid", "fmlpaymentcreditday", "due_date", "car_numberplate"
+    ]
+    for k in head_fields:
+        if k in payload:
+            setattr(inv, k, payload[k])
+
+    new_inv_no = inv.invoice_number or old_inv_no
+
+    if "items" in payload and isinstance(payload["items"], list):
+        db.query(models.InvoiceItem).filter(models.InvoiceItem.invoice_number == old_inv_no).delete(synchronize_session=False)
+        if new_inv_no != old_inv_no:
+            db.query(models.InvoiceItem).filter(models.InvoiceItem.invoice_number == new_inv_no).delete(synchronize_session=False)
+
+        for it in payload["items"]:
+            qty = _money(it.get("quantity"))
+            price = _money(it.get("unit_price"))
+            row = models.InvoiceItem(
+                invoice_number=new_inv_no,
+                personid=inv.personid or None,
+                cf_itemid=it.get("cf_itemid"),
+                cf_itemname=it.get("cf_itemname"),
+                cf_unitname=None,
+                cf_itempricelevel_price=price,
+                cf_items_ordinary=None,
+                quantity=qty,
+                amount=qty * price,
+            )
+            db.add(row)
+
+    db.commit()
+    return {"ok": True, "idx": inv.idx}
