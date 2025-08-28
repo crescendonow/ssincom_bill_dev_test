@@ -43,6 +43,7 @@ function fillInvoiceForm(h) {
   setVal("fmlpaymentcreditday", h.fmlpaymentcreditday);
   setVal("due_date", h.due_date);
   setVal("car_numberplate", h.car_numberplate);
+  computeAndFillDueDate();
 }
 
 function fillInvoiceItems(items) {
@@ -52,10 +53,10 @@ function fillInvoiceItems(items) {
     const div = document.createElement("div");
     div.className = "item-row flex gap-2 items-center mb-2";
     div.innerHTML = `
-      <input name="product_code" class="product_code w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" value="${it.cf_itemid ?? ""}">
-      <input name="description" class="description flex-1 min-w-[120px] bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5" value="${it.cf_itemname ?? ""}">
-      <input name="quantity" type="number" step="0.01" class="quantity w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" value="${it.quantity ?? 0}">
-      <input name="unit_price" type="number" step="0.01" class="unit_price w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" value="${it.unit_price ?? 0}">
+      <input name="product_code" class="product_code w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" value="${it.cf_itemid ?? ""}" readonly>
+      <input name="description" class="description flex-1 min-w-[120px] bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5" value="${it.cf_itemname ?? ""}" readonly>
+      <input name="quantity" type="number" step="0.01" class="quantity w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" value="${it.quantity ?? 0}" oninput="updateTotal()">
+      <input name="unit_price" type="number" step="0.01" class="unit_price w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" value="${it.unit_price ?? 0}" oninput="updateTotal()">
       <button type="button" onclick="openProductModal(this)" class="text-sm text-blue-600 hover:text-blue-800 px-2">🔍 ค้นหา</button>
       <button type="button" onclick="removeItem(this)" class="text-red-600 hover:text-red-800 font-semibold px-2">🗑️</button>
     `;
@@ -66,27 +67,30 @@ function fillInvoiceItems(items) {
 
 let customers = [];
 
-// Load customers (for autofill)
+// โหลดรายชื่อลูกค้าสำหรับ datalist (ใช้เป็น fallback หา credit day)
 fetch('/api/customers/all')
   .then(res => res.json())
   .then(data => {
-    customers = data;
-    const html = data.map(c => `<option value="${c.fname}">`).join('');
-    document.getElementById("customerList").innerHTML = html;
+    customers = data || [];
+    const html = customers.map(c => `<option value="${c.fname}">`).join('');
+    const dl = document.getElementById("customerList");
+    if (dl) dl.innerHTML = html;
   });
 
 function normalize(str) {
   return (str || '').normalize("NFC").trim();
 }
 
-const _customerCache = new Map(); // map จาก label => object เต็ม
+const _customerCache = new Map(); // label => object เต็มจาก suggest
 
+// ---- APIs รวบยอด ----
 async function searchCustomers(q) {
   const res = await fetch(`/api/customers/suggest?q=${encodeURIComponent(q)}`);
   if (!res.ok) return [];
-  return await res.json(); // [{personid, customer_name, taxid, province, address, tel, mobile}]
+  return await res.json(); // server ควรส่ง {personid, customer_name, taxid, province, address, tel, mobile, fmlpaymentcreditday?}
 }
 
+// ---- Autocomplete ลูกค้า ----
 function bindCustomerAutocomplete() {
   const input = document.getElementById('customer_name');
   const list  = document.getElementById('customerList');
@@ -113,9 +117,45 @@ function bindCustomerAutocomplete() {
   input.addEventListener('change', () => fillCustomerFromSelected(input.value));
 }
 
+// ติดให้ input ทำงานตั้งแต่โหลด
+document.addEventListener('DOMContentLoaded', bindCustomerAutocomplete);
+
+// ให้เข้ากับ oninput="selectCustomer()" ใน HTML เดิม
+function selectCustomer() {
+  const el = document.getElementById('customer_name');
+  if (el) fillCustomerFromSelected(el.value);
+}
+
+// เติมข้อมูลลูกค้า + เครดิตวัน + คำนวณ due date
 function fillCustomerFromSelected(label) {
-  const c = _customerCache.get(label);
-  if (!c) return;
+  let c = _customerCache.get(label);
+
+  // ถ้าใน suggest ไม่มีเครดิต ให้ลองแมตช์จากรายการ all
+  if (c && (c.fmlpaymentcreditday == null || c.fmlpaymentcreditday === '')) {
+    const byPid = customers.find(x => x.personid && c.personid && x.personid === c.personid);
+    const byName = customers.find(x => !byPid && x.fname === c.customer_name);
+    const src = byPid || byName;
+    if (src) c = { ...c, fmlpaymentcreditday: src.fmlpaymentcreditday ?? c.fmlpaymentcreditday };
+  }
+
+  // ถ้า cache ไม่มี แปลว่าเลือกจาก datalist ตรง ๆ → หาใน all ตามชื่อ
+  if (!c) {
+    const name = (label || '').replace(/\s*\([^)]*\)\s*$/, ''); // ตัด (PCxxxx)
+    c = customers.find(x => x.fname === name) || null;
+    if (!c) return;
+    // ปรับรูปแบบให้ฟิลด์สอดคล้อง
+    c = {
+      personid: c.personid,
+      customer_name: c.fname,
+      taxid: c.cf_taxid,
+      address: c.cf_personaddress,
+      province: c.cf_provincename,
+      tel: c.tel,
+      mobile: c.mobile,
+      fmlpaymentcreditday: c.fmlpaymentcreditday
+    };
+  }
+
   const set = (id,v)=>{ const el=document.getElementById(id); if(el) el.value = v ?? ''; };
   set('personid', c.personid);
   set('customer_name', c.customer_name);
@@ -125,24 +165,27 @@ function fillCustomerFromSelected(label) {
   set('tel', c.tel);
   set('mobile', c.mobile);
 
+  // ✅ เติมเครดิตวัน (ถ้ามี)
+  if (c.fmlpaymentcreditday != null && c.fmlpaymentcreditday !== '') {
+    set('fmlpaymentcreditday', c.fmlpaymentcreditday);
+  }
+  computeAndFillDueDate();
 }
-document.addEventListener('DOMContentLoaded', bindCustomerAutocomplete);
 
 // ------- Items / Products -------
 let selectedRow = null;
-let products = [];
 
 function addItem() {
   const div = document.createElement('div');
   div.className = "flex flex-wrap gap-4 item-row items-end";
   div.innerHTML = `
-    <input name="product_code" readonly placeholder="Product Code"
+    <input name="product_code" readonly placeholder="รหัสสินค้า"
       class="product_code flex-1 min-w-[120px] bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5">
-    <input name="description" readonly placeholder="Description"
+    <input name="description" readonly placeholder="รายละเอียด"
       class="description flex-1 min-w-[120px] bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5">
-    <input name="quantity" type="number" step="0.01" placeholder="Qty" oninput="updateTotal()"
+    <input name="quantity" type="number" step="0.01" placeholder="จำนวน" oninput="updateTotal()"
       class="quantity w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
-    <input name="unit_price" type="number" step="0.01" placeholder="Unit Price"
+    <input name="unit_price" type="number" step="0.01" placeholder="ราคาต่อหน่วย" oninput="updateTotal()"
       class="unit_price w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
     <button type="button" onclick="openProductModal(this)"
       class="text-sm text-blue-600 hover:text-blue-800 px-2">🔍 ค้นหา</button>
@@ -160,6 +203,7 @@ function removeItem(btn) {
 
 function openProductModal(btn) {
   selectedRow = btn.closest('.item-row');
+  document.getElementById("productSearch").value = "";
   filterProducts();
   document.getElementById("productModal").classList.remove("hidden");
 }
@@ -169,38 +213,14 @@ function closeProductModal() {
   selectedRow = null;
 }
 
-function filterProducts() {
-  const keyword = (document.getElementById("productSearch").value || "").toLowerCase().trim();
-  const listDiv = document.getElementById("productList");
-  listDiv.innerHTML = "";
-
-  const filtered = products.filter(p =>
-    p.code?.toLowerCase().startsWith(keyword) ||
-    p.name?.toLowerCase().startsWith(keyword) ||
-    p.name?.toLowerCase().includes(keyword) ||
-    p.code?.toLowerCase().includes(keyword)
-  );
-
-  if (filtered.length === 0) {
-    listDiv.innerHTML = `<div class="p-2 text-gray-500">ไม่พบสินค้า</div>`;
-    return;
-  }
-
-  filtered.forEach(p => {
-    const div = document.createElement("div");
-    div.className = "p-2 hover:bg-blue-50 cursor-pointer";
-    div.innerHTML = `<strong>${p.code}</strong> - ${p.name} <span class="float-right text-gray-600">฿${p.price}</span>`;
-    div.onclick = () => selectProduct(p);
-    listDiv.appendChild(div);
-  });
-}
-
+// ---- API ค้นหาสินค้า ----
 async function searchProducts(q) {
   const res = await fetch(`/api/products/suggest?q=${encodeURIComponent(q)}`);
   if (!res.ok) return [];
   return await res.json(); // [{product_code, description, avg_unit_price, used}]
 }
 
+// ---- แสดงผลรายการให้เลือก (เวอร์ชันเดียว) ----
 async function filterProducts() {
   const keyword = (document.getElementById("productSearch").value || "").trim();
   const listDiv = document.getElementById("productList");
@@ -229,13 +249,30 @@ async function filterProducts() {
   });
 }
 
+// ✅ ฟังก์ชันเลือกสินค้า — เติมค่าเข้าแถวที่กำลังแก้
+function selectProduct(p) {
+  if (!selectedRow) return;
+  const codeEl = selectedRow.querySelector('.product_code');
+  const nameEl = selectedRow.querySelector('.description');
+  const qtyEl  = selectedRow.querySelector('.quantity');
+  const priceEl= selectedRow.querySelector('.unit_price');
+
+  if (codeEl) codeEl.value = p.code || '';
+  if (nameEl) nameEl.value = p.name || '';
+  if (priceEl) priceEl.value = (p.price || 0);
+  if (qtyEl && !parseFloat(qtyEl.value || 0)) qtyEl.value = 1;
+
+  updateTotal();
+  closeProductModal();
+}
+
 // ------- Duplicate check: invoice number -------
 function debounce(fn, ms = 400) {
   let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
 }
 
 const invInput = document.getElementById('invoice_number');
-const help = document.getElementById('invNoHelp'); // <p id="invNoHelp" ...> in form.html
+const help = document.getElementById('invNoHelp');
 const form = document.getElementById('invoice_form');
 let invDup = false;
 
@@ -260,16 +297,11 @@ async function checkDup(num) {
   }
 }
 
-if (invInput) {
-  invInput.addEventListener('input', debounce(() => checkDup(invInput.value.trim()), 400));
-}
+if (invInput) invInput.addEventListener('input', debounce(() => checkDup(invInput.value.trim()), 400));
 
 if (form) {
   form.addEventListener('submit', (e) => {
-    if (invDup) {
-      e.preventDefault();
-      invInput?.focus();
-    }
+    if (invDup) { e.preventDefault(); invInput?.focus(); }
   });
 }
 
@@ -283,7 +315,7 @@ function updateTotal() {
   });
   const totalEl = document.getElementById('total_amount');
   totalEl.textContent = '฿ ' + sum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  totalEl.dataset.value = String(sum);  // <-- เก็บค่าเลขดิบไว้ที่นี่
+  totalEl.dataset.value = String(sum);
 }
 
 function collectItems() {
@@ -304,14 +336,12 @@ function collectFormData() {
   const totalRaw = parseFloat(document.getElementById('total_amount')?.dataset.value || 0);
 
   return {
-    // หัวเอกสาร
     invoice_number: v('invoice_number'),
     invoice_date: v('invoice_date'),
     grn_number: v('grn_number'),
     dn_number: v('dn_number'),
     po_number: v('po_number'),
 
-    // ลูกค้า
     customer_name: v('customer_name'),
     customer_taxid: v('customer_taxid'),
     customer_address: v('customer_address'),
@@ -324,34 +354,21 @@ function collectFormData() {
     due_date: v('due_date'),
     car_numberplate: v('car_numberplate'),
 
-    // ยอดรวมจากฟอร์ม (optional, ที่ template ก็คำนวณได้เองอยู่แล้ว)
     total_amount: totalRaw,
-
-    // สินค้า
     items: collectItems(),
-
-    // เผื่ออนาคต
-    // discount: 0,
-    // vat_rate: 7
   };
 }
 
 function previewInvoice(evt) {
   if (evt) evt.preventDefault();
-
-  // คำนวณ due_date ให้เรียบร้อยก่อน
   computeAndFillDueDate();
 
   const formEl = document.getElementById("invoice_form");
   const fd = new FormData(formEl);
 
-  // แปลงวันที่ → YYYY-MM-DD
   let dateStr = fd.get("invoice_date");
-  if (dateStr) {
-    dateStr = formatDateToISO(dateStr);
-  }
+  if (dateStr) dateStr = formatDateToISO(dateStr);
 
-  // รวบรวมหัวเอกสาร
   const invoice = {
     invoice_number: fd.get("invoice_number"),
     invoice_date: dateStr,
@@ -367,12 +384,10 @@ function previewInvoice(evt) {
     fmlpaymentcreditday: fd.get("fmlpaymentcreditday"),
     due_date: document.getElementById("due_date")?.value || fd.get("due_date"),
     car_numberplate: fd.get("car_numberplate"),
-    // ✅ ใส่ชนิดเอกสาร
     variant: document.getElementById("variant")?.value || "invoice_original",
     items: []
   };
 
-  // รายการสินค้า
   document.querySelectorAll("#items .item-row").forEach(row => {
     const product_code = row.querySelector('[name="product_code"]').value;
     const description = row.querySelector('[name="description"]').value;
@@ -383,10 +398,7 @@ function previewInvoice(evt) {
     }
   });
 
-  // เปิดหน้าต่างไว้ก่อน กัน popup blocker
   const popup = window.open('about:blank', '_blank');
-
-  // ส่งไปเรนเดอร์ invoice.html (ใช้ endpoint /preview ที่มีอยู่แล้ว)
   fetch("/preview", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -406,20 +418,16 @@ function previewInvoice(evt) {
     });
 }
 
-// ------- Preview & Save (with GRN/DN included in preview) -------
 async function saveInvoice() {
   const formEl = document.getElementById("invoice_form");
   const fd = new FormData(formEl);
 
-  // แปลงวันที่จาก datepicker → YYYY-MM-DD
   const _d = fd.get("invoice_date");
   if (_d) fd.set("invoice_date", formatDateToISO(_d));
 
-  // แน่ใจว่าแนบวิธีชำระและกำหนดชำระ
   const pay = fd.get("fm_payment") || "cash";
   fd.set("fm_payment", pay);
 
-  // ถ้ายังไม่มี due_date ให้คำนวณและอัปเดตลงฟอร์ม/FD
   if (!fd.get("due_date")) {
     computeAndFillDueDate();
     fd.set("due_date", document.getElementById("due_date")?.value || "");
@@ -437,20 +445,13 @@ async function saveInvoice() {
 
 //-----------------------edit invoice function --------------------//
 function buildUpdatePayload() {
-  // รวบรวมค่าจากฟอร์ม (ใช้ตัวช่วยเดิมก็ได้)
   const v = id => document.getElementById(id)?.value ?? '';
 
-  // ให้แน่ใจว่า due_date ถูกคำนวณแล้ว
   computeAndFillDueDate();
 
-  // map -> schema ของ InvoiceUpdate ใน backend
   const payload = {
     invoice_number: v('invoice_number'),
-
-
-    // ชื่อฟิลด์ฝั่ง DB คือ fname (ชื่อลูกค้า)
     fname: v('customer_name'),
-
     personid: v('personid'),
     tel: v('tel'),
     mobile: v('mobile'),
@@ -458,21 +459,16 @@ function buildUpdatePayload() {
     cf_personzipcode: v('cf_personzipcode'),
     cf_provincename: v('cf_provincename'),
     cf_taxid: v('customer_taxid'),
-
     po_number: v('po_number'),
     grn_number: v('grn_number'),
     dn_number: v('dn_number'),
     fmlpaymentcreditday: (v('fmlpaymentcreditday') ? parseInt(v('fmlpaymentcreditday'), 10) : null),
-
     car_numberplate: v('car_numberplate'),
-
-    // สินค้า: map เป็น {cf_itemid, cf_itemname, quantity, unit_price}
     items: []
   };
-  const idISO = normalizeDateInputValue('invoice_date'); // แปลงและเขียนกลับ input
-  const ddISO = normalizeDateInputValue('due_date');     // เช่นกัน
+  const idISO = normalizeDateInputValue('invoice_date');
+  const ddISO = normalizeDateInputValue('due_date');
 
-  // ใส่ลง payload เฉพาะเมื่อแปลงได้
   if (idISO) payload.invoice_date = idISO;
   if (ddISO) payload.due_date = ddISO;
 
@@ -482,14 +478,8 @@ function buildUpdatePayload() {
     const quantity = parseFloat(row.querySelector('.quantity')?.value || 0);
     const unit_price = parseFloat(row.querySelector('.unit_price')?.value || 0);
 
-    // เพิ่มเฉพาะแถวที่มีข้อมูล
     if (product_code || description) {
-      payload.items.push({
-        cf_itemid: product_code,
-        cf_itemname: description,
-        quantity,
-        unit_price
-      });
+      payload.items.push({ cf_itemid: product_code, cf_itemname: description, quantity, unit_price });
     }
   });
 
@@ -512,7 +502,6 @@ async function updateInvoice() {
       const t = await res.text();
       throw new Error(t || 'อัปเดตไม่สำเร็จ');
     }
-    // เคลียร์ cache ที่อาจเก็บจากหน้า summary
     sessionStorage.removeItem('invoice_edit_data');
     alert('อัปเดตเรียบร้อย');
   } catch (e) {
@@ -521,98 +510,37 @@ async function updateInvoice() {
   }
 }
 
-// export ให้เรียกจากปุ่ม
-window.updateInvoice = updateInvoice;
-
-(function () {
-  // mm -> px (อิง 96dpi)
-  const mmToPx = mm => (mm / 25.4) * 96;
-
-  function fitToA4Once() {
-    const doc = document.querySelector('.doc');
-    if (!doc) return;
-
-    // ต้องสอดคล้องกับ @page margin: 10mm (บน+ล่าง รวม 20mm)
-    const printableHeightPx = mmToPx(297 - 20); // 297mm คือความสูง A4
-
-    // วัดความสูงเนื้อหา
-    const actual = doc.getBoundingClientRect().height;
-
-    // ถ้าสูงเกินพื้นที่พิมพ์ ให้ scale ลง (ไม่เกิน 1)
-    const scale = Math.min(1, printableHeightPx / actual);
-    if (scale < 1) {
-      doc.style.transform = `scale(${scale})`;
-      // พอสเกลลง ความกว้างก็เล็กลง → อาจเหลือด้านขวา ให้ชดเชยด้วย margin-bottom
-      // เพื่อกันไม่ให้โดนตัดท้ายหน้า
-      const scaledHeight = actual * scale;
-      const spare = printableHeightPx - scaledHeight;
-      doc.style.marginBottom = spare > 0 ? `${spare}px` : '0';
-    } else {
-      doc.style.transform = '';
-      doc.style.marginBottom = '';
-    }
-  }
-
-  // ปรับสเกลเฉพาะก่อนพิมพ์และคืนค่าหลังพิมพ์
-  window.addEventListener('beforeprint', fitToA4Once);
-  window.addEventListener('afterprint', () => {
-    const doc = document.querySelector('.doc');
-    if (doc) {
-      doc.style.transform = '';
-      doc.style.marginBottom = '';
-    }
-  });
-
-  // เผื่อปุ่มพิมพ์ในหน้าเรียก window.print() ทันทีหลังเรนเดอร์
-  // ให้หน่วงเล็กน้อยเพื่อให้ layout คำนวณเสร็จก่อน
-  setTimeout(() => {
-    // ถ้าต้องการลองสเกลบนจอก่อนพิมพ์ ให้ uncomment บรรทัดนี้
-    // fitToA4Once();
-  }, 50);
-})();
-
+// ====== Utilities: วันที่ / Due date ======
 function formatDateToISO(dateStr) {
   if (!dateStr) return "";
   const TH_MONTHS = {
-    "มกราคม": 0, "กุมภาพันธ์": 1, "มีนาคม": 2, "เมษายน": 3, "พฤษภาคม": 4, "มิถุนายน": 5,
-    "กรกฎาคม": 6, "สิงหาคม": 7, "กันยายน": 8, "ตุลาคม": 9, "พฤศจิกายน": 10, "ธันวาคม": 11
+    "มกราคม":0,"กุมภาพันธ์":1,"มีนาคม":2,"เมษายน":3,"พฤษภาคม":4,"มิถุนายน":5,
+    "กรกฎาคม":6,"สิงหาคม":7,"กันยายน":8,"ตุลาคม":9,"พฤศจิกายน":10,"ธันวาคม":11
   };
-
-  // 1) ISO อยู่แล้ว
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
 
-  // 2) dd <เดือนไทย> yyyy (พ.ศ./ค.ศ.)
   const p = dateStr.trim().split(/\s+/);
   if (p.length === 3 && TH_MONTHS[p[1]] !== undefined) {
     const d = parseInt(p[0], 10);
     const m = TH_MONTHS[p[1]];
     let y = parseInt(p[2], 10);
-    if (y > 2400) y -= 543; // พ.ศ. -> ค.ศ.
-
-    if (y >= 1900 && y <= 2100) {
-      const js = new Date(Date.UTC(y, m, d));
-      if (!isNaN(js)) return js.toISOString().slice(0, 10);
-    }
+    if (y > 2400) y -= 543;
+    const js = new Date(Date.UTC(y, m, d));
+    if (!isNaN(js)) return js.toISOString().slice(0, 10);
     return "";
   }
 
-  // 3) dd/mm/YYYY หรือ mm/dd/YYYY
   const m1 = dateStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
   if (m1) {
-    const [, a, b, c] = m1; // a,b= d/m หรือ m/d ; c=YYYY
+    const [, a, b, c] = m1;
     const try1 = new Date(`${c}-${b.padStart(2, '0')}-${a.padStart(2, '0')}T00:00:00Z`);
-    if (!isNaN(try1) && try1.getUTCFullYear() >= 1900 && try1.getUTCFullYear() <= 2100)
-      return try1.toISOString().slice(0, 10);
+    if (!isNaN(try1)) return try1.toISOString().slice(0, 10);
     const try2 = new Date(`${c}-${a.padStart(2, '0')}-${b.padStart(2, '0')}T00:00:00Z`);
-    if (!isNaN(try2) && try2.getUTCFullYear() >= 1900 && try2.getUTCFullYear() <= 2100)
-      return try2.toISOString().slice(0, 10);
+    if (!isNaN(try2)) return try2.toISOString().slice(0, 10);
   }
-
-  // 4) ห้ามใช้ new Date(locale-string) อีกต่อไป -> ป้องกันปี 0192/0190
   return "";
 }
 
-// ใช้ค่านี้ normalize field ให้เป็น ISO ถ้าทำได้
 function normalizeDateInputValue(inputId) {
   const el = document.getElementById(inputId);
   if (!el) return "";
@@ -621,31 +549,10 @@ function normalizeDateInputValue(inputId) {
   return iso;
 }
 
-function parseInvoiceDateToDate(dateStr) {
-  if (!dateStr) return null;
-  const months = {
-    "มกราคม": 0, "กุมภาพันธ์": 1, "มีนาคม": 2,
-    "เมษายน": 3, "พฤษภาคม": 4, "มิถุนายน": 5,
-    "กรกฎาคม": 6, "สิงหาคม": 7, "กันยายน": 8,
-    "ตุลาคม": 9, "พฤศจิกายน": 10, "ธันวาคม": 11
-  };
-  const parts = String(dateStr).trim().split(" ");
-  if (parts.length === 3 && months.hasOwnProperty(parts[1])) {
-    const d = parseInt(parts[0], 10);
-    const m = months[parts[1]];
-    let y = parseInt(parts[2], 10);
-    if (y > 2400) y -= 543; // พ.ศ. -> ค.ศ.
-    return new Date(y, m, d);
-  }
-  const jsDate = new Date(dateStr);
-  return isNaN(jsDate) ? null : jsDate;
-}
-
 function computeAndFillDueDate() {
-  const invISO = normalizeDateInputValue('invoice_date'); // แปลง/บันทึกกลับเป็น ISO ในช่อง
+  const invISO = normalizeDateInputValue('invoice_date');
   const credit = parseInt(document.getElementById('fmlpaymentcreditday')?.value || '0', 10) || 0;
-  if (!invISO) return; // ไม่มีวันที่เริ่ม → ไม่คำนวณ
-
+  if (!invISO) return;
   const base = new Date(invISO + 'T00:00:00Z');
   base.setUTCDate(base.getUTCDate() + credit);
   const dueISO = base.toISOString().slice(0, 10);
@@ -653,28 +560,23 @@ function computeAndFillDueDate() {
   if (dueEl) dueEl.value = dueISO;
 }
 
-// ผูก event เมื่อหน้าโหลด
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('invoice_date')?.addEventListener('change', computeAndFillDueDate);
   document.getElementById('fmlpaymentcreditday')?.addEventListener('input', computeAndFillDueDate);
 });
-
-// คำนวณครั้งแรกตอนโหลดหน้า (เผื่อมีค่า default)
 window.addEventListener("load", computeAndFillDueDate);
 
-// ===== Autocomplete: ทะเบียนรถจาก products.ss_car =====
+// ===== Autocomplete: ทะเบียนรถ =====
 async function searchCarPlates(q) {
   const res = await fetch(`/api/suggest/number_plate?q=${encodeURIComponent(q)}`);
   if (!res.ok) return [];
-  return await res.json(); // [{number_plate}]
+  return await res.json();
 }
-
 (function setupCarPlateAutocomplete() {
   const input = document.getElementById('car_numberplate');
   const list  = document.getElementById('car_plate_datalist');
   const msg   = document.getElementById('car_plate_msg');
   if (!input || !list) return;
-
   const deb = (fn, t=200)=>{ let h; return (...a)=>{clearTimeout(h); h=setTimeout(()=>fn(...a),t)}};
   async function suggest() {
     const q = (input.value || '').trim();
@@ -692,33 +594,24 @@ async function searchCarPlates(q) {
   input.addEventListener('focus', () => input.value && suggest());
 })();
 
-// ===== Align TAX ID with company email on invoice header =====
+// ===== Align TAX ID with company email on invoice header (safe on all pages) =====
 (function alignTaxIdWithEmail() {
   function run() {
     const emailEl = document.getElementById('company-email');
     const rightCol = document.getElementById('header-right');
     const taxIdEl = document.getElementById('tax-id');
-
-    // ทำงานเฉพาะหน้า invoice.html ที่มี element เหล่านี้
     if (!emailEl || !rightCol || !taxIdEl) return;
-
-    // เว้นระยะ label จาก "TAX INVOICE/..." (ถ้ายังไม่ได้ตั้งไว้ใน HTML)
     const taxLabel = document.getElementById('tax-label');
     if (taxLabel && parseFloat(getComputedStyle(taxLabel).marginTop || 0) < 8) {
       taxLabel.style.marginTop = '12px';
     }
-
-    // จัดให้ตัวเลขภาษีอยู่ระดับเดียวกับบรรทัดอีเมล (ซ้าย)
     const rightTop = rightCol.getBoundingClientRect().top + window.scrollY;
     const emailTop = emailEl.getBoundingClientRect().top + window.scrollY;
     const taxTop = taxIdEl.getBoundingClientRect().top + window.scrollY;
-
     const delta = (emailTop - rightTop) - (taxTop - rightTop);
     const currentMt = parseFloat(getComputedStyle(taxIdEl).marginTop || 0);
     taxIdEl.style.marginTop = (currentMt + delta) + 'px';
   }
-
-  // รันหลัง DOM พร้อม และอีกรอบหลังโหลดฟอนต์/รูปครบ
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
     setTimeout(run, 0);
   } else {
@@ -738,5 +631,3 @@ window.selectCustomer = selectCustomer;
 window.previewInvoice = previewInvoice;
 window.saveInvoice = saveInvoice;
 window.filterProducts = filterProducts;
-
-
