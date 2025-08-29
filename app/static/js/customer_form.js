@@ -1,4 +1,9 @@
 // /static/js/customer_form.js
+
+// ===== Config / Endpoints =====
+const ENDPOINT_PROV_SUGGEST = '/api/suggest/province';
+
+// ===== State & Helpers =====
 let all = [];            // ข้อมูลทั้งหมดจากเซิร์ฟเวอร์
 let filtered = [];       // ผลลัพธ์ที่กรองด้วยช่องค้นหา
 let editing = null;      // idx ที่กำลังแก้ไข
@@ -7,13 +12,16 @@ const PAGE_SIZE = 20;
 
 const $ = (id) => document.getElementById(id);
 const norm = (s) => (s ?? '').toString().trim().toLowerCase();
+const debounce = (fn, delay = 250) => {
+  let t = null;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); };
+};
 
 function displayName(c) {
   const parts = [c.prename, c.fname, c.lname].filter(Boolean);
   return parts.join(' ').trim() || c.fname || '';
 }
 function displayPhone(c) {
-  // เรียงลำดับตามที่อยากแสดง
   return c.mobile || c.tel || c.cf_personaddress_mobile || '';
 }
 
@@ -108,6 +116,38 @@ function doSearch() {
   renderPage();
 }
 
+// ===== Province autocomplete =====
+async function suggestProvinces() {
+  const input = $('cf_provincename');
+  const list = $('province_datalist');
+  if (!input || !list) return;
+  const q = (input.value || '').trim();
+  list.innerHTML = '';
+  if (q.length < 1) return;
+
+  try {
+    const url = new URL(ENDPOINT_PROV_SUGGEST, location.origin);
+    url.searchParams.set('q', q);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('โหลดจังหวัดไม่สำเร็จ');
+
+    const data = await res.json(); // [{ prov_nam_t }]
+    // รวม/unique แล้วเติมลง datalist
+    const seen = new Set();
+    data.forEach(r => {
+      const name = r.prov_nam_t;
+      if (name && !seen.has(name)) {
+        seen.add(name);
+        const opt = document.createElement('option');
+        opt.value = name;
+        list.appendChild(opt);
+      }
+    });
+  } catch (e) {
+    console.error(e);
+  }
+}
+
 // ===== ฟอร์ม =====
 function resetForm() {
   editing = null;
@@ -191,6 +231,16 @@ function initCustomerForm() {
     const btn = e.target.closest('.btn-edit');
     if (btn && btn.dataset.idx) editRowByIdx(btn.dataset.idx);
   });
+
+  // Province autocomplete bind
+  const provInput = $('cf_provincename');
+  if (provInput) {
+    const deb = debounce(suggestProvinces, 200);
+    provInput.addEventListener('input', deb);
+    provInput.addEventListener('focus', () => {
+      if (provInput.value) suggestProvinces();
+    });
+  }
 
   loadAll();
 }

@@ -81,7 +81,9 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
           <div>
             <label for="cf_provincename" class="block text-sm text-gray-700 mb-1">จังหวัด</label>
-            <input name="cf_provincename" id="cf_provincename" class="input" />
+            <input name="cf_provincename" id="cf_provincename" class="input" list="province_datalist" autocomplete="off" />
+            <!-- datalist สำหรับ autocomplete จังหวัด -->
+            <datalist id="province_datalist"></datalist>
           </div>
           <div>
             <label for="cf_personzipcode" class="block text-sm text-gray-700 mb-1">รหัสไปรษณีย์</label>
@@ -147,7 +149,7 @@
     </section>
   </div>
 
-  <!-- JS คงเดิม -->
+  <!-- JS -->
   <script src="/static/js/customer_form.js" defer></script>
 </body>
 </html>
