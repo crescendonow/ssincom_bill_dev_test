@@ -16,10 +16,17 @@ const debounce = (fn, delay = 250) => {
   let t = null;
   return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); };
 };
+const esc = (s) =>
+  String(s ?? '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 
+// ใช้ customer_name เป็นหลัก; ถ้าไม่มีค่อย fallback เป็น prename/fname/lname
 function displayName(c) {
-  const parts = [c.prename, c.fname, c.lname].filter(Boolean);
-  return parts.join(' ').trim() || c.fname || '';
+  const primary = (c.customer_name || '').toString().trim();
+  if (primary) return primary;
+  const combo = [c.prename, c.fname, c.lname].filter(Boolean).join(' ').trim();
+  return combo || c.fname || '';
 }
 function displayPhone(c) {
   return c.mobile || c.tel || c.cf_personaddress_mobile || '';
@@ -84,12 +91,13 @@ function renderTable(rows) {
     const tr = document.createElement('tr');
     tr.className = 'row border-b';
 
+    const nameText = displayName(c); // ใช้ customer_name เป็นหลัก
     tr.innerHTML = `
-      <td class="p-2">${displayName(c)}</td>
-      <td class="p-2 hidden sm:table-cell">${c.personid || ''}</td>
-      <td class="p-2 hidden lg:table-cell">${c.cf_taxid || ''}</td>
-      <td class="p-2">${displayPhone(c)}</td>
-      <td class="p-2 hidden md:table-cell">${c.cf_provincename || ''}</td>
+      <td class="p-2">${esc(nameText)}</td>
+      <td class="p-2 hidden sm:table-cell">${esc(c.personid || '')}</td>
+      <td class="p-2 hidden lg:table-cell">${esc(c.cf_taxid || '')}</td>
+      <td class="p-2">${esc(displayPhone(c))}</td>
+      <td class="p-2 hidden md:table-cell">${esc(c.cf_provincename || '')}</td>
       <td class="p-2 w-24">
         <button type="button" class="text-blue-600 hover:underline btn-edit" data-idx="${c.idx}">แก้ไข</button>
       </td>
@@ -98,13 +106,14 @@ function renderTable(rows) {
   });
 }
 
-// ===== ค้นหา (ชื่อ / รหัสลูกค้า / เลขภาษี / เบอร์ / จังหวัด) =====
+// ===== ค้นหา (รวม customer_name ด้วย) =====
 function doSearch() {
   const q = norm($('search')?.value);
   if (!q) {
     filtered = all.slice();
   } else {
     filtered = all.filter((c) =>
+      (c.customer_name || '').toLowerCase().includes(q) ||       // ← เพิ่มบรรทัดนี้
       displayName(c).toLowerCase().includes(q) ||
       (c.personid || '').toLowerCase().includes(q) ||
       (c.cf_taxid || '').toLowerCase().includes(q) ||
@@ -132,7 +141,6 @@ async function suggestProvinces() {
     if (!res.ok) throw new Error('โหลดจังหวัดไม่สำเร็จ');
 
     const data = await res.json(); // [{ prov_nam_t }]
-    // รวม/unique แล้วเติมลง datalist
     const seen = new Set();
     data.forEach(r => {
       const name = r.prov_nam_t;
@@ -158,7 +166,10 @@ function resetForm() {
 }
 function fillForm(c) {
   Object.keys(c || {}).forEach((k) => { const el = $(k); if (el) el.value = c[k] ?? ''; });
-  if ($('fname') && !$('fname').value) $('fname').value = displayName(c);
+  // ถ้า fname ยังว่าง ให้ใช้ customer_name เติมให้ก่อน
+  if ($('fname') && !$('fname').value) {
+    $('fname').value = (c.customer_name || displayName(c));
+  }
 }
 async function isDuplicate(payload, ignoreIdx = null) {
   const fd = new FormData();
