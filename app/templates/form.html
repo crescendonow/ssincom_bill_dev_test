@@ -47,7 +47,8 @@
     <div class="card p-4 md:p-8">
       <h2 class="text-xl md:text-2xl font-bold mb-4 md:mb-6">แบบฟอร์มใบกำกับภาษี</h2>
 
-      <form id="invoice_form" onsubmit="return previewInvoice(event)" class="space-y-4">
+      <!-- ✅ ลบ onsubmit ออก -->
+      <form id="invoice_form" class="space-y-4">
         <!-- หมายเลข/วันที่ -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -198,6 +199,7 @@
               </select>
             </div>
             <div class="flex gap-2">
+              <!-- type="button" ไว้อยู่แล้ว -->
               <button type="button" onclick="previewInvoice(event)" class="px-4 py-2 rounded bg-gray-600 text-white">🔍
                 Preview</button>
               <button type="button" id="btnSave" onclick="saveInvoice()"
