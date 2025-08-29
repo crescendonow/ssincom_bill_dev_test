@@ -14,7 +14,6 @@ from . import models
 
 router = APIRouter()
 
-
 # ---------------- DB Session ----------------
 def get_db():
     db = SessionLocal()
@@ -23,39 +22,60 @@ def get_db():
     finally:
         db.close()
 
-
 # -------------- Helpers ---------------------
 def _row_to_dict(c: models.CustomerList) -> Dict[str, Any]:
-    """แปลง ORM -> dict ให้สอดคล้องกับฝั่ง Frontend"""
+    """
+    แปลง ORM -> dict ให้สอดคล้องกับ Frontend
+    NOTE: ส่งคีย์เลขภาษีให้ครบ 3 แบบ เพื่อรองรับหน้าเว็บ/สคริปต์เก่า:
+      - cf_taxid (มาตรฐานใหม่)
+      - tax_id   (บางที่ใช้ snake_case)
+      - taxid    (คีย์เก่าที่เคยใช้)
+    """
+    customer_name = (c.fname or "").strip()  # รักษาพฤติกรรมเดิม ถ้าต้องรวม lname ค่อยปรับฝั่ง DB/ETL
     return {
         "idx": c.idx,
         "personid": c.personid,
-        "customer_name": c.fname,
+        "customer_name": customer_name,
         "prename": c.prename,
+
+        # เลขภาษี: ส่งให้ครบทั้งสามคีย์
+        "cf_taxid": c.cf_taxid,
+        "tax_id": c.cf_taxid,
         "taxid": c.cf_taxid,
+
+        # ที่อยู่/จังหวัด/รหัสไปรษณีย์: คงคีย์คู่ทั้งแบบสั้นและแบบเต็มเพื่อความเข้ากันได้
         "address": c.cf_personaddress,
+        "cf_personaddress": c.cf_personaddress,
+
         "province": c.cf_provincename,
+        "cf_provincename": c.cf_provincename,
+
         "zipcode": c.cf_personzipcode,
+        "cf_personzipcode": c.cf_personzipcode,
+
+        # เบอร์โทร
         "tel": c.tel,
         "mobile": c.mobile,
+        "cf_personaddress_tel": c.tel,
+        "cf_personaddress_mobile": c.mobile,
+
+        # เครดิต (วัน)
         "fmlpaymentcreditday": c.fmlpaymentcreditday,
     }
 
-
 def _find_template(filename: str) -> Optional[str]:
-    """พยายามหาไฟล์ HTML หลาย ๆ path ยอดนิยมของโปรเจกต์นี้"""
+    """พยายามหาไฟล์ HTML หลาย path"""
     here = os.path.dirname(os.path.abspath(__file__))
     candidates = [
-        os.path.join(here, filename),                          # app/customer_form.html
-        os.path.join(here, "templates", filename),             # app/templates/customer_form.html
-        os.path.join(os.getcwd(), filename),                   # ./customer_form.html
-        os.path.join(os.getcwd(), "templates", filename),      # ./templates/customer_form.html
+        os.path.join(here, filename),
+        os.path.join(here, "templates", filename),
+        os.path.join(os.getcwd(), filename),
+        os.path.join(os.getcwd(), "templates", filename),
     ]
     for p in candidates:
         if os.path.isfile(p):
             return p
     return None
-
 
 # -------------- Pages (optional) -------------
 @router.get("/customers", response_class=HTMLResponse)
@@ -66,9 +86,7 @@ def customers_page():
         raise HTTPException(status_code=404, detail="templates/customer_form.html not found")
     return FileResponse(path)
 
-
 # -------------- APIs ------------------------
-
 @router.get("/api/customers/all")
 def api_customers_all(db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
     """ดึงลูกค้าทั้งหมด (ไว้ใช้ทำ datalist/fallback)"""
@@ -78,7 +96,6 @@ def api_customers_all(db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
         .all()
     )
     return [_row_to_dict(r) for r in rows]
-
 
 @router.get("/api/customers/suggest")
 def api_customers_suggest(
@@ -105,7 +122,6 @@ def api_customers_suggest(
     )
     return [_row_to_dict(r) for r in rows]
 
-
 @router.get("/api/customers/detail")
 def api_customer_detail(
     personid: Optional[str] = Query(None),
@@ -126,7 +142,6 @@ def api_customer_detail(
     if not c:
         raise HTTPException(status_code=404, detail="customer not found")
     return _row_to_dict(c)
-
 
 @router.get("/api/customers")
 def api_customers_list(
