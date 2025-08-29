@@ -1,0 +1,44 @@
+/* Layout */
+body {
+    background: #f3f4f6;
+}
+
+.form-shell {
+    max-width: 72rem;
+    margin: 0 auto;
+}
+
+.card {
+    background: #fff;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
+}
+
+/* Sticky action bar สำหรับจอเล็ก */
+.action-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 40;
+    background: #fff;
+    border-top: 1px solid #e5e7eb;
+    padding: .75rem .75rem;
+}
+
+@media (min-width: 768px) {
+    .action-bar {
+        position: static;
+        border-top: 0;
+        padding: 0;
+    }
+}
+
+/* ตอนพิมพ์/ทำ PDF ไม่ต้องแสดงปุ่ม และพื้นหลังขาว */
+@media print {
+    .action-bar {
+        display: none !important;
+    }
+
+    body {
+        background: #fff;
+    }
+}

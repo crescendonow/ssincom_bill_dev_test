@@ -1,138 +1,145 @@
 <!DOCTYPE html>
-<html>
+<html lang="th">
 
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   <title>Invoice Form</title>
+
+  <!-- Responsive -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+  <!-- CSS/JS libs -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.css" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/datepicker.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/locales/th.js"></script>
 
+  <!-- สไตล์ของฟอร์ม (แยกออกมา) -->
+  <link rel="stylesheet" href="/static/css/form.css" />
+
+  <!-- สไตล์ A4 ของหน้า invoice เฉพาะตอนพิมพ์/สร้าง PDF -->
+  <link rel="stylesheet" href="/static/css/invoice.css" media="print" />
 </head>
 
-<body class="bg-gray-100 py-8 px-4">
+<body class="py-6 px-3 md:px-4">
+  <!-- datalist ที่ JS ใช้งาน -->
   <datalist id="productCodes"></datalist>
   <datalist id="productNames"></datalist>
-  <div class="max-w-5xl mx-auto bg-white rounded-xl shadow p-8 space-y-6">
-    <div class="flex items-center gap-2 text-blue-700 font-semibold mb-4">
-      <nav class="flex items-center gap-2 text-sm mb-4">
-        <!-- กลับหน้าหลัก -->
+  <datalist id="customerList"></datalist>
+  <datalist id="car_plate_datalist"></datalist>
+
+  <div class="form-shell space-y-4">
+    <!-- Breadcrumb -->
+    <div class="card p-3 md:p-4">
+      <nav class="flex flex-wrap items-center gap-2 text-sm">
         <a href="/" class="inline-flex items-center px-3 py-1.5 rounded border hover:bg-gray-50">
           <span class="mr-2">←</span> กลับหน้าหลัก
         </a>
-
-        <!-- ✅ กลับไปหน้ารายการใบกำกับภาษีทั้งหมด -->
         <a href="/summary_invoices.html"
           class="inline-flex items-center px-3 py-1.5 rounded border text-blue-700 hover:bg-blue-50">
           <span class="mr-2">📃</span> รายการใบกำกับภาษีทั้งหมด
         </a>
       </nav>
     </div>
-    <div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow">
-      <h2 class="text-2xl font-bold mb-6">แบบฟอร์มใบกำกับภาษี</h2>
-      <form id="invoice_form" onsubmit="return previewInvoice(event)">
-        <!-- Invoice Number -->
-        <div>
-          <label for="invoice_number" class="block mb-2 text-sm font-medium text-gray-900">เลขที่ใบกำกับภาษี</label>
-          <input type="text" id="invoice_number" name="invoice_number" placeholder="Invoice No"
-            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5" required>
-          <p id="invNoHelp" class="mt-1 text-sm text-red-600 hidden">เลขที่ใบกำกับนี้ถูกใช้แล้ว</p>
-        </div>
 
-        <!-- Date -->
-        <div>
-          <label for="invoice_date" class="block mb-2 text-sm font-medium text-gray-900">วันที่</label>
-          <input id="invoice_date" name="invoice_date" type="date" min="1900-01-01" max="2100-12-31"
-            class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
-        </div>
-        <!-- GRN DN-->
+    <!-- ฟอร์มหลัก -->
+    <div class="card p-4 md:p-8">
+      <h2 class="text-xl md:text-2xl font-bold mb-4 md:mb-6">แบบฟอร์มใบกำกับภาษี</h2>
+
+      <form id="invoice_form" onsubmit="return previewInvoice(event)" class="space-y-4">
+        <!-- หมายเลข/วันที่ -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label for="grn_number" class="block mb-2 text-sm font-medium text-gray-900">เลขที่ใบรับสินค้า (GRN)</label>
-            <input type="text" id="grn_number" name="grn_number"
-              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" placeholder="เช่น GRN-0001">
+            <label for="invoice_number" class="block mb-1 text-sm font-medium text-gray-900">เลขที่ใบกำกับภาษี</label>
+            <input type="text" id="invoice_number" name="invoice_number" placeholder="Invoice No"
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" required />
+            <p id="invNoHelp" class="mt-1 text-sm text-red-600 hidden">เลขที่ใบกำกับนี้ถูกใช้แล้ว</p>
           </div>
           <div>
-            <label for="dn_number" class="block mb-2 text-sm font-medium text-gray-900">เลขที่ใบส่งสินค้า (DN)</label>
-            <input type="text" id="dn_number" name="dn_number"
-              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" placeholder="เช่น DN-0001">
+            <label for="invoice_date" class="block mb-1 text-sm font-medium text-gray-900">วันที่</label>
+            <input id="invoice_date" name="invoice_date" type="date" min="1900-01-01" max="2100-12-31"
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
           </div>
         </div>
 
-        <!-- PO Number -->
-        <div>
-          <label for="po_number" class="block mb-2 text-sm font-medium text-gray-900">เลขที่ใบสั่งซื้อ (PO)</label>
-          <input type="text" id="po_number" name="po_number" placeholder="po_number"
-            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5">
-        </div>
-
-        <!-- Customer Name -->
-        <div>
-          <label for="customer_name" class="block mb-2 text-sm font-medium text-gray-900">ชื่อลูกค้า</label>
-          <input type="text" name="customer_name" id="customer_name" list="customerList" oninput="selectCustomer()"
-            autocomplete="off" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5">
-          <datalist id="customerList"></datalist>
-        </div>
-
-        <!-- Customer Tax ID -->
-        <div>
-          <label for="customer_taxid"
-            class="block mb-2 text-sm font-medium text-gray-900">เลขประจำตัวผู้เสียภาษี</label>
-          <input type="text" name="customer_taxid" id="customer_taxid"
-            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5">
-        </div>
-
-        <!-- Customer Address -->
-        <div>
-          <label for="customer_address" class="block mb-2 text-sm font-medium text-gray-900">ที่อยู่</label>
-          <input type="text" name="customer_address" id="customer_address"
-            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5">
-        </div>
-
-        <!-- More customer details (auto-fill) -->
+        <!-- GRN / DN / PO -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label for="personid" class="block mb-2 text-sm font-medium text-gray-900">รหัสลูกค้า (personid)</label>
+            <label for="grn_number" class="block mb-1 text-sm font-medium text-gray-900">เลขที่ใบรับสินค้า (GRN)</label>
+            <input type="text" id="grn_number" name="grn_number" placeholder="เช่น GRN-0001"
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
+          </div>
+          <div>
+            <label for="dn_number" class="block mb-1 text-sm font-medium text-gray-900">เลขที่ใบส่งสินค้า (DN)</label>
+            <input type="text" id="dn_number" name="dn_number" placeholder="เช่น DN-0001"
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
+          </div>
+          <div>
+            <label for="po_number" class="block mb-1 text-sm font-medium text-gray-900">เลขที่ใบสั่งซื้อ (PO)</label>
+            <input type="text" id="po_number" name="po_number" placeholder="PO-XXXXX"
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
+          </div>
+        </div>
+
+        <!-- ลูกค้า -->
+        <div>
+          <label for="customer_name" class="block mb-1 text-sm font-medium text-gray-900">ชื่อลูกค้า</label>
+          <input type="text" name="customer_name" id="customer_name" list="customerList" oninput="selectCustomer()"
+            autocomplete="off" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
+        </div>
+
+        <div>
+          <label for="customer_taxid"
+            class="block mb-1 text-sm font-medium text-gray-900">เลขประจำตัวผู้เสียภาษี</label>
+          <input type="text" name="customer_taxid" id="customer_taxid"
+            class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
+        </div>
+
+        <div>
+          <label for="customer_address" class="block mb-1 text-sm font-medium text-gray-900">ที่อยู่</label>
+          <input type="text" name="customer_address" id="customer_address"
+            class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label for="personid" class="block mb-1 text-sm font-medium text-gray-900">รหัสลูกค้า (personid)</label>
             <input type="text" name="personid" id="personid"
-              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5">
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
           </div>
           <div>
-            <label for="tel" class="block mb-2 text-sm font-medium text-gray-900">โทรศัพท์</label>
+            <label for="tel" class="block mb-1 text-sm font-medium text-gray-900">โทรศัพท์</label>
             <input type="text" name="tel" id="tel"
-              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5">
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
           </div>
           <div>
-            <label for="mobile" class="block mb-2 text-sm font-medium text-gray-900">มือถือ</label>
+            <label for="mobile" class="block mb-1 text-sm font-medium text-gray-900">มือถือ</label>
             <input type="text" name="mobile" id="mobile"
-              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5">
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
           </div>
           <div>
-            <label for="cf_personzipcode" class="block mb-2 text-sm font-medium text-gray-900">รหัสไปรษณีย์</label>
+            <label for="cf_personzipcode" class="block mb-1 text-sm font-medium text-gray-900">รหัสไปรษณีย์</label>
             <input type="text" name="cf_personzipcode" id="cf_personzipcode"
-              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5">
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
           </div>
           <div>
-            <label for="cf_provincename" class="block mb-2 text-sm font-medium text-gray-900">จังหวัด</label>
+            <label for="cf_provincename" class="block mb-1 text-sm font-medium text-gray-900">จังหวัด</label>
             <input type="text" name="cf_provincename" id="cf_provincename"
-              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5">
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
           </div>
           <div>
-            <label for="car_numberplate" class="block mb-2 text-sm font-medium text-gray-900">
-              ทะเบียนรถจัดส่ง
-            </label>
+            <label for="car_numberplate" class="block mb-1 text-sm font-medium text-gray-900">ทะเบียนรถจัดส่ง</label>
             <input type="text" name="car_numberplate" id="car_numberplate" list="car_plate_datalist"
-              placeholder="เช่น 1กก 1234" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5">
-            <datalist id="car_plate_datalist"></datalist>
+              placeholder="เช่น 1กก 1234" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
             <p id="car_plate_msg" class="text-xs text-gray-400 mt-1"></p>
           </div>
         </div>
 
-        <!-- Payment / Credit / Due date -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+        <!-- วิธีชำระ/เครดิต/กำหนดชำระ -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label for="fm_payment" class="block mb-2 text-sm font-medium text-gray-900">วิธีชำระ</label>
+            <label for="fm_payment" class="block mb-1 text-sm font-medium text-gray-900">วิธีชำระ</label>
             <select id="fm_payment" name="fm_payment"
               class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5">
               <option value="cash">เงินสด / โอนทันที</option>
@@ -140,84 +147,86 @@
             </select>
           </div>
           <div>
-            <label for="fmlpaymentcreditday" class="block mb-2 text-sm font-medium text-gray-900">เครดิต (วัน)</label>
+            <label for="fmlpaymentcreditday" class="block mb-1 text-sm font-medium text-gray-900">เครดิต (วัน)</label>
             <input type="number" name="fmlpaymentcreditday" id="fmlpaymentcreditday"
-              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5">
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
           </div>
           <div>
-            <label for="due_date" class="block mb-2 text-sm font-medium text-gray-900">กำหนดชำระ (Due date)</label>
-            <input type="text" id="due_date" name="due_date" readonly
-              class="bg-gray-100 border border-gray-300 text-sm rounded-lg w-full p-2.5" placeholder="จะคำนวณอัตโนมัติ">
+            <label for="due_date" class="block mb-1 text-sm font-medium text-gray-900">กำหนดชำระ (Due date)</label>
+            <input type="text" id="due_date" name="due_date" readonly placeholder="คำนวณอัตโนมัติ"
+              class="bg-gray-100 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
           </div>
         </div>
 
-        <!-- Items Section -->
-        <hr class="my-4">
-        <div id="items" class="space-y-4">
-          <div class="flex flex-wrap gap-4 item-row items-end">
+        <!-- รายการสินค้า -->
+        <hr class="my-2 md:my-4" />
+        <div id="items" class="space-y-3 md:space-y-4">
+          <div class="flex flex-wrap gap-3 md:gap-4 item-row items-end">
             <input name="product_code" readonly placeholder="รหัสสินค้า"
-              class="product_code flex-1 min-w-[120px] bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5">
+              class="product_code flex-1 min-w-[120px] bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5" />
             <input name="description" readonly placeholder="รายละเอียด"
-              class="description flex-1 min-w-[120px] bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5">
+              class="description flex-1 min-w-[140px] bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5" />
             <input name="quantity" type="number" step="0.01" placeholder="จำนวน" oninput="updateTotal()"
-              class="quantity w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
-            <input name="unit_price" type="number" step="0.01" placeholder="ราคาต่อหน่วย"
-              class="unit_price w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
+              class="quantity w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
+            <input name="unit_price" type="number" step="0.01" placeholder="ราคาต่อหน่วย" oninput="updateTotal()"
+              class="unit_price w-28 md:w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
             <button type="button" onclick="openProductModal(this)"
               class="text-sm text-blue-600 hover:text-blue-800 px-2">🔍 ค้นหา</button>
           </div>
         </div>
 
-        <!-- 🔽 add item after box -->
         <div class="mt-2">
-          <button type="button" onclick="addItem()" class="text-blue-600 hover:text-blue-800 font-semibold">➕ Add
-            Item</button>
+          <button type="button" onclick="addItem()" class="text-blue-600 hover:text-blue-800 font-semibold">➕
+            เพิ่มรายการ</button>
         </div>
 
-        <!-- 🔽 Total Amount at bottom page -->
-        <div class="pt-6">
+        <div class="pt-4">
           <label class="block mb-1 text-sm font-medium text-gray-700">รวมเป็นเงิน</label>
-          <div class="text-right text-lg font-bold text-green-700" id="total_amount">฿ 0.00</div>
+          <div class="text-right text-lg md:text-xl font-bold text-green-700" id="total_amount">฿ 0.00</div>
         </div>
 
-        <!-- 🔽 Submit close page -->
-        <div class="flex gap-3 pt-4">
-          <label for="variant" class="block text-sm mb-1">ชนิดเอกสาร</label>
-          <select id="variant" class="bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
-            <option value="invoice_original">ใบกำกับ/ส่งของ/แจ้งหนี้ (ต้นฉบับ)</option>
-            <option value="invoice_copy">ใบกำกับ/ส่งของ/แจ้งหนี้ (สำเนา)</option>
-            <option value="receipt_original">ใบเสร็จรับเงิน (ต้นฉบับ)</option>
-            <option value="receipt_copy">ใบเสร็จรับเงิน (สำเนา)</option>
-          </select>
-          <button type="button" onclick="previewInvoice(event)" class="px-4 py-2 rounded bg-gray-600 text-white">🔍
-            Preview</button>
-          <!-- ✅ ปุ่ม Save (สร้างใหม่) -->
-          <button type="button" id="btnSave" onclick="saveInvoice()" class="px-4 py-2 rounded bg-blue-600 text-white">✅
-            Save</button>
-
-          <!-- ✅ ปุ่ม Edit (อัปเดต) — ซ่อนไว้ก่อน แล้วค่อยโชว์เมื่อมี ?edit= -->
-          <button type="button" id="btnUpdate" onclick="updateInvoice()"
-            class="px-4 py-2 rounded bg-amber-600 text-white hidden">✏️ Update</button>
+        <!-- แถบปุ่มลอย -->
+        <div class="action-bar rounded-b-lg">
+          <div class="flex flex-wrap gap-2 items-center justify-between md:justify-start">
+            <div class="flex items-center gap-2">
+              <label for="variant" class="text-sm">ชนิดเอกสาร</label>
+              <select id="variant" class="bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
+                <option value="invoice_original">ใบกำกับ/ส่งของ/แจ้งหนี้ (ต้นฉบับ)</option>
+                <option value="invoice_copy">ใบกำกับ/ส่งของ/แจ้งหนี้ (สำเนา)</option>
+                <option value="receipt_original">ใบเสร็จรับเงิน (ต้นฉบับ)</option>
+                <option value="receipt_copy">ใบเสร็จรับเงิน (สำเนา)</option>
+              </select>
+            </div>
+            <div class="flex gap-2">
+              <button type="button" onclick="previewInvoice(event)" class="px-4 py-2 rounded bg-gray-600 text-white">🔍
+                Preview</button>
+              <button type="button" id="btnSave" onclick="saveInvoice()"
+                class="px-4 py-2 rounded bg-blue-600 text-white">✅ Save</button>
+              <button type="button" id="btnUpdate" onclick="updateInvoice()"
+                class="px-4 py-2 rounded bg-amber-600 text-white hidden">✏️ Update</button>
+            </div>
+          </div>
         </div>
-        <!-- Product Selection Modal -->
-        <div id="productModal" tabindex="-1" class="hidden fixed inset-0 z-50 bg-black bg-opacity-50 overflow-y-auto">
+
+        <!-- Modal เลือกสินค้า -->
+        <div id="productModal" tabindex="-1" class="hidden fixed inset-0 z-50 bg-black/50 overflow-y-auto">
           <div class="relative w-full max-w-2xl mx-auto mt-20 bg-white rounded-lg shadow p-6">
-            <h3 class="text-xl font-bold mb-4">เลือกสินค้า</h3>
+            <h3 class="text-lg md:text-xl font-bold mb-4">เลือกสินค้า</h3>
             <input type="text" id="productSearch" placeholder="ค้นหาด้วยชื่อหรือรหัส..." oninput="filterProducts()"
-              class="w-full mb-4 p-2 border border-gray-300 rounded">
-
+              class="w-full mb-4 p-2 border border-gray-300 rounded" />
             <div id="productList" class="max-h-72 overflow-y-auto divide-y"></div>
-
             <div class="mt-4 text-right">
               <button type="button" onclick="closeProductModal()"
                 class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">ปิด</button>
             </div>
           </div>
         </div>
-
       </form>
+    </div>
+  </div>
 
-      <script src="/static/js/form.js" defer></script>
+  <!-- JS -->
+  <script src="/static/js/form.js" defer></script>
 </body>
 
 </html>
