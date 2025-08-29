@@ -1,103 +1,124 @@
-<!-- templates/customer_form.html -->
 <!DOCTYPE html>
 <html lang="th">
-
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>จัดการลูกค้า</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    /* สไตล์อินพุตพื้นฐานให้ใช้งานง่ายบนมือถือ */
+    .input {
+      width: 100%;
+      padding: .6rem;
+      border: 1px solid #d1d5db; /* gray-300 */
+      border-radius: .5rem;
+      background: #fff;
+    }
+    .row:hover { background: #f7fbff; }
+  </style>
 </head>
 
 <body class="bg-blue-50 min-h-screen">
-  <div class="max-w-6xl mx-auto py-8 px-4">
+  <div class="max-w-7xl mx-auto py-6 sm:py-8 px-3 sm:px-6 lg:px-8">
+    <!-- Back -->
     <div class="mb-4">
-      <a href="/" class="text-blue-700 hover:underline">← กลับ Dashboard</a>
+      <a href="/" class="inline-flex items-center gap-2 text-blue-700 hover:underline">
+        <span>←</span> กลับ Dashboard
+      </a>
     </div>
 
-    <div class="bg-white rounded-xl shadow p-6 mb-6">
-      <h2 class="text-xl font-bold text-blue-700 mb-4">ฟอร์มลูกค้า (เพิ่ม/แก้ไข)</h2>
+    <!-- ฟอร์มลูกค้า -->
+    <section class="bg-white rounded-xl shadow p-4 sm:p-6 mb-6">
+      <h2 class="text-lg sm:text-xl font-bold text-blue-700 mb-3 sm:mb-4">ฟอร์มลูกค้า (เพิ่ม/แก้ไข)</h2>
 
       <form id="customerForm" class="space-y-4">
-        <input type="hidden" name="idx" id="idx">
+        <input type="hidden" name="idx" id="idx" />
 
-        <div class="grid md:grid-cols-4 gap-4">
+        <!-- แถว 1 -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 sm:gap-4">
           <div>
-            <label class="block text-sm text-gray-700 mb-1">คำนำหน้า</label>
-            <input name="prename" id="prename" class="input" placeholder="นาย/นาง/บริษัท">
+            <label for="prename" class="block text-sm text-gray-700 mb-1">คำนำหน้า</label>
+            <input name="prename" id="prename" class="input" placeholder="นาย/นาง/บริษัท" />
           </div>
           <div>
-            <label class="block text-sm text-gray-700 mb-1">ชื่อ *</label>
-            <input name="fname" id="fname" class="input" required>
+            <label for="fname" class="block text-sm text-gray-700 mb-1">ชื่อ *</label>
+            <input name="fname" id="fname" class="input" required />
           </div>
           <div>
-            <label class="block text-sm text-gray-700 mb-1">นามสกุล</label>
-            <input name="lname" id="lname" class="input">
+            <label for="lname" class="block text-sm text-gray-700 mb-1">นามสกุล</label>
+            <input name="lname" id="lname" class="input" />
           </div>
           <div>
-            <label class="block text-sm text-gray-700 mb-1">รหัสลูกค้า</label>
-            <input name="personid" id="personid" class="input">
+            <label for="personid" class="block text-sm text-gray-700 mb-1">รหัสลูกค้า</label>
+            <input name="personid" id="personid" class="input" />
           </div>
         </div>
 
-        <div class="grid md:grid-cols-3 gap-4">
+        <!-- แถว 2 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
           <div>
-            <label class="block text-sm text-gray-700 mb-1">เลขภาษี</label>
-            <input name="cf_taxid" id="cf_taxid" class="input" maxlength="13">
+            <label for="cf_taxid" class="block text-sm text-gray-700 mb-1">เลขภาษี</label>
+            <input name="cf_taxid" id="cf_taxid" class="input" maxlength="13" />
           </div>
           <div>
-            <label class="block text-sm text-gray-700 mb-1">โทรศัพท์</label>
-            <input name="cf_personaddress_tel" id="cf_personaddress_tel" class="input">
+            <label for="cf_personaddress_tel" class="block text-sm text-gray-700 mb-1">โทรศัพท์</label>
+            <input name="cf_personaddress_tel" id="cf_personaddress_tel" class="input" />
           </div>
           <div>
-            <label class="block text-sm text-gray-700 mb-1">มือถือ</label>
-            <input name="cf_personaddress_mobile" id="cf_personaddress_mobile" class="input">
+            <label for="cf_personaddress_mobile" class="block text-sm text-gray-700 mb-1">มือถือ</label>
+            <input name="cf_personaddress_mobile" id="cf_personaddress_mobile" class="input" />
           </div>
         </div>
 
+        <!-- ที่อยู่ -->
         <div>
-          <label class="block text-sm text-gray-700 mb-1">ที่อยู่</label>
+          <label for="cf_personaddress" class="block text-sm text-gray-700 mb-1">ที่อยู่</label>
           <textarea name="cf_personaddress" id="cf_personaddress" class="input" rows="2"></textarea>
         </div>
 
-        <div class="grid md:grid-cols-3 gap-4">
+        <!-- แถว 3 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
           <div>
-            <label class="block text-sm text-gray-700 mb-1">จังหวัด</label>
-            <input name="cf_provincename" id="cf_provincename" class="input">
+            <label for="cf_provincename" class="block text-sm text-gray-700 mb-1">จังหวัด</label>
+            <input name="cf_provincename" id="cf_provincename" class="input" />
           </div>
           <div>
-            <label class="block text-sm text-gray-700 mb-1">รหัสไปรษณีย์</label>
-            <input name="cf_personzipcode" id="cf_personzipcode" class="input">
+            <label for="cf_personzipcode" class="block text-sm text-gray-700 mb-1">รหัสไปรษณีย์</label>
+            <input name="cf_personzipcode" id="cf_personzipcode" class="input" />
           </div>
           <div>
-            <label class="block text-sm text-gray-700 mb-1">เครดิต (วัน)</label>
-            <input type="number" name="fmlpaymentcreditday" id="fmlpaymentcreditday" class="input">
+            <label for="fmlpaymentcreditday" class="block text-sm text-gray-700 mb-1">เครดิต (วัน)</label>
+            <input type="number" name="fmlpaymentcreditday" id="fmlpaymentcreditday" class="input" />
           </div>
         </div>
 
-        <div class="flex items-center gap-3">
-          <label class="flex items-center gap-2 text-sm">
-            <input type="checkbox" id="redirectDash" class="h-4 w-4">
+        <!-- ออปชัน + คำเตือน -->
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+          <label for="redirectDash" class="flex items-center gap-2 text-sm">
+            <input type="checkbox" id="redirectDash" class="h-4 w-4" />
             บันทึกแล้วกลับ Dashboard
           </label>
           <span id="dupWarn" class="text-red-600 text-sm hidden">⚠️ พบข้อมูลซ้ำ (ชื่อ รหัสลูกค้า หรือ เลขภาษี)</span>
         </div>
 
-        <div class="flex gap-3">
+        <!-- ปุ่ม -->
+        <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <button type="submit" class="px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">💾 บันทึก</button>
           <button type="button" id="btnReset" class="px-5 py-2 border rounded hover:bg-gray-50">♻️ รีเซ็ต</button>
-          <button type="button" id="btnDelete"
-            class="px-5 py-2 bg-red-600 text-white rounded hover:bg-red-700 hidden">🗑️ ลบ</button>
+          <button type="button" id="btnDelete" class="px-5 py-2 bg-red-600 text-white rounded hover:bg-red-700 hidden">🗑️ ลบ</button>
         </div>
       </form>
-    </div>
+    </section>
 
-    <div class="bg-white rounded-xl shadow p-6">
+    <!-- ตารางข้อมูลลูกค้า -->
+    <section class="bg-white rounded-xl shadow p-4 sm:p-6">
       <div class="flex items-center justify-between mb-3 gap-2 flex-wrap">
-        <h3 class="font-semibold">ข้อมูลลูกค้า</h3>
-        <input id="search" placeholder="ค้นหา (ชื่อ / รหัสลูกค้า / จังหวัด / เบอร์ / เลขภาษี)"
-          class="input w-full sm:w-64">
+        <h3 class="text-base sm:text-lg font-semibold">ข้อมูลลูกค้า</h3>
+        <input id="search" placeholder="ค้นหา (ชื่อ / รหัสลูกค้า / จังหวัด / เบอร์ / เลขภาษี)" class="input w-full sm:w-64" />
       </div>
 
+      <!-- ตารางห่อด้วย container กันล้น -->
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
@@ -123,24 +144,10 @@
           <button id="nextPage" class="px-3 py-1 border rounded hover:bg-gray-50">ถัดไป</button>
         </div>
       </div>
-    </div>
-    
-    <style>
-      .input {
-        width: 100%;
-        padding: .6rem;
-        border: 1px solid #ccc;
-        border-radius: .5rem;
-        background: #fff;
-      }
+    </section>
+  </div>
 
-      .row:hover {
-        background: #f7fbff;
-      }
-    </style>
-
-    <script src="/static/js/customer_form.js" defer></script>
-
+  <!-- JS คงเดิม -->
+  <script src="/static/js/customer_form.js" defer></script>
 </body>
-
 </html>
