@@ -1,4 +1,5 @@
-/* /static/js/form.js  — unified products (master + suggest), iOS-friendly clicks, and bug fixes */
+
+// /static/js/form.js — products from master only (/api/products/all), iOS-friendly, and Preview fix
 
 /* ===========================
    Edit mode (show Update/Save)
@@ -169,11 +170,8 @@ async function fillCustomerFromSelected(label) {
 }
 
 /* ===========================
-   Items / Products
-   - Unified search (master + suggest)
-   - iPhone/iPad Safari click-friendly
+   Items / Products (MASTER ONLY)
    =========================== */
-
 let selectedRow = null;
 
 function addItem() {
@@ -202,7 +200,7 @@ function removeItem(btn) {
 }
 window.removeItem = removeItem;
 
-// ---------- Unified product search (master + suggest) ----------
+// ---------- Master list only ----------
 let _allProductsCache = null; // [{cf_itemid, cf_itemname, cf_itempricelevel_price, ...}]
 
 async function loadAllProductsOnce() {
@@ -218,54 +216,24 @@ async function loadAllProductsOnce() {
   return _allProductsCache;
 }
 
-async function fetchSuggest(q) {
-  const res = await fetch(`/api/products/suggest?q=${encodeURIComponent(q || '')}`);
-  if (!res.ok) return [];
-  // format: {product_code, description, avg_unit_price, used?}
-  return await res.json();
-}
-
 function _norm(s) { return (s ?? '').toString().trim().toLowerCase(); }
 
-async function searchProductsUnified(q) {
-  const [all, sug] = await Promise.all([loadAllProductsOnce(), fetchSuggest(q)]);
+async function searchProductsMaster(q) {
+  const all = await loadAllProductsOnce();
   const kw = _norm(q);
-
-  // from master (filter by id or name)
-  const fromMaster = (all || []).filter(p => {
+  // /api/products/all already ordered by cf_items_ordinary then cf_itemid (backend)
+  const filtered = (all || []).filter(p => {
+    if (!kw) return true;
     const code = _norm(p.cf_itemid);
     const name = _norm(p.cf_itemname);
-    // แค่ช่องค้นหาว่างก็ให้ขึ้นครบ (เพื่อครอบคลุม cf_itemid แบบ 1-2066 ด้วย)
-    return !kw || code.includes(kw) || name.includes(kw);
-  }).map(p => ({
+    return code.includes(kw) || name.includes(kw);
+  });
+  // map to display shape
+  return filtered.map(p => ({
     product_code: p.cf_itemid,
     description: p.cf_itemname,
-    avg_unit_price: p.cf_itempricelevel_price ?? 0,
-    source: 'master'
+    avg_unit_price: p.cf_itempricelevel_price ?? 0
   }));
-
-  // from suggest (same shape)
-  const fromSuggest = (sug || []).map(r => ({
-    product_code: r.product_code,
-    description: r.description,
-    avg_unit_price: r.avg_unit_price ?? 0,
-    source: 'suggest',
-    used: r.used ?? 0
-  }));
-
-  // merge, prefer suggest for duplicates
-  const byCode = new Map();
-  fromSuggest.forEach(x => { if (x.product_code) byCode.set(x.product_code, x); });
-  fromMaster.forEach(x => { if (x.product_code && !byCode.has(x.product_code)) byCode.set(x.product_code, x); });
-
-  const arr = Array.from(byCode.values());
-  arr.sort((a, b) => {
-    if (a.source !== b.source) return a.source === 'suggest' ? -1 : 1;
-    if (a.source === 'suggest' && b.source === 'suggest') return (b.used||0) - (a.used||0);
-    return (a.product_code || '').localeCompare(b.product_code || '');
-  });
-
-  return arr.slice(0, 200); // แสดงได้มากขึ้น
 }
 
 // ---------- Modal open/close + render ----------
@@ -291,10 +259,10 @@ async function filterProducts() {
   if (!listDiv) return;
   listDiv.innerHTML = '<div class="p-2 text-gray-500">กำลังค้นหา...</div>';
 
-  const items = await searchProductsUnified(keyword);
+  const items = await searchProductsMaster(keyword);
   if (!items.length) { listDiv.innerHTML = `<div class="p-2 text-gray-500">ไม่พบสินค้า</div>`; return; }
 
-  listDiv.innerHTML = items.map(p => `
+  listDiv.innerHTML = items.slice(0, 500).map(p => `
     <div class="p-2 hover:bg-blue-50 cursor-pointer flex items-center justify-between product-option"
          data-code="${p.product_code || ''}" data-name="${p.description || ''}" data-price="${p.avg_unit_price || 0}">
       <div><strong>${p.product_code || ''}</strong> - ${p.description || ''}</div>
@@ -358,10 +326,205 @@ if (invInput) invInput.addEventListener('input', debounce(() => checkDup(invInpu
 if (form) form.addEventListener('submit', (e)=>{ if (invDup) { e.preventDefault(); invInput?.focus(); } });
 
 /* ===========================
-   Due date helper (already in page)
+   Dates / due date helpers
    =========================== */
-window.addEventListener("load", computeAndFillDueDate);
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('invoice_date')?.addEventListener('change', computeAndFillDueDate);
-  document.getElementById('fmlpaymentcreditday')?.addEventListener('input', computeAndFillDueDate);
-});
+function formatDateToISO(dateStr) {
+  if (!dateStr) return "";
+  const TH_MONTHS = {"มกราคม":0,"กุมภาพันธ์":1,"มีนาคม":2,"เมษายน":3,"พฤษภาคม":4,"มิถุนายน":5,"กรกฎาคม":6,"สิงหาคม":7,"กันยายน":8,"ตุลาคม":9,"พฤศจิกายน":10,"ธันวาคม":11};
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  const p = dateStr.trim().split(/\s+/);
+  if (p.length === 3 && TH_MONTHS[p[1]] !== undefined) {
+    const d = parseInt(p[0],10), m = TH_MONTHS[p[1]]; let y = parseInt(p[2],10); if (y>2400) y -= 543;
+    const js = new Date(Date.UTC(y,m,d)); if (!isNaN(js)) return js.toISOString().slice(0,10);
+    return "";
+  }
+  const m1 = dateStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m1) {
+    const [,a,b,c]=m1;
+    const try1 = new Date(`${c}-${b.padStart(2,'0')}-${a.padStart(2,'0')}T00:00:00Z`);
+    if (!isNaN(try1)) return try1.toISOString().slice(0,10);
+    const try2 = new Date(`${c}-${a.padStart(2,'0')}-${b.padStart(2,'0')}T00:00:00Z`);
+    if (!isNaN(try2)) return try2.toISOString().slice(0,10);
+  }
+  return "";
+}
+
+function normalizeDateInputValue(inputId) {
+  const el = document.getElementById(inputId);
+  if (!el) return "";
+  const iso = formatDateToISO((el.value || "").trim());
+  if (iso) el.value = iso;
+  return iso;
+}
+
+function computeAndFillDueDate() {
+  const invISO = normalizeDateInputValue('invoice_date');
+  const credit = parseInt(document.getElementById('fmlpaymentcreditday')?.value || '0', 10) || 0;
+  if (!invISO) return;
+  const base = new Date(invISO + 'T00:00:00Z');
+  base.setUTCDate(base.getUTCDate() + credit);
+  const dueISO = base.toISOString().slice(0, 10);
+  const dueEl = document.getElementById('due_date');
+  if (dueEl) dueEl.value = dueISO;
+}
+window.computeAndFillDueDate = computeAndFillDueDate;
+
+/* ===========================
+   Preview / Save / Update
+   =========================== */
+function previewInvoice(evt) {
+  if (evt) evt.preventDefault();
+
+  // iOS-friendly: open popup immediately under user gesture
+  const popup = window.open('about:blank', '_blank');
+  if (!popup) { alert("Safari บล็อคหน้าต่างใหม่ กรุณาอนุญาต pop-up"); return; }
+
+  computeAndFillDueDate();
+  const formEl = document.getElementById("invoice_form");
+  const fd = new FormData(formEl);
+  let dateStr = fd.get("invoice_date");
+  if (dateStr) dateStr = formatDateToISO(dateStr);
+
+  const invoice = {
+    invoice_number: fd.get("invoice_number"),
+    invoice_date: dateStr,
+    personid: fd.get("personid"),
+    grn_number: fd.get("grn_number"),
+    dn_number: fd.get("dn_number"),
+    po_number: fd.get("po_number"),
+    tel: fd.get("tel"),
+    mobile: fd.get("mobile"),
+    customer_name: fd.get("customer_name"),
+    customer_taxid: fd.get("customer_taxid"),
+    customer_address: fd.get("customer_address"),
+    fmlpaymentcreditday: fd.get("fmlpaymentcreditday"),
+    due_date: document.getElementById("due_date")?.value || fd.get("due_date"),
+    car_numberplate: fd.get("car_numberplate"),
+    variant: document.getElementById("variant")?.value || "invoice_original",
+    items: []
+  };
+
+  document.querySelectorAll("#items .item-row").forEach(row => {
+    const product_code = row.querySelector('[name="product_code"]').value;
+    const description = row.querySelector('[name="description"]').value;
+    const quantity = parseFloat(row.querySelector('[name="quantity"]').value || 0);
+    const unit_price = parseFloat(row.querySelector('[name="unit_price"]').value || 0);
+    if (product_code || description) invoice.items.push({ product_code, description, quantity, unit_price });
+  });
+
+  fetch("/preview", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(invoice)
+  })
+  .then(r => r.text())
+  .then(html => { popup.document.open(); popup.document.write(html); popup.document.close(); })
+  .catch(err => { console.error(err); popup.close(); alert("พรีวิวไม่สำเร็จ"); });
+}
+window.previewInvoice = previewInvoice;
+
+async function saveInvoice() {
+  const formEl = document.getElementById("invoice_form");
+  const fd = new FormData(formEl);
+  const _d = fd.get("invoice_date");
+  if (_d) fd.set("invoice_date", formatDateToISO(_d));
+  const pay = fd.get("fm_payment") || "cash";
+  fd.set("fm_payment", pay);
+  if (!fd.get("due_date")) { computeAndFillDueDate(); fd.set("due_date", document.getElementById("due_date")?.value || ""); }
+  const res = await fetch("/submit", { method: "POST", body: fd });
+  if (!res.ok) { const t = await res.text(); alert("บันทึกล้มเหลว: " + t); return; }
+  const data = await res.json();
+  alert("บันทึกสำเร็จ เลขที่: " + data.invoice_number);
+}
+window.saveInvoice = saveInvoice;
+
+function buildUpdatePayload() {
+  const v = id => document.getElementById(id)?.value ?? '';
+  computeAndFillDueDate();
+  const payload = {
+    invoice_number: v('invoice_number'),
+    fname: v('customer_name'),
+    personid: v('personid'),
+    tel: v('tel'),
+    mobile: v('mobile'),
+    cf_personaddress: v('customer_address'),
+    cf_personzipcode: v('cf_personzipcode'),
+    cf_provincename: v('cf_provincename'),
+    cf_taxid: v('customer_taxid'),
+    po_number: v('po_number'),
+    grn_number: v('grn_number'),
+    dn_number: v('dn_number'),
+    fmlpaymentcreditday: (v('fmlpaymentcreditday') ? parseInt(v('fmlpaymentcreditday'), 10) : null),
+    car_numberplate: v('car_numberplate'),
+    items: []
+  };
+  const idISO = normalizeDateInputValue('invoice_date');
+  const ddISO = normalizeDateInputValue('due_date');
+  if (idISO) payload.invoice_date = idISO;
+  if (ddISO) payload.due_date = ddISO;
+
+  document.querySelectorAll('#items .item-row').forEach(row => {
+    const product_code = row.querySelector('.product_code')?.value || '';
+    const description = row.querySelector('.description')?.value || '';
+    const quantity = parseFloat(row.querySelector('.quantity')?.value || 0);
+    const unit_price = parseFloat(row.querySelector('.unit_price')?.value || 0);
+    if (product_code || description) payload.items.push({ cf_itemid: product_code, cf_itemname: description, quantity, unit_price });
+  });
+  return payload;
+}
+async function updateInvoice() {
+  const editId = new URL(location.href).searchParams.get("edit");
+  if (!editId) { alert('ไม่พบรหัสสำหรับแก้ไข'); return; }
+  const payload = buildUpdatePayload();
+  try {
+    const res = await fetch(`/api/invoices/${editId}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+    });
+    if (!res.ok) { const t = await res.text(); throw new Error(t || 'อัปเดตไม่สำเร็จ'); }
+    sessionStorage.removeItem('invoice_edit_data');
+    alert('อัปเดตเรียบร้อย');
+  } catch (e) { console.error(e); alert('ผิดพลาด: ' + e.message); }
+}
+window.updateInvoice = updateInvoice;
+
+/* ===========================
+   Total
+   =========================== */
+function updateTotal() {
+  let sum = 0;
+  document.querySelectorAll('#items .item-row').forEach(row => {
+    const q = parseFloat(row.querySelector('.quantity').value || 0);
+    const p = parseFloat(row.querySelector('.unit_price').value || 0);
+    sum += q * p;
+  });
+  const totalEl = document.getElementById('total_amount');
+  if (!totalEl) return;
+  totalEl.textContent = '฿ ' + sum.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+  totalEl.dataset.value = String(sum);
+}
+window.updateTotal = updateTotal;
+
+/* ===========================
+   Car number plate autocomplete
+   =========================== */
+async function searchCarPlates(q) {
+  const res = await fetch(`/api/suggest/number_plate?q=${encodeURIComponent(q)}`);
+  if (!res.ok) return [];
+  return await res.json();
+}
+(function setupCarPlateAutocomplete() {
+  const input = document.getElementById('car_numberplate');
+  const list  = document.getElementById('car_plate_datalist');
+  const msg   = document.getElementById('car_plate_msg');
+  if (!input || !list) return;
+  const deb = (fn, t=200)=>{ let h; return (...a)=>{clearTimeout(h); h=setTimeout(()=>fn(...a),t)} };
+  async function suggest() {
+    const q = (input.value || '').trim(); list.innerHTML = ''; if (msg) msg.textContent = '';
+    if (!q) return;
+    const items = await searchCarPlates(q);
+    items.forEach(it => { const opt = document.createElement('option'); opt.value = it.number_plate; list.appendChild(opt); });
+    if (msg) msg.textContent = `พบ ${items.length} รายการ`;
+  }
+  input.addEventListener('input', deb(suggest, 200));
+  input.addEventListener('focus', () => input.value && suggest());
+})();
