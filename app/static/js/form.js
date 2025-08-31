@@ -1,5 +1,6 @@
 
-// /static/js/form.js — products from master only (/api/products/all), iOS-friendly, and Preview fix
+// /static/js/form.js — MASTER-ONLY Product list (no suggest), iOS-friendly
+// Build: 2025-08-31 15:25
 
 /* ===========================
    Edit mode (show Update/Save)
@@ -65,8 +66,8 @@ function fillInvoiceItems(items) {
       <input name="description" class="description flex-1 min-w-[120px] bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5" value="${it.cf_itemname ?? ""}" readonly>
       <input name="quantity" type="number" step="0.01" class="quantity w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" value="${it.quantity ?? 0}" oninput="updateTotal()">
       <input name="unit_price" type="number" step="0.01" class="unit_price w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" value="${it.unit_price ?? 0}" oninput="updateTotal()">
-      <button type="button" class="btn-find text-sm text-blue-600 hover:text-blue-800 px-2">🔍 ค้นหา</button>
-      <button type="button" class="btn-remove text-red-600 hover:text-red-800 font-semibold px-2">🗑️</button>
+      <button type="button" onclick="openProductModal(this)" class="text-sm text-blue-600 hover:text-blue-800 px-2">🔍 ค้นหา</button>
+      <button type="button" onclick="removeItem(this)" class="text-red-600 hover:text-red-800 font-semibold px-2">🗑️</button>
     `;
     wrap.appendChild(div);
   });
@@ -186,8 +187,8 @@ function addItem() {
       class="quantity w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
     <input name="unit_price" type="number" step="0.01" placeholder="ราคาต่อหน่วย" oninput="updateTotal()"
       class="unit_price w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
-    <button type="button" class="btn-find text-sm text-blue-600 hover:text-blue-800 px-2">🔍 ค้นหา</button>
-    <button type="button" class="btn-remove text-red-600 hover:text-red-800 font-semibold px-2">🗑️</button>
+    <button type="button" onclick="openProductModal(this)" class="text-sm text-blue-600 hover:text-blue-800 px-2">🔍 ค้นหา</button>
+    <button type="button" onclick="removeItem(this)" class="text-red-600 hover:text-red-800 font-semibold px-2">🗑️</button>
   `;
   document.getElementById('items')?.appendChild(div);
   if (typeof updateTotal === "function") updateTotal();
@@ -221,14 +222,13 @@ function _norm(s) { return (s ?? '').toString().trim().toLowerCase(); }
 async function searchProductsMaster(q) {
   const all = await loadAllProductsOnce();
   const kw = _norm(q);
-  // /api/products/all already ordered by cf_items_ordinary then cf_itemid (backend)
+  // filter by id or name; if no keyword, return all
   const filtered = (all || []).filter(p => {
     if (!kw) return true;
     const code = _norm(p.cf_itemid);
     const name = _norm(p.cf_itemname);
     return code.includes(kw) || name.includes(kw);
   });
-  // map to display shape
   return filtered.map(p => ({
     product_code: p.cf_itemid,
     description: p.cf_itemname,
@@ -262,7 +262,7 @@ async function filterProducts() {
   const items = await searchProductsMaster(keyword);
   if (!items.length) { listDiv.innerHTML = `<div class="p-2 text-gray-500">ไม่พบสินค้า</div>`; return; }
 
-  listDiv.innerHTML = items.slice(0, 500).map(p => `
+  listDiv.innerHTML = items.map(p => `
     <div class="p-2 hover:bg-blue-50 cursor-pointer flex items-center justify-between product-option"
          data-code="${p.product_code || ''}" data-name="${p.description || ''}" data-price="${p.avg_unit_price || 0}">
       <div><strong>${p.product_code || ''}</strong> - ${p.description || ''}</div>
@@ -405,10 +405,10 @@ function previewInvoice(evt) {
   };
 
   document.querySelectorAll("#items .item-row").forEach(row => {
-    const product_code = row.querySelector('[name="product_code"]').value;
-    const description = row.querySelector('[name="description"]').value;
-    const quantity = parseFloat(row.querySelector('[name="quantity"]').value || 0);
-    const unit_price = parseFloat(row.querySelector('[name="unit_price"]').value || 0);
+    const product_code = row.querySelector('[name=\"product_code\"]').value;
+    const description = row.querySelector('[name=\"description\"]').value;
+    const quantity = parseFloat(row.querySelector('[name=\"quantity\"]').value || 0);
+    const unit_price = parseFloat(row.querySelector('[name=\"unit_price\"]').value || 0);
     if (product_code || description) invoice.items.push({ product_code, description, quantity, unit_price });
   });
 
