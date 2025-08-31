@@ -1,3 +1,4 @@
+// /static/js/form.js  (replacement)
 //------------- check edit -------------------//
 document.addEventListener("DOMContentLoaded", async () => {
   const url = new URL(location.href);
@@ -62,6 +63,7 @@ function fillInvoiceItems(items) {
   updateTotal && updateTotal();
 }
 
+// ---------------- Customers autocomplete ----------------
 let customers = [];
 fetch('/api/customers/all')
   .then(res => res.json())
@@ -140,7 +142,6 @@ async function fillCustomerFromSelected(label) {
     set('fmlpaymentcreditday', c.fmlpaymentcreditday);
     computeAndFillDueDate();
   } else if (c.personid) {
-    // ✅ เรียก detail เพื่อดึงเครดิตวันให้ชัวร์
     try {
       const res = await fetch(`/api/customers/detail?personid=${encodeURIComponent(c.personid)}`);
       if (res.ok) {
@@ -154,7 +155,7 @@ async function fillCustomerFromSelected(label) {
   }
 }
 
-// ------- Items / Products -------
+// ---------------- Items / Products (UNIFIED search) ----------------
 let selectedRow = null;
 
 function addItem() {
@@ -191,10 +192,66 @@ function closeProductModal() {
   selectedRow = null;
 }
 
-async function searchProducts(q) {
-  const res = await fetch(`/api/products/suggest?q=${encodeURIComponent(q)}`);
+// ---------- Unified product search (master + suggest) ----------
+let _allProductsCache = null; // [{cf_itemid, cf_itemname, cf_itempricelevel_price, ...}]
+async function loadAllProductsOnce() {
+  if (Array.isArray(_allProductsCache)) return _allProductsCache;
+  try {
+    const res = await fetch('/api/products/all'); // master list
+    if (!res.ok) throw new Error('load all products failed');
+    _allProductsCache = await res.json();
+  } catch (e) {
+    console.error(e);
+    _allProductsCache = [];
+  }
+  return _allProductsCache;
+}
+
+async function fetchSuggest(q) {
+  const res = await fetch(`/api/products/suggest?q=${encodeURIComponent(q || '')}`);
   if (!res.ok) return [];
-  return await res.json(); // [{product_code, description, avg_unit_price}]
+  // format: {product_code, description, avg_unit_price, used?}
+  return await res.json();
+}
+
+async function searchProductsUnified(q) {
+  const [all, sug] = await Promise.all([loadAllProductsOnce(), fetchSuggest(q)]);
+  const kw = (q || '').trim().toLowerCase();
+
+  // from master (filter by id or name)
+  const fromMaster = (all || []).filter(p => {
+    const code = (p.cf_itemid || '').toLowerCase();
+    const name = (p.cf_itemname || '').toLowerCase();
+    return !kw || code.includes(kw) || name.includes(kw);
+  }).map(p => ({
+    product_code: p.cf_itemid,
+    description: p.cf_itemname,
+    avg_unit_price: p.cf_itempricelevel_price ?? 0,
+    source: 'master'
+  }));
+
+  // from suggest (same shape)
+  const fromSuggest = (sug || []).map(r => ({
+    product_code: r.product_code,
+    description: r.description,
+    avg_unit_price: r.avg_unit_price ?? 0,
+    source: 'suggest',
+    used: r.used ?? 0
+  }));
+
+  // merge, prefer suggest for duplicates
+  const byCode = new Map();
+  fromSuggest.forEach(x => byCode.set(x.product_code, x));
+  fromMaster.forEach(x => { if (!byCode.has(x.product_code)) byCode.set(x.product_code, x); });
+
+  const arr = Array.from(byCode.values());
+  arr.sort((a, b) => {
+    if (a.source !== b.source) return a.source === 'suggest' ? -1 : 1;
+    if (a.source === 'suggest' && b.source === 'suggest') return (b.used||0) - (a.used||0);
+    return (a.product_code || '').localeCompare(b.product_code || '');
+  });
+
+  return arr.slice(0, 100); // cap list length
 }
 
 async function filterProducts() {
@@ -202,7 +259,7 @@ async function filterProducts() {
   const listDiv = document.getElementById("productList");
   listDiv.innerHTML = '<div class="p-2 text-gray-500">กำลังค้นหา...</div>';
 
-  const items = await searchProducts(keyword);
+  const items = await searchProductsUnified(keyword);
   if (!items.length) { listDiv.innerHTML = `<div class="p-2 text-gray-500">ไม่พบสินค้า</div>`; return; }
 
   listDiv.innerHTML = items.map(p => `
@@ -213,6 +270,7 @@ async function filterProducts() {
     </div>
   `).join('');
 }
+
 // ใช้ event delegation ป้องกันปัญหาคลิกไม่ติด
 document.addEventListener('click', (ev) => {
   const opt = ev.target.closest('.product-option');
@@ -241,7 +299,7 @@ function selectProduct(p) {
 }
 window.selectProduct = selectProduct; // เผื่อ scope
 
-// ------- Duplicate check: invoice number -------
+// ---------------- Duplicate check: invoice number ----------------
 function debounce(fn, ms = 400) { let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms);} }
 const invInput = document.getElementById('invoice_number');
 const help = document.getElementById('invNoHelp');
@@ -260,7 +318,7 @@ async function checkDup(num) {
 if (invInput) invInput.addEventListener('input', debounce(() => checkDup(invInput.value.trim()), 400));
 if (form) form.addEventListener('submit', (e)=>{ if (invDup) { e.preventDefault(); invInput?.focus(); } });
 
-// ---- รวมยอด ----
+// ---------------- Total ----------------
 function updateTotal() {
   let sum = 0;
   document.querySelectorAll('#items .item-row').forEach(row => {
@@ -311,7 +369,7 @@ function collectFormData() {
   };
 }
 
-// ---- Preview / Save / Update เหมือนเดิม ----
+// ---------------- Preview / Save / Update ----------------
 function formatDateToISO(dateStr) {
   if (!dateStr) return "";
   const TH_MONTHS = {"มกราคม":0,"กุมภาพันธ์":1,"มีนาคม":2,"เมษายน":3,"พฤษภาคม":4,"มิถุนายน":5,"กรกฎาคม":6,"สิงหาคม":7,"กันยายน":8,"ตุลาคม":9,"พฤศจิกายน":10,"ธันวาคม":11};
@@ -352,13 +410,20 @@ function computeAndFillDueDate() {
   if (dueEl) dueEl.value = dueISO;
 }
 
+// ✅ iOS Safari-friendly: open popup BEFORE async
 function previewInvoice(evt) {
   if (evt) evt.preventDefault();
+
+  // open popup immediately under user gesture
+  const popup = window.open('about:blank', '_blank');
+  if (!popup) { alert("Safari บล็อคหน้าต่างใหม่ กรุณาอนุญาต pop-up"); return; }
+
   computeAndFillDueDate();
   const formEl = document.getElementById("invoice_form");
   const fd = new FormData(formEl);
   let dateStr = fd.get("invoice_date");
   if (dateStr) dateStr = formatDateToISO(dateStr);
+
   const invoice = {
     invoice_number: fd.get("invoice_number"),
     invoice_date: dateStr,
@@ -377,6 +442,7 @@ function previewInvoice(evt) {
     variant: document.getElementById("variant")?.value || "invoice_original",
     items: []
   };
+
   document.querySelectorAll("#items .item-row").forEach(row => {
     const product_code = row.querySelector('[name="product_code"]').value;
     const description = row.querySelector('[name="description"]').value;
@@ -384,10 +450,15 @@ function previewInvoice(evt) {
     const unit_price = parseFloat(row.querySelector('[name="unit_price"]').value || 0);
     if (product_code || description) invoice.items.push({ product_code, description, quantity, unit_price });
   });
-  const popup = window.open('about:blank', '_blank');
-  fetch("/preview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(invoice) })
-    .then(r => r.text()).then(html => { if (!popup) return; popup.document.open(); popup.document.write(html); popup.document.close(); })
-    .catch(err => { console.error(err); if (popup) popup.close(); alert("พรีวิวไม่สำเร็จ"); });
+
+  fetch("/preview", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(invoice)
+  })
+  .then(r => r.text())
+  .then(html => { popup.document.open(); popup.document.write(html); popup.document.close(); })
+  .catch(err => { console.error(err); popup.close(); alert("พรีวิวไม่สำเร็จ"); });
 }
 
 async function saveInvoice() {
@@ -404,7 +475,7 @@ async function saveInvoice() {
   alert("บันทึกสำเร็จ เลขที่: " + data.invoice_number);
 }
 
-// อัปเดต
+// ---------------- Update ----------------
 function buildUpdatePayload() {
   const v = id => document.getElementById(id)?.value ?? '';
   computeAndFillDueDate();
@@ -444,7 +515,9 @@ async function updateInvoice() {
   if (!editId) { alert('ไม่พบรหัสสำหรับแก้ไข'); return; }
   const payload = buildUpdatePayload();
   try {
-    const res = await fetch(`/api/invoices/${editId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const res = await fetch(`/api/invoices/${editId}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+    });
     if (!res.ok) { const t = await res.text(); throw new Error(t || 'อัปเดตไม่สำเร็จ'); }
     sessionStorage.removeItem('invoice_edit_data');
     alert('อัปเดตเรียบร้อย');
@@ -457,7 +530,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 window.addEventListener("load", computeAndFillDueDate);
 
-// ทะเบียนรถ
+// ---------------- Car plates ----------------
 async function searchCarPlates(q) {
   const res = await fetch(`/api/suggest/number_plate?q=${encodeURIComponent(q)}`);
   if (!res.ok) return [];
@@ -480,6 +553,7 @@ async function searchCarPlates(q) {
   input.addEventListener('focus', () => input.value && suggest());
 })();
 
+// expose
 window.addItem = addItem;
 window.openProductModal = openProductModal;
 window.closeProductModal = closeProductModal;
