@@ -171,23 +171,34 @@ function fillForm(c) {
   if ($('cf_provincename') && !$('cf_provincename').value) $('cf_provincename').value = getProvince(c);
   if ($('fname') && !$('fname').value) $('fname').value = displayName(c);
 }
-async function isDuplicate(payload, ignoreIdx = null) {
-  const fd = new FormData();
-  fd.append('fname', payload.fname || '');
-  fd.append('personid', payload.personid || '');
-  // รองรับทั้ง cf_taxid/tax_id
-  fd.append('cf_taxid', payload.cf_taxid || payload.tax_id || payload.taxid || '');
-  if (ignoreIdx) fd.append('ignore_idx', ignoreIdx);
-  const res = await fetch('/api/customers/check-duplicate', { method: 'POST', body: fd });
-  const data = await res.json().catch(() => ({}));
-  return !!data.duplicate;
+
+// ตรวจซ้ำ (ใช้เฉพาะตอนเพิ่มใหม่)
+async function isDuplicate(payload) {
+  try {
+    const fd = new FormData();
+    fd.append('fname', payload.fname || '');
+    fd.append('personid', payload.personid || '');
+    fd.append('cf_taxid', payload.cf_taxid || payload.tax_id || payload.taxid || '');
+    const res = await fetch('/api/customers/check-duplicate', { method: 'POST', body: fd });
+    if (!res.ok) return false; // ถ้าตรวจไม่ได้ ให้ถือว่า “ไม่ซ้ำ”
+    const data = await res.json().catch(() => ({}));
+    return !!data.duplicate;
+  } catch {
+    return false;
+  }
 }
+
 async function saveCustomer(e) {
   e.preventDefault();
   const f = new FormData($('customerForm'));
   const payload = Object.fromEntries(f.entries());
 
-  const duplicate = await isDuplicate(payload, payload.idx || null);
+  const isEditing = !!payload.idx;          // <— โหมดแก้ไข
+  let duplicate = false;
+  if (!isEditing) {                         // <— โหมดเพิ่มใหม่เท่านั้นที่ตรวจซ้ำ
+    duplicate = await isDuplicate(payload);
+  }
+
   const warn = $('dupWarn');
   if (duplicate) { warn?.classList.remove('hidden'); return; }
   warn?.classList.add('hidden');
@@ -208,6 +219,7 @@ async function saveCustomer(e) {
   if (!payload.idx) resetForm();
   alert('บันทึกเรียบร้อย');
 }
+
 function editRowByIdx(idx) {
   const c = all.find((it) => String(it.idx) === String(idx));
   if (!c) return;
