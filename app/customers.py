@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from math import ceil
 from typing import List, Optional, Dict, Any
+from pydantic import BaseModel
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse, HTMLResponse
@@ -186,3 +187,50 @@ def api_customers_list(
         "pages": pages,
         "limit": limit,
     }
+
+# ====== เพิ่ม: อัปเดต/เช็กซ้ำลูกค้า ======
+class CustomerUpdate(BaseModel):
+    prename: str | None = None
+    fname: str | None = None
+    lname: str | None = None
+    personid: str | None = None
+    cf_taxid: str | None = None
+    cf_personaddress: str | None = None
+    cf_personzipcode: str | None = None
+    cf_provincename: str | None = None
+    tel: str | None = None
+    mobile: str | None = None
+    fmlpaymentcreditday: int | None = None
+
+@router.post("/api/customers/check-duplicate")
+def api_customers_check_duplicate(payload: dict):
+    """
+    ทำให้เข้ากันได้กับฟรอนต์เก่า: ตอบว่าซ้ำหรือไม่
+    โจทย์ต้องการ 'อัปเดตโดยไม่ต้องเช็กซ้ำ' เลยตอบให้ 'ไม่ซ้ำ' ตลอด
+    """
+    return {"duplicate": False}
+
+@router.put("/api/customers/{idx}")
+def api_customers_update(idx: int, payload: CustomerUpdate, db: Session = Depends(get_db)):
+    """
+    อัปเดตข้อมูลลูกค้าในตาราง CustomerList ตาม idx
+    """
+    c = db.query(models.CustomerList).filter(models.CustomerList.idx == idx).first()
+    if not c:
+        raise HTTPException(status_code=404, detail="customer not found")
+
+    # map field จาก payload -> ORM
+    for field in [
+        "prename", "fname", "lname", "personid",
+        "cf_taxid",
+        "cf_personaddress", "cf_personzipcode", "cf_provincename",
+        "tel", "mobile",
+        "fmlpaymentcreditday",
+    ]:
+        val = getattr(payload, field)
+        if val is not None:
+            setattr(c, field, val)
+
+    db.commit()
+    return {"ok": True, "idx": idx}
+
