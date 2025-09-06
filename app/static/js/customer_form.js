@@ -13,7 +13,7 @@ const PAGE_SIZE = 20;
 const $ = (id) => document.getElementById(id);
 const norm = (s) => (s ?? '').toString().trim().toLowerCase();
 const debounce = (fn, delay = 250) => { let t = null; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), delay); }; };
-const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
 // ใช้ customer_name เป็นหลัก; ถ้าไม่มีค่อย fallback prename/fname/lname
 function displayName(c) {
@@ -194,7 +194,10 @@ async function saveCustomer(e) {
 
   const toDash = $('redirectDash')?.checked ? '1' : null;
   let url = '/api/customers', method = 'POST';
-  if (payload.idx) url = `/api/customers/${payload.idx}`;
+  iif(payload.idx) {
+    url = `/api/customers/${payload.idx}`;
+    method = 'PUT'; // <--- เพิ่มบรรทัดนี้เพื่อเปลี่ยนเมธอดเป็น PUT
+  }
 
   const fd = new FormData();
   for (const [k, v] of Object.entries(payload)) if (k !== 'idx') fd.append(k, v);
