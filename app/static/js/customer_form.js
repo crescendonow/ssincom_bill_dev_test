@@ -199,21 +199,19 @@ async function saveCustomer(e) {
     method = 'PUT'; // <--- เพิ่มบรรทัดนี้เพื่อเปลี่ยนเมธอดเป็น PUT
   }
 
-  const fd = new FormData();
-  for (const [k, v] of Object.entries(payload)) {
-    if (k !== 'idx') {
-      // ---- เพิ่มส่วนตรวจสอบนี้เข้ามา ----
-      // ถ้าเป็นฟิลด์ "เครดิต" และมีค่าเป็นสตริงว่าง ให้ข้ามไปเลย ไม่ต้องส่ง
-      if (k === 'fmlpaymentcreditday' && v === '') {
-        continue;
-      }
-      // ---------------------------------
-      fd.append(k, v);
-    }
+  if (payload.fmlpaymentcreditday === '') {
+    payload.fmlpaymentcreditday = null;
   }
-  if (toDash) fd.append('redirect_to_dashboard', '1');
+  // ถ้ามีฟิลด์ตัวเลขอื่นๆ ที่อาจเป็นค่าว่าง ก็ควรทำแบบเดียวกัน
 
-  const res = await fetch(url, { method, body: fd });
+  // --- เปลี่ยนจากการส่ง FormData เป็น JSON ---
+  const res = await fetch(url, {
+    method,
+    headers: {
+      'Content-Type': 'application/json', // <-- 1. ระบุ Content-Type ให้ถูกต้อง
+    },
+    body: JSON.stringify(payload), // <-- 2. แปลง JavaScript object เป็น JSON string
+  });
   if (res.redirected) { window.location.href = res.url; return; }
   if (!res.ok) { alert('บันทึกล้มเหลว'); return; }
 
