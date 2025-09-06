@@ -194,7 +194,7 @@ async function saveCustomer(e) {
 
   const toDash = $('redirectDash')?.checked ? '1' : null;
   let url = '/api/customers', method = 'POST';
-  iif(payload.idx) {
+  if(payload.idx) {
     url = `/api/customers/${payload.idx}`;
     method = 'PUT'; // <--- เพิ่มบรรทัดนี้เพื่อเปลี่ยนเมธอดเป็น PUT
   }
