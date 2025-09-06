@@ -4,6 +4,11 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional, List
 
+import tempfile
+import uuid
+from pypdf import PdfMerger
+import pdfkit
+
 from fastapi import APIRouter, Request, Form, HTTPException, Query, Depends, Body
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -365,3 +370,62 @@ def preview(request: Request, payload: dict = Body(...)):
             "vat_rate": payload.get("vat_rate", 7),
         }
     )
+
+@router.post("/export-merged-pdf")
+def export_merged_pdf(request: Request, payload: dict = Body(...)):
+    """
+    รับข้อมูล invoice, สร้าง PDF 4 รูปแบบ แล้วรวมเป็นไฟล์เดียว
+    """
+    variants = [
+        ("invoice_original", "ใบกำกับ/ส่งของ/แจ้งหนี้ (ต้นฉบับ)"),
+        ("invoice_copy", "ใบกำกับ/ส่งของ/แจ้งหนี้ (สำเนา)"),
+        ("receipt_original", "ใบเสร็จรับเงิน (ต้นฉบับ)"),
+        ("receipt_copy", "ใบเสร็จรับเงิน (สำเนา)"),
+    ]
+
+    temp_pdf_paths = []
+    merger = PdfMerger()
+
+    try:
+        # 1. วนลูปสร้าง PDF ชั่วคราว 4 ไฟล์
+        for variant_code, variant_name in variants:
+            # อัปเดตข้อมูล variant ใน payload ที่จะส่งไป render
+            payload["variant"] = variant_code
+            
+            # Render HTML template เหมือนฟังก์ชัน preview
+            html_content = templates.TemplateResponse(
+                "invoice.html",
+                {
+                    "request": request,
+                    "invoice": payload,
+                    "discount": payload.get("discount", 0),
+                    "vat_rate": payload.get("vat_rate", 7),
+                }
+            ).body.decode("utf-8")
+
+            # สร้างไฟล์ PDF ชั่วคราว
+            temp_pdf_path = Path(tempfile.gettempdir()) / f"{uuid.uuid4()}.pdf"
+            pdfkit.from_string(html_content, str(temp_pdf_path))
+            temp_pdf_paths.append(temp_pdf_path)
+
+        # 2. รวม PDF ทั้งหมด
+        for path in temp_pdf_paths:
+            merger.append(str(path))
+        
+        # 3. บันทึกไฟล์ที่รวมแล้ว
+        merged_pdf_path = Path(tempfile.gettempdir()) / f"merged_invoice_{payload.get('invoice_number', 'doc')}.pdf"
+        merger.write(str(merged_pdf_path))
+        merger.close()
+
+        # 4. ส่งไฟล์กลับไปให้ผู้ใช้
+        return FileResponse(
+            path=merged_pdf_path,
+            media_type="application/pdf",
+            filename=f"invoice_merged_{payload.get('invoice_number', 'doc')}.pdf"
+        )
+
+    finally:
+        # 5. ลบไฟล์ชั่วคราวทั้งหมดทิ้ง
+        for path in temp_pdf_paths:
+            if path.exists():
+                path.unlink()

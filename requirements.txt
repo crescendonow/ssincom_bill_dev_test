@@ -6,3 +6,5 @@ jinja2
 weasyprint
 python-multipart
 itsdangerous==2.2.0
+pypdf
+pdfkit

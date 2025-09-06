@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!editId) return;
 
   let data = null;
-  try { data = JSON.parse(sessionStorage.getItem("invoice_edit_data") || "null"); } catch {}
+  try { data = JSON.parse(sessionStorage.getItem("invoice_edit_data") || "null"); } catch { }
   if (!data) {
     try {
       const res = await fetch(`/api/invoices/${editId}/detail`);
@@ -98,10 +98,10 @@ async function searchCustomers(q) {
 
 function bindCustomerAutocomplete() {
   const input = document.getElementById('customer_name');
-  const list  = document.getElementById('customerList');
+  const list = document.getElementById('customerList');
   if (!input || !list) return;
 
-  const deb = (fn, t=250)=>{ let h; return (...a)=>{clearTimeout(h); h=setTimeout(()=>fn(...a),t)} };
+  const deb = (fn, t = 250) => { let h; return (...a) => { clearTimeout(h); h = setTimeout(() => fn(...a), t) } };
 
   async function suggest() {
     const q = (input.value || '').trim();
@@ -110,7 +110,7 @@ function bindCustomerAutocomplete() {
     if (!q) return;
     const items = await searchCustomers(q);
     items.forEach(c => {
-      const label = `${(c.customer_name || '').trim()}${c.personid ? ' ('+c.personid+')' : ''}`;
+      const label = `${(c.customer_name || '').trim()}${c.personid ? ' (' + c.personid + ')' : ''}`;
       const opt = document.createElement('option');
       opt.value = label;
       list.appendChild(opt);
@@ -142,7 +142,7 @@ async function fillCustomerFromSelected(label) {
 
   if (!c) return;
 
-  const set = (id,v)=>{ const el=document.getElementById(id); if(el) el.value = v ?? ''; };
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
   set('personid', c.personid);
   set('customer_name', c.customer_name || bareName);
   set('customer_taxid', c.taxid);
@@ -166,7 +166,7 @@ async function fillCustomerFromSelected(label) {
           computeAndFillDueDate();
         }
       }
-    } catch {}
+    } catch { }
   }
 }
 
@@ -240,7 +240,7 @@ async function searchProductsMaster(q) {
 function openProductModal(btn) {
   selectedRow = btn.closest('.item-row');
   const search = document.getElementById("productSearch");
-  const modal  = document.getElementById("productModal");
+  const modal = document.getElementById("productModal");
   if (search) search.value = "";
   filterProducts(); // initial render
   modal?.classList.remove("hidden");
@@ -266,7 +266,7 @@ async function filterProducts() {
     <div class="p-2 hover:bg-blue-50 cursor-pointer flex items-center justify-between product-option"
          data-code="${p.product_code || ''}" data-name="${p.description || ''}" data-price="${p.avg_unit_price || 0}">
       <div><strong>${p.product_code || ''}</strong> - ${p.description || ''}</div>
-      <div class="text-gray-600">฿${(p.avg_unit_price||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+      <div class="text-gray-600">฿${(p.avg_unit_price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
     </div>
   `).join('');
 }
@@ -289,13 +289,13 @@ function onPickProduct(ev) {
 
 function selectProduct(p) {
   if (!selectedRow) return;
-  const codeEl  = selectedRow.querySelector('.product_code');
-  const nameEl  = selectedRow.querySelector('.description');
-  const qtyEl   = selectedRow.querySelector('.quantity');
+  const codeEl = selectedRow.querySelector('.product_code');
+  const nameEl = selectedRow.querySelector('.description');
+  const qtyEl = selectedRow.querySelector('.quantity');
   const priceEl = selectedRow.querySelector('.unit_price');
 
-  if (codeEl)  codeEl.value  = p.code || '';
-  if (nameEl)  nameEl.value  = p.name || '';
+  if (codeEl) codeEl.value = p.code || '';
+  if (nameEl) nameEl.value = p.name || '';
   if (priceEl) priceEl.value = (p.price || 0);
   if (qtyEl && !parseFloat(qtyEl.value || 0)) qtyEl.value = 1;
 
@@ -307,13 +307,13 @@ window.selectProduct = selectProduct;
 /* ===========================
    Duplicate check: invoice number
    =========================== */
-function debounce(fn, ms = 400) { let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms);} }
+function debounce(fn, ms = 400) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); } }
 const invInput = document.getElementById('invoice_number');
 const help = document.getElementById('invNoHelp');
 const form = document.getElementById('invoice_form');
 let invDup = false;
 async function checkDup(num) {
-  if (!num) { invDup=false; help?.classList.add('hidden'); invInput?.classList?.remove('border-red-500'); return; }
+  if (!num) { invDup = false; help?.classList.add('hidden'); invInput?.classList?.remove('border-red-500'); return; }
   const res = await fetch(`/api/invoices/check-number?number=${encodeURIComponent(num)}`);
   const data = await res.json();
   invDup = !!data.exists;
@@ -323,28 +323,28 @@ async function checkDup(num) {
   }
 }
 if (invInput) invInput.addEventListener('input', debounce(() => checkDup(invInput.value.trim()), 400));
-if (form) form.addEventListener('submit', (e)=>{ if (invDup) { e.preventDefault(); invInput?.focus(); } });
+if (form) form.addEventListener('submit', (e) => { if (invDup) { e.preventDefault(); invInput?.focus(); } });
 
 /* ===========================
    Dates / due date helpers
    =========================== */
 function formatDateToISO(dateStr) {
   if (!dateStr) return "";
-  const TH_MONTHS = {"มกราคม":0,"กุมภาพันธ์":1,"มีนาคม":2,"เมษายน":3,"พฤษภาคม":4,"มิถุนายน":5,"กรกฎาคม":6,"สิงหาคม":7,"กันยายน":8,"ตุลาคม":9,"พฤศจิกายน":10,"ธันวาคม":11};
+  const TH_MONTHS = { "มกราคม": 0, "กุมภาพันธ์": 1, "มีนาคม": 2, "เมษายน": 3, "พฤษภาคม": 4, "มิถุนายน": 5, "กรกฎาคม": 6, "สิงหาคม": 7, "กันยายน": 8, "ตุลาคม": 9, "พฤศจิกายน": 10, "ธันวาคม": 11 };
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
   const p = dateStr.trim().split(/\s+/);
   if (p.length === 3 && TH_MONTHS[p[1]] !== undefined) {
-    const d = parseInt(p[0],10), m = TH_MONTHS[p[1]]; let y = parseInt(p[2],10); if (y>2400) y -= 543;
-    const js = new Date(Date.UTC(y,m,d)); if (!isNaN(js)) return js.toISOString().slice(0,10);
+    const d = parseInt(p[0], 10), m = TH_MONTHS[p[1]]; let y = parseInt(p[2], 10); if (y > 2400) y -= 543;
+    const js = new Date(Date.UTC(y, m, d)); if (!isNaN(js)) return js.toISOString().slice(0, 10);
     return "";
   }
   const m1 = dateStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
   if (m1) {
-    const [,a,b,c]=m1;
-    const try1 = new Date(`${c}-${b.padStart(2,'0')}-${a.padStart(2,'0')}T00:00:00Z`);
-    if (!isNaN(try1)) return try1.toISOString().slice(0,10);
-    const try2 = new Date(`${c}-${a.padStart(2,'0')}-${b.padStart(2,'0')}T00:00:00Z`);
-    if (!isNaN(try2)) return try2.toISOString().slice(0,10);
+    const [, a, b, c] = m1;
+    const try1 = new Date(`${c}-${b.padStart(2, '0')}-${a.padStart(2, '0')}T00:00:00Z`);
+    if (!isNaN(try1)) return try1.toISOString().slice(0, 10);
+    const try2 = new Date(`${c}-${a.padStart(2, '0')}-${b.padStart(2, '0')}T00:00:00Z`);
+    if (!isNaN(try2)) return try2.toISOString().slice(0, 10);
   }
   return "";
 }
@@ -417,9 +417,9 @@ function previewInvoice(evt) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(invoice)
   })
-  .then(r => r.text())
-  .then(html => { popup.document.open(); popup.document.write(html); popup.document.close(); })
-  .catch(err => { console.error(err); popup.close(); alert("พรีวิวไม่สำเร็จ"); });
+    .then(r => r.text())
+    .then(html => { popup.document.open(); popup.document.write(html); popup.document.close(); })
+    .catch(err => { console.error(err); popup.close(); alert("พรีวิวไม่สำเร็จ"); });
 }
 window.previewInvoice = previewInvoice;
 
@@ -487,6 +487,55 @@ async function updateInvoice() {
 }
 window.updateInvoice = updateInvoice;
 
+//function downloadMergedPdf() 
+async function downloadMergedPdf() {
+  const btn = document.getElementById('btnMergePdf');
+  if (!btn) return;
+
+  // ใช้ฟังก์ชันเดิมที่สร้าง payload สำหรับ update ได้เลย เพราะโครงสร้างข้อมูลเหมือนกัน
+  const payload = buildUpdatePayload();
+
+  // แสดงสถานะกำลังทำงาน
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '⚙️ Generating...';
+
+  try {
+    const res = await fetch('/export-merged-pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error('สร้างไฟล์ PDF รวมไม่สำเร็จ: ' + errorText);
+    }
+
+    // จัดการการดาวน์โหลดไฟล์
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    // ตั้งชื่อไฟล์ที่จะดาวน์โหลด
+    a.download = `invoice_merged_${payload.invoice_number || 'document'}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    a.remove();
+
+  } catch (e) {
+    console.error(e);
+    alert(e.message);
+  } finally {
+    // คืนค่าปุ่มให้เป็นปกติ
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+  }
+}
+window.downloadMergedPdf = downloadMergedPdf;
+
 /* ===========================
    Total
    =========================== */
@@ -499,7 +548,7 @@ function updateTotal() {
   });
   const totalEl = document.getElementById('total_amount');
   if (!totalEl) return;
-  totalEl.textContent = '฿ ' + sum.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+  totalEl.textContent = '฿ ' + sum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   totalEl.dataset.value = String(sum);
 }
 window.updateTotal = updateTotal;
@@ -514,10 +563,10 @@ async function searchCarPlates(q) {
 }
 (function setupCarPlateAutocomplete() {
   const input = document.getElementById('car_numberplate');
-  const list  = document.getElementById('car_plate_datalist');
-  const msg   = document.getElementById('car_plate_msg');
+  const list = document.getElementById('car_plate_datalist');
+  const msg = document.getElementById('car_plate_msg');
   if (!input || !list) return;
-  const deb = (fn, t=200)=>{ let h; return (...a)=>{clearTimeout(h); h=setTimeout(()=>fn(...a),t)} };
+  const deb = (fn, t = 200) => { let h; return (...a) => { clearTimeout(h); h = setTimeout(() => fn(...a), t) } };
   async function suggest() {
     const q = (input.value || '').trim(); list.innerHTML = ''; if (msg) msg.textContent = '';
     if (!q) return;

@@ -24,6 +24,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-noto-color-emoji \
  && rm -rf /var/lib/apt/lists/*
 
+ RUN apt-get update && \
+    apt-get install -y wkhtmltopdf && \
+    apt-get clean
+
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
