@@ -6,7 +6,7 @@ const ENDPOINT_PROV_SUGGEST = '/api/suggest/province';
 // ===== State =====
 let all = [];
 let filtered = [];
-let editing = null;
+let editingIdx = null;
 let currentPage = 1;
 const PAGE_SIZE = 20;
 
@@ -24,21 +24,21 @@ function displayName(c){
   const combo = [c.prename, c.fname, c.lname].filter(Boolean).join(' ').trim();
   return combo || c.fname || '';
 }
-function displayPhone(c){ return c.mobile || c.tel || c.cf_personaddress_mobile || ''; }
+function displayPhone(c){ return c.cf_personaddress_mobile || c.mobile || c.cf_personaddress_tel || c.tel || ''; }
 function getTaxId(c){ return c.cf_taxid ?? c.tax_id ?? c.taxid ?? ''; }
 function getProvince(c){ return c.cf_provincename ?? c.province ?? ''; }
 
 // ===== Load all =====
 async function loadAll(){
   try{
-    const res = await fetch('/api/customers/all');
+    const res = await fetch('/api/customers/all', { credentials: 'same-origin' });
     if(!res.ok) throw new Error('โหลดรายการลูกค้าไม่สำเร็จ');
     all = await res.json();
     filtered = all.slice();
     currentPage = 1;
     renderPage();
   }catch(e){
-    console.error(e);
+    console.error('[customer_form] loadAll error:', e);
     all = []; filtered = [];
     renderPage();
   }
@@ -55,20 +55,16 @@ function renderPage(){
 
   renderTable(filtered.slice(startIdx, endIdx));
 
-  const resultInfo = $('resultInfo');
-  if (resultInfo) resultInfo.textContent =
-    `แสดง ${total ? startIdx + 1 : 0}-${endIdx} จากทั้งหมด ${total} รายการ`;
-  const pageInfo = $('pageInfo');
-  if (pageInfo) pageInfo.textContent = `หน้า ${currentPage} / ${maxPage}`;
+  $('resultInfo') && ( $('resultInfo').textContent =
+    `แสดง ${total ? startIdx + 1 : 0}-${endIdx} จากทั้งหมด ${total} รายการ` );
+  $('pageInfo') && ( $('pageInfo').textContent = `หน้า ${currentPage} / ${maxPage}` );
 
-  const prevBtn = $('prevPage'), nextBtn = $('nextPage');
-  if (prevBtn) prevBtn.disabled = currentPage <= 1;
-  if (nextBtn) nextBtn.disabled = currentPage >= maxPage;
+  $('prevPage') && ( $('prevPage').disabled = currentPage <= 1 );
+  $('nextPage') && ( $('nextPage').disabled = currentPage >= maxPage );
 }
 
 function renderTable(rows){
-  // tbody id="tbody" ตามหน้า customer_form.html
-  const tb = $('tbody');
+  const tb = $('tbody'); // ตามหน้า customer_form.html
   if(!tb) return;
 
   if(!rows.length){
@@ -90,7 +86,7 @@ function renderTable(rows){
   `).join('');
 }
 
-// ===== Edit (fill the top form; no modal) =====
+// ===== Fill / Reset form =====
 function fillForm(c){
   $('idx')?.value = c.idx ?? '';
   $('prename')?.value = c.prename ?? '';
@@ -98,7 +94,7 @@ function fillForm(c){
   $('lname')?.value = c.lname ?? '';
   $('personid')?.value = c.personid ?? '';
 
-  // ในฟอร์มใช้ชื่อฟิลด์ cf_* อยู่แล้ว
+  // ใช้คีย์ cf_* ตามฟอร์มใน HTML
   $('cf_taxid')?.value = getTaxId(c);
   $('cf_personaddress')?.value = c.cf_personaddress ?? '';
   $('cf_personzipcode')?.value = c.cf_personzipcode ?? '';
@@ -107,42 +103,97 @@ function fillForm(c){
   $('cf_personaddress_mobile')?.value = c.mobile ?? '';
 
   $('fmlpaymentcreditday')?.value = c.fmlpaymentcreditday ?? '';
+
+  // แสดงปุ่มลบเมื่อกำลังแก้ไข
+  $('btnDelete')?.classList.remove('hidden');
 }
 
 function resetForm(){
   $('customerForm')?.reset();
   $('idx')?.value = '';
-  editing = null;
+  editingIdx = null;
+  $('btnDelete')?.classList.add('hidden');
+  $('dupWarn')?.classList.add('hidden');
 }
 
+// ===== Edit row (click from table) =====
 function editRowByIdx(idx){
   const c = all.find(it => String(it.idx) === String(idx));
   if(!c) return;
-  editing = c.idx;
+  editingIdx = c.idx;
   fillForm(c);
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// ===== Save / Delete (ถ้าต้องใช้ปุ่มบันทึก/รีเซ็ตบนฟอร์ม) =====
+// ===== Save (PUT when editing, POST when creating) =====
 async function saveCustomer(e){
   e?.preventDefault();
   const f = new FormData($('customerForm'));
   const payload = Object.fromEntries(f.entries());
 
-  // เข้ากับ backend เดิม: ใช้ form-data POST/PUT
-  let url = '/api/customers', method = 'POST';
-  if (payload.idx) url = `/api/customers/${payload.idx}`;
+  const isEditing = !!payload.idx;
 
-  const fd = new FormData();
-  for (const [k,v] of Object.entries(payload)) if(k!=='idx') fd.append(k, v);
+  // ไม่ตรวจ duplicate เวลาแก้ไข (ตามที่ตกลง)
+  $('dupWarn')?.classList.add('hidden');
 
-  const res = await fetch(url, { method, body: fd });
-  if (res.redirected) { location.href = res.url; return; }
-  if (!res.ok) { alert('บันทึกล้มเหลว'); return; }
+  try{
+    if (isEditing) {
+      // --- UPDATE via JSON -> PUT /api/customers/{idx}
+      const idx = payload.idx;
+      const body = {
+        prename: payload.prename || null,
+        fname: payload.fname || null,
+        lname: payload.lname || null,
+        personid: payload.personid || null,
+        cf_taxid: payload.cf_taxid || null,
+        cf_personaddress: payload.cf_personaddress || null,
+        cf_personzipcode: payload.cf_personzipcode || null,
+        cf_provincename: payload.cf_provincename || null,
+        tel: payload.cf_personaddress_tel || null,
+        mobile: payload.cf_personaddress_mobile || null,
+        fmlpaymentcreditday: payload.fmlpaymentcreditday ? Number(payload.fmlpaymentcreditday) : null,
+      };
 
-  await loadAll();
-  if (!payload.idx) resetForm();
-  alert('บันทึกเรียบร้อย');
+      const res = await fetch(`/api/customers/${idx}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error('อัปเดตไม่สำเร็จ');
+      alert('บันทึกการแก้ไขเรียบร้อย');
+    } else {
+      // --- CREATE (ถ้ามี) : POST /api/customers (ใช้ form-data เดิมไว้)
+      const fd = new FormData();
+      for (const [k,v] of Object.entries(payload)) fd.append(k, v);
+      const res = await fetch('/api/customers', { method: 'POST', body: fd });
+      if (!res.ok) throw new Error('เพิ่มลูกค้าไม่สำเร็จ');
+      alert('เพิ่มลูกค้าเรียบร้อย');
+    }
+
+    await loadAll();
+    // ถ้าเป็นสร้างใหม่ → รีเซ็ตฟอร์ม, ถ้าเป็นแก้ไข → คงค่าไว้
+    if (!isEditing) resetForm();
+  }catch(e){
+    console.error('[customer_form] save error:', e);
+    alert('บันทึกล้มเหลว');
+  }
+}
+
+// ===== Delete (DELETE /api/customers/{idx}) =====
+async function deleteCustomer(){
+  const idx = $('idx')?.value;
+  if (!idx) { alert('ยังไม่ได้เลือกแถวที่จะแก้ไข/ลบ'); return; }
+  if (!confirm('ยืนยันลบลูกค้ารายนี้?')) return;
+  try{
+    const res = await fetch(`/api/customers/${idx}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('ลบไม่สำเร็จ');
+    alert('ลบเรียบร้อย');
+    await loadAll();
+    resetForm();
+  }catch(e){
+    console.error('[customer_form] delete error:', e);
+    alert('ลบไม่สำเร็จ');
+  }
 }
 
 // ===== Search & province suggest =====
@@ -190,12 +241,13 @@ async function suggestProvinces(){
 function initCustomerForm(){
   $('customerForm')?.addEventListener('submit', saveCustomer);
   $('btnReset')?.addEventListener('click', resetForm);
+  $('btnDelete')?.addEventListener('click', deleteCustomer);
 
   $('search')?.addEventListener('input', doSearch);
   $('prevPage')?.addEventListener('click', ()=>{ if(currentPage>1){ currentPage--; renderPage(); } });
   $('nextPage')?.addEventListener('click', ()=>{ currentPage++; renderPage(); });
 
-  // event delegation ให้ปุ่มแก้ไขทำงานแน่ๆ
+  // ปุ่ม "แก้ไข" ในตาราง — ใช้ delegation
   document.addEventListener('click', (e)=>{
     const btn = e.target.closest('.btn-edit');
     if(btn && btn.dataset.idx) editRowByIdx(btn.dataset.idx);
@@ -211,4 +263,8 @@ function initCustomerForm(){
   loadAll();
 }
 
-document.addEventListener('DOMContentLoaded', initCustomerForm);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initCustomerForm, { once: true });
+} else {
+  initCustomerForm();
+}
