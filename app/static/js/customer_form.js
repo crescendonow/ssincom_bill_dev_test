@@ -194,13 +194,23 @@ async function saveCustomer(e) {
 
   const toDash = $('redirectDash')?.checked ? '1' : null;
   let url = '/api/customers', method = 'POST';
-  if(payload.idx) {
+  if (payload.idx) {
     url = `/api/customers/${payload.idx}`;
     method = 'PUT'; // <--- เพิ่มบรรทัดนี้เพื่อเปลี่ยนเมธอดเป็น PUT
   }
 
   const fd = new FormData();
-  for (const [k, v] of Object.entries(payload)) if (k !== 'idx') fd.append(k, v);
+  for (const [k, v] of Object.entries(payload)) {
+    if (k !== 'idx') {
+      // ---- เพิ่มส่วนตรวจสอบนี้เข้ามา ----
+      // ถ้าเป็นฟิลด์ "เครดิต" และมีค่าเป็นสตริงว่าง ให้ข้ามไปเลย ไม่ต้องส่ง
+      if (k === 'fmlpaymentcreditday' && v === '') {
+        continue;
+      }
+      // ---------------------------------
+      fd.append(k, v);
+    }
+  }
   if (toDash) fd.append('redirect_to_dashboard', '1');
 
   const res = await fetch(url, { method, body: fd });
