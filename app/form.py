@@ -390,9 +390,10 @@ def preview(request: Request, payload: dict = Body(...)):
 @router.post("/export-merged-pdf")
 def export_merged_pdf(request: Request, payload: dict = Body(...)):
     """
-    เรนเดอร์ invoice 4 เวอร์ชันให้เหมือน preview และ merge เป็นไฟล์เดียว
-    - Normalize คีย์จากฟอร์มให้ตรงกับ invoice.html
-    - ใช้ invoice.html + /static/css/invoice.css แบบเดียวกับ preview
+    สร้าง PDF 4 เวอร์ชันจาก invoice.html (เหมือน preview) แล้ว merge เป็นไฟล์เดียว
+    - normalize คีย์จาก payload ให้ตรงกับเทมเพลต
+    - map ทุกลิงก์ /static/* เป็น file://…/static/* สำหรับ WeasyPrint
+    - แนบ stylesheet /static/css/invoice.css เสมอ
     """
     variants = [
         ("invoice_original", "ใบกำกับ/ส่งของ/แจ้งหนี้ (ต้นฉบับ)"),
@@ -401,27 +402,22 @@ def export_merged_pdf(request: Request, payload: dict = Body(...)):
         ("receipt_copy",     "ใบเสร็จรับเงิน (สำเนา)"),
     ]
 
-    # เตรียม path ให้ WeasyPrint เหมือนที่ใช้กับ preview
     base_dir = BASE_DIR
-    css_path = (base_dir / "static" / "css" / "invoice.css")
-    logo_path = (base_dir / "static" / "ss_logo.png")
+    css_path = base_dir / "static" / "css" / "invoice.css"
+    static_root_uri = (base_dir / "static").as_uri()  # e.g. file:///app/app/static
 
     def normalize_payload(src: dict) -> dict:
-        """แปลงคีย์ payload ให้ตรงกับที่ invoice.html ใช้"""
         out = dict(src or {})
-        # ---- normalize หัวลูกค้า ----
-        out["customer_name"]   = src.get("customer_name")   or src.get("fname") or ""
-        out["customer_taxid"]  = src.get("customer_taxid")  or src.get("cf_taxid") or ""
-        out["customer_address"]= src.get("customer_address")or src.get("cf_personaddress") or ""
-        # โทรศัพท์ใน template ใช้ {{ invoice.tel or invoice.mobile }}
-        out["tel"]             = src.get("tel") or src.get("mobile") or ""
-        out["mobile"]          = src.get("mobile") or src.get("tel") or ""
-        # เวลาที่ template แสดง province/zipcode ถูก join ไว้ใน address ฝั่ง JS อยู่แล้ว
-        # แต่หากอยากใช้ที่อื่น ก็ยังคงค่าไว้
-        out["cf_personzipcode"]= src.get("cf_personzipcode") or ""
-        out["cf_provincename"] = src.get("cf_provincename") or ""
+        # ---- หัวลูกค้า ----
+        out["customer_name"]     = src.get("customer_name") or src.get("fname") or ""
+        out["customer_taxid"]    = src.get("customer_taxid") or src.get("cf_taxid") or ""
+        out["customer_address"]  = src.get("customer_address") or src.get("cf_personaddress") or ""
+        out["cf_personzipcode"]  = src.get("cf_personzipcode") or ""
+        out["cf_provincename"]   = src.get("cf_provincename") or ""
+        out["tel"]               = src.get("tel") or src.get("mobile") or ""
+        out["mobile"]            = src.get("mobile") or src.get("tel") or ""
 
-        # ---- normalize รายการสินค้า ให้เป็น product_code/description ----
+        # ---- รายการสินค้า ----
         items = []
         for it in (src.get("items") or []):
             items.append({
@@ -438,39 +434,36 @@ def export_merged_pdf(request: Request, payload: dict = Body(...)):
 
     try:
         for variant_code, _name in variants:
-            # แนบ variant ลง payload
             payload["variant"] = variant_code
-
-            # แปลงคีย์ให้ตรงกับเทมเพลตก่อนเรนเดอร์
             view_payload = normalize_payload(payload)
 
-            # เรนเดอร์ HTML เดียวกับ preview
+            # 1) เรนเดอร์ HTML เดียวกับ preview
             html_resp = templates.TemplateResponse(
-    "invoice.html",
-    {
-        "request": request,
-        "invoice": view_payload,
-        "discount": view_payload.get("discount", 0),
-        "vat_rate": view_payload.get("vat_rate", 7),
-    }
-)
-    html_str = html_resp.body.decode("utf-8")
+                "invoice.html",
+                {
+                    "request": request,
+                    "invoice": view_payload,
+                    "discount": view_payload.get("discount", 0),
+                    "vat_rate": view_payload.get("vat_rate", 7),
+                }
+            )
+            html_str = html_resp.body.decode("utf-8")
 
-    # ✅ map ลิงก์ /static/* ให้เป็น file://.../static/* (ครอบคลุมทั้ง <link>, <img>, @font-face)
-    static_root = (BASE_DIR / "static").as_uri()  # e.g. file:///app/app/static
-    html_str = (html_str
-        .replace('href="/static/',  f'href="{static_root}/')
-        .replace('src="/static/',   f'src="{static_root}/')
-    )
+            # 2) map /static/* -> file://…/static/* (ครอบคลุม <link>, <img>, @font-face)
+            html_str = (html_str
+                .replace('href="/static/',  f'href="{static_root_uri}/')
+                .replace('src="/static/',   f'src="{static_root_uri}/')
+            )
 
-    # ✅ render PDF โดยแนบ stylesheet invoice.css (ไฟล์เดียวกับที่ preview ใช้)
-    css_path = BASE_DIR / "static" / "css" / "invoice.css"
-    HTML(string=html_str, base_url=str(BASE_DIR)).write_pdf(
-        str(tmp_pdf),
-        stylesheets=[CSS(filename=str(css_path))]
-    )
+            # 3) เขียน PDF ชั่วคราว ด้วย CSS เดียวกับ preview
+            tmp_pdf = Path(tempfile.gettempdir()) / f"{uuid.uuid4()}.pdf"
+            HTML(string=html_str, base_url=str(base_dir)).write_pdf(
+                str(tmp_pdf),
+                stylesheets=[CSS(filename=str(css_path))]
+            )
+            temp_pdf_paths.append(tmp_pdf)
 
-        # รวม PDF ทั้งหมด
+        # 4) รวม PDF
         for p in temp_pdf_paths:
             merger.append(str(p))
 
@@ -485,6 +478,7 @@ def export_merged_pdf(request: Request, payload: dict = Body(...)):
         )
 
     finally:
+        # 5) เก็บกวาด temp เสมอ
         for p in temp_pdf_paths:
             try:
                 if p.exists():
