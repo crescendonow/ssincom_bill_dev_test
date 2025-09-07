@@ -8,7 +8,7 @@
     }
 
     body {
-        font-family: "TH Sarabun New", "Tahoma", sans-serif;
+        font-family: "TH Sarabun New", "Tahoma", "sans-serif", "Sukhumvit Set", "Thonburi","NotoSansThai", "Noto Sans Thai", "Noto Sans", "Arial";
         font-size: 12pt;
         /* เดิม 15pt */
         color: #0F3F7F;
@@ -285,90 +285,4 @@
         .box-light {
             padding: 6px;
         }
-    }
-
-    /* ===============================
-   iOS-safe + PDF-safe Thai fonts
-   =============================== */
-
-    /* 1) เว็บฟอนต์สำรองฝั่งเซิร์ฟเวอร์/อุปกรณ์ที่ไม่มีฟอนต์ไทยของ iOS */
-    @font-face {
-        font-family: 'NotoSansThai';
-        src: url('/static/fonts/NotoSansThai-Regular.ttf') format('truetype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-    }
-
-    @font-face {
-        font-family: 'NotoSansThai';
-        src: url('/static/fonts/NotoSansThai-Bold.ttf') format('truetype');
-        font-weight: 700;
-        font-style: normal;
-        font-display: swap;
-    }
-
-    /* 2) เซ็ตสแตกฟอนต์: iOS ก่อน (Sukhumvit Set/Thonburi), 
-      ตามด้วยระบบ (-apple-system) และเว็บฟอนต์สำรอง (NotoSansThai) */
-    html,
-    body,
-    .doc {
-        /* ปิด text boost ใน iOS Safari เพื่อลดอาการขยับ */
-        -webkit-text-size-adjust: 100%;
-        text-size-adjust: 100%;
-
-        /* ใช้ตัวเลขแบบตาราง เพื่อตัวเลขไม่เด้งเมื่อค่าเปลี่ยน */
-        font-variant-numeric: tabular-nums;
-        font-feature-settings: "tnum" 1, "lnum" 1;
-
-        /* สแตกฟอนต์ iOS-friendly + สำรองสำหรับ PDF/เครื่องอื่น */
-        font-family:
-            "Sukhumvit Set",
-            /* iOS Thai */
-            "Thonburi",
-            /* iOS Thai */
-            -apple-system,
-            /* SF (Latin); ไทยจะ fallback ไป Thonburi */
-            "SF Pro Text", "SF Pro Display",
-            /* เผื่อ */
-            "NotoSansThai",
-            /* เว็บฟอนต์สำรอง (เราจัดให้) */
-            "Tahoma", "Segoe UI", "Roboto", "Arial", sans-serif;
-    }
-
-    /* 3) ขนาดอักษร/บรรทัดคงที่ ป้องกันการขยับ (คุมร่วมกับค่าเดิมในไฟล์) */
-    body {
-        /* รักษา metric ให้คงที่ทุกที่ */
-        line-height: 1.25;
-    }
-
-    /* 4) เฉพาะหัวเอกสาร: กันเลข/ข้อความทับบน iOS (ไม่พึ่ง JS) */
-    .row.header {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        /* ซ้าย=ที่อยู่บริษัท, ขวา=หัวกระดาษ */
-        column-gap: 16px;
-        align-items: start;
-    }
-
-    #header-right {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        line-height: 1.25;
-    }
-
-    #tax-label {
-        margin-top: 10px;
-    }
-
-    #tax-id {
-        line-height: 1.2;
-    }
-
-    /* 5) ข้อความยาวๆ (เบอร์โทร/ที่อยู่) ไม่ให้บีบจนทับ */
-    .doc .muted,
-    .doc .title {
-        line-height: 1.25;
-        white-space: normal;
     }
