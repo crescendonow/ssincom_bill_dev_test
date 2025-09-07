@@ -24,7 +24,7 @@ except ImportError:
             pass
 
 # ใช้ WeasyPrint แทน pdfkit/wkhtmltopdf
-from weasyprint import HTML
+from weasyprint import HTML, CSS
 from fastapi import APIRouter, Request, Form, HTTPException, Query, Depends, Body
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
@@ -390,12 +390,14 @@ def preview(request: Request, payload: dict = Body(...)):
 @router.post("/export-merged-pdf")
 def export_merged_pdf(request: Request, payload: dict = Body(...)):
     """
-    รับข้อมูล invoice, สร้าง PDF 4 รูปแบบ แล้วรวมเป็นไฟล์เดียว
-    ใช้ WeasyPrint แทน pdfkit เพื่อเลี่ยง wkhtmltopdf ใน Railway
+    เรนเดอร์ invoice 4 เวอร์ชันให้เหมือน preview และ merge เป็นไฟล์เดียว
+    - ใช้ invoice.html เหมือน preview
+    - บังคับแนบ /static/css/invoice.css เข้า WeasyPrint ทุกหน้า
+    - map asset (/static/...) เป็น path แบบ file:// เพื่อให้ WeasyPrint อ่านได้
     """
     variants = [
         ("invoice_original", "ใบกำกับ/ส่งของ/แจ้งหนี้ (ต้นฉบับ)"),
-        ("invoice_copy",     "ใบกำกับ/ส่งของ/แจ้งหนี้ (สำเนา)"),
+        ("invoice_copy",     "ใบกำกับ/ส่งของ/ใบแจ้งหนี้ (สำเนา)"),
         ("receipt_original", "ใบเสร็จรับเงิน (ต้นฉบับ)"),
         ("receipt_copy",     "ใบเสร็จรับเงิน (สำเนา)"),
     ]
@@ -403,15 +405,20 @@ def export_merged_pdf(request: Request, payload: dict = Body(...)):
     temp_pdf_paths = []
     merger = PdfMerger()
 
-    # base_url ให้ WeasyPrint หาไฟล์อ้างอิงใน templates/static ได้พอสมควร
-    base_url = str(BASE_DIR)  # BASE_DIR มาจากส่วนต้นไฟล์ form.py เดิมของคุณ :contentReference[oaicite:4]{index=4}
+    # ตำแหน่งโฟลเดอร์โปรเจ็กต์ (มี templates และ static อยู่ตรงนี้)
+    # BASE_DIR ถูกประกาศไว้ตอนต้นไฟล์แล้ว
+    # templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+    # static ถูก mount ที่ /static ในแอป (ดู main.py) 
+    base_dir = BASE_DIR
+    css_path = (base_dir / "static" / "css" / "invoice.css")
+    logo_path = (base_dir / "static" / "ss_logo.png")  # ไฟล์โลโก้ที่ template ใช้
 
     try:
-        # 1) วนลูปเรนเดอร์ HTML → PDF 4 ไฟล์ด้วย WeasyPrint
-        for variant_code, _variant_name in variants:
+        for variant_code, _name in variants:
             payload["variant"] = variant_code
 
-            # เรนเดอร์เทมเพลต (เหมือน preview)
+            # 1) เรนเดอร์ HTML เดียวกับ preview (invoice.html)
+            #    -> ใช้ TemplateResponse เพื่อให้ตัวกรอง/ค่าคงเดิมทั้งหมด
             html_resp = templates.TemplateResponse(
                 "invoice.html",
                 {
@@ -423,35 +430,43 @@ def export_merged_pdf(request: Request, payload: dict = Body(...)):
             )
             html_str = html_resp.body.decode("utf-8")
 
-            # เขียน PDF ชั่วคราว
-            tmp_path = Path(tempfile.gettempdir()) / f"{uuid.uuid4()}.pdf"
-            # WeasyPrint: ระบุ base_url เพื่อให้ url แบบ relative (ถ้ามี) พอ resolve ได้
-            HTML(string=html_str, base_url=base_url).write_pdf(str(tmp_path))
-            temp_pdf_paths.append(tmp_path)
+            # 2) แก้ path asset แบบ /static/... ให้เป็น file://... ที่ WeasyPrint อ่านได้
+            #    - CSS: เราจะส่งผ่าน stylesheets โดยตรง (ไม่ต้องดึงจาก <link>)
+            #    - IMG โลโก้: แทน src="/static/ss_logo.png" เป็น file://...
+            html_str = html_str.replace(
+                'src="/static/ss_logo.png"',
+                f'src="{logo_path.as_uri()}"'
+            )
+            # (ถ้าในเทมเพลตมี asset อื่น ๆ ใส่แบบ object storage/URL เต็มจะง่ายกว่า)
 
-        # 2) รวม PDF
+            # 3) ให้ WeasyPrint เรนเดอร์ โดยกำหนด base_url เพื่อ resolve relative URL
+            #    และ **บังคับ stylesheet เป็น /static/css/invoice.css เดียวกับ preview**
+            tmp_pdf = Path(tempfile.gettempdir()) / f"{uuid.uuid4()}.pdf"
+            HTML(string=html_str, base_url=str(base_dir)).write_pdf(
+                str(tmp_pdf),
+                stylesheets=[CSS(filename=str(css_path))]
+            )
+            temp_pdf_paths.append(tmp_pdf)
+
+        # 4) รวม PDF ทั้งหมด
         for p in temp_pdf_paths:
-            # ทั้ง pypdf 3.x/4.x รองรับการ append() ด้วย path ได้
             merger.append(str(p))
 
-        # 3) บันทึกเป็นไฟล์รวม
-        merged_pdf_path = Path(tempfile.gettempdir()) / f"merged_invoice_{payload.get('invoice_number', 'doc')}.pdf"
-        merger.write(str(merged_pdf_path))
+        out_path = Path(tempfile.gettempdir()) / f"merged_invoice_{payload.get('invoice_number', 'doc')}.pdf"
+        merger.write(str(out_path))
         merger.close()
 
-        # 4) ส่งไฟล์กลับ
+        # 5) ส่งไฟล์ออก
         return FileResponse(
-            path=merged_pdf_path,
+            path=out_path,
             media_type="application/pdf",
             filename=f"invoice_merged_{payload.get('invoice_number', 'doc')}.pdf"
         )
 
     finally:
-        # 5) ลบไฟล์ชั่วคราว
         for p in temp_pdf_paths:
             try:
-                if p.exists():
-                    p.unlink()
+                if p.exists(): p.unlink()
             except Exception:
                 pass
 
