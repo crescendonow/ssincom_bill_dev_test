@@ -6,8 +6,25 @@ from typing import Optional, List
 
 import tempfile
 import uuid
-from pypdf import PdfMerger
-import pdfkit
+# --- PdfMerger compatibility (pypdf 3.x & 4.x) ---
+try:
+    # pypdf <= 3.x
+    from pypdf import PdfMerger  # noqa: F401
+except ImportError:
+    # pypdf >= 4.x : ใช้ PdfWriter.append(...) แทน แล้วทำ shim ให้ API เดิมใช้ได้
+    from pypdf import PdfWriter as _PdfWriter
+    class PdfMerger:
+        def __init__(self):
+            self._w = _PdfWriter()
+        def append(self, fileobj_or_path):
+            self._w.append(fileobj_or_path)
+        def write(self, out_fp):
+            self._w.write(out_fp)
+        def close(self):
+            pass
+
+# ใช้ WeasyPrint แทน pdfkit/wkhtmltopdf
+from weasyprint import HTML
 
 from fastapi import APIRouter, Request, Form, HTTPException, Query, Depends, Body
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
@@ -375,25 +392,28 @@ def preview(request: Request, payload: dict = Body(...)):
 def export_merged_pdf(request: Request, payload: dict = Body(...)):
     """
     รับข้อมูล invoice, สร้าง PDF 4 รูปแบบ แล้วรวมเป็นไฟล์เดียว
+    ใช้ WeasyPrint แทน pdfkit เพื่อเลี่ยง wkhtmltopdf ใน Railway
     """
     variants = [
         ("invoice_original", "ใบกำกับ/ส่งของ/แจ้งหนี้ (ต้นฉบับ)"),
-        ("invoice_copy", "ใบกำกับ/ส่งของ/แจ้งหนี้ (สำเนา)"),
+        ("invoice_copy",     "ใบกำกับ/ส่งของ/แจ้งหนี้ (สำเนา)"),
         ("receipt_original", "ใบเสร็จรับเงิน (ต้นฉบับ)"),
-        ("receipt_copy", "ใบเสร็จรับเงิน (สำเนา)"),
+        ("receipt_copy",     "ใบเสร็จรับเงิน (สำเนา)"),
     ]
 
     temp_pdf_paths = []
     merger = PdfMerger()
 
+    # base_url ให้ WeasyPrint หาไฟล์อ้างอิงใน templates/static ได้พอสมควร
+    base_url = str(BASE_DIR)  # BASE_DIR มาจากส่วนต้นไฟล์ form.py เดิมของคุณ :contentReference[oaicite:4]{index=4}
+
     try:
-        # 1. วนลูปสร้าง PDF ชั่วคราว 4 ไฟล์
-        for variant_code, variant_name in variants:
-            # อัปเดตข้อมูล variant ใน payload ที่จะส่งไป render
+        # 1) วนลูปเรนเดอร์ HTML → PDF 4 ไฟล์ด้วย WeasyPrint
+        for variant_code, _variant_name in variants:
             payload["variant"] = variant_code
-            
-            # Render HTML template เหมือนฟังก์ชัน preview
-            html_content = templates.TemplateResponse(
+
+            # เรนเดอร์เทมเพลต (เหมือน preview)
+            html_resp = templates.TemplateResponse(
                 "invoice.html",
                 {
                     "request": request,
@@ -401,23 +421,26 @@ def export_merged_pdf(request: Request, payload: dict = Body(...)):
                     "discount": payload.get("discount", 0),
                     "vat_rate": payload.get("vat_rate", 7),
                 }
-            ).body.decode("utf-8")
+            )
+            html_str = html_resp.body.decode("utf-8")
 
-            # สร้างไฟล์ PDF ชั่วคราว
-            temp_pdf_path = Path(tempfile.gettempdir()) / f"{uuid.uuid4()}.pdf"
-            pdfkit.from_string(html_content, str(temp_pdf_path))
-            temp_pdf_paths.append(temp_pdf_path)
+            # เขียน PDF ชั่วคราว
+            tmp_path = Path(tempfile.gettempdir()) / f"{uuid.uuid4()}.pdf"
+            # WeasyPrint: ระบุ base_url เพื่อให้ url แบบ relative (ถ้ามี) พอ resolve ได้
+            HTML(string=html_str, base_url=base_url).write_pdf(str(tmp_path))
+            temp_pdf_paths.append(tmp_path)
 
-        # 2. รวม PDF ทั้งหมด
-        for path in temp_pdf_paths:
-            merger.append(str(path))
-        
-        # 3. บันทึกไฟล์ที่รวมแล้ว
+        # 2) รวม PDF
+        for p in temp_pdf_paths:
+            # ทั้ง pypdf 3.x/4.x รองรับการ append() ด้วย path ได้
+            merger.append(str(p))
+
+        # 3) บันทึกเป็นไฟล์รวม
         merged_pdf_path = Path(tempfile.gettempdir()) / f"merged_invoice_{payload.get('invoice_number', 'doc')}.pdf"
         merger.write(str(merged_pdf_path))
         merger.close()
 
-        # 4. ส่งไฟล์กลับไปให้ผู้ใช้
+        # 4) ส่งไฟล์กลับ
         return FileResponse(
             path=merged_pdf_path,
             media_type="application/pdf",
@@ -425,7 +448,11 @@ def export_merged_pdf(request: Request, payload: dict = Body(...)):
         )
 
     finally:
-        # 5. ลบไฟล์ชั่วคราวทั้งหมดทิ้ง
-        for path in temp_pdf_paths:
-            if path.exists():
-                path.unlink()
+        # 5) ลบไฟล์ชั่วคราว
+        for p in temp_pdf_paths:
+            try:
+                if p.exists():
+                    p.unlink()
+            except Exception:
+                pass
+
