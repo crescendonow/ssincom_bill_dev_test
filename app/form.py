@@ -446,28 +446,29 @@ def export_merged_pdf(request: Request, payload: dict = Body(...)):
 
             # เรนเดอร์ HTML เดียวกับ preview
             html_resp = templates.TemplateResponse(
-                "invoice.html",
-                {
-                    "request": request,
-                    "invoice": view_payload,
-                    "discount": view_payload.get("discount", 0),
-                    "vat_rate": view_payload.get("vat_rate", 7),
-                }
-            )
-            html_str = html_resp.body.decode("utf-8")
+    "invoice.html",
+    {
+        "request": request,
+        "invoice": view_payload,
+        "discount": view_payload.get("discount", 0),
+        "vat_rate": view_payload.get("vat_rate", 7),
+    }
+)
+    html_str = html_resp.body.decode("utf-8")
 
-            # map asset logo เป็น file:// ให้ WeasyPrint อ่านได้
-            html_str = html_str.replace(
-                'src="/static/ss_logo.png"', logo_path.as_uri()
-            )
+    # ✅ map ลิงก์ /static/* ให้เป็น file://.../static/* (ครอบคลุมทั้ง <link>, <img>, @font-face)
+    static_root = (BASE_DIR / "static").as_uri()  # e.g. file:///app/app/static
+    html_str = (html_str
+        .replace('href="/static/',  f'href="{static_root}/')
+        .replace('src="/static/',   f'src="{static_root}/')
+    )
 
-            # เรนเดอร์ PDF ชั่วคราว (บังคับ stylesheet = invoice.css)
-            tmp_pdf = Path(tempfile.gettempdir()) / f"{uuid.uuid4()}.pdf"
-            HTML(string=html_str, base_url=str(base_dir)).write_pdf(
-                str(tmp_pdf),
-                stylesheets=[CSS(filename=str(css_path))]
-            )
-            temp_pdf_paths.append(tmp_pdf)
+    # ✅ render PDF โดยแนบ stylesheet invoice.css (ไฟล์เดียวกับที่ preview ใช้)
+    css_path = BASE_DIR / "static" / "css" / "invoice.css"
+    HTML(string=html_str, base_url=str(BASE_DIR)).write_pdf(
+        str(tmp_pdf),
+        stylesheets=[CSS(filename=str(css_path))]
+    )
 
         # รวม PDF ทั้งหมด
         for p in temp_pdf_paths:
