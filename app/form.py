@@ -25,9 +25,8 @@ except ImportError:
 
 # ใช้ WeasyPrint แทน pdfkit/wkhtmltopdf
 from weasyprint import HTML
-
 from fastapi import APIRouter, Request, Form, HTTPException, Query, Depends, Body
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func, cast, Integer, Date
