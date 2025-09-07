@@ -391,9 +391,8 @@ def preview(request: Request, payload: dict = Body(...)):
 def export_merged_pdf(request: Request, payload: dict = Body(...)):
     """
     เรนเดอร์ invoice 4 เวอร์ชันให้เหมือน preview และ merge เป็นไฟล์เดียว
-    - ใช้ invoice.html เหมือน preview
-    - บังคับแนบ /static/css/invoice.css เข้า WeasyPrint ทุกหน้า
-    - map asset (/static/...) เป็น path แบบ file:// เพื่อให้ WeasyPrint อ่านได้
+    - Normalize คีย์จากฟอร์มให้ตรงกับ invoice.html
+    - ใช้ invoice.html + /static/css/invoice.css แบบเดียวกับ preview
     """
     variants = [
         ("invoice_original", "ใบกำกับ/ส่งของ/แจ้งหนี้ (ต้นฉบับ)"),
@@ -402,45 +401,67 @@ def export_merged_pdf(request: Request, payload: dict = Body(...)):
         ("receipt_copy",     "ใบเสร็จรับเงิน (สำเนา)"),
     ]
 
+    # เตรียม path ให้ WeasyPrint เหมือนที่ใช้กับ preview
+    base_dir = BASE_DIR
+    css_path = (base_dir / "static" / "css" / "invoice.css")
+    logo_path = (base_dir / "static" / "ss_logo.png")
+
+    def normalize_payload(src: dict) -> dict:
+        """แปลงคีย์ payload ให้ตรงกับที่ invoice.html ใช้"""
+        out = dict(src or {})
+        # ---- normalize หัวลูกค้า ----
+        out["customer_name"]   = src.get("customer_name")   or src.get("fname") or ""
+        out["customer_taxid"]  = src.get("customer_taxid")  or src.get("cf_taxid") or ""
+        out["customer_address"]= src.get("customer_address")or src.get("cf_personaddress") or ""
+        # โทรศัพท์ใน template ใช้ {{ invoice.tel or invoice.mobile }}
+        out["tel"]             = src.get("tel") or src.get("mobile") or ""
+        out["mobile"]          = src.get("mobile") or src.get("tel") or ""
+        # เวลาที่ template แสดง province/zipcode ถูก join ไว้ใน address ฝั่ง JS อยู่แล้ว
+        # แต่หากอยากใช้ที่อื่น ก็ยังคงค่าไว้
+        out["cf_personzipcode"]= src.get("cf_personzipcode") or ""
+        out["cf_provincename"] = src.get("cf_provincename") or ""
+
+        # ---- normalize รายการสินค้า ให้เป็น product_code/description ----
+        items = []
+        for it in (src.get("items") or []):
+            items.append({
+                "product_code": it.get("product_code") or it.get("cf_itemid") or "",
+                "description":  it.get("description")  or it.get("cf_itemname") or "",
+                "quantity":     float(it.get("quantity") or 0),
+                "unit_price":   float(it.get("unit_price") or 0),
+            })
+        out["items"] = items
+        return out
+
     temp_pdf_paths = []
     merger = PdfMerger()
 
-    # ตำแหน่งโฟลเดอร์โปรเจ็กต์ (มี templates และ static อยู่ตรงนี้)
-    # BASE_DIR ถูกประกาศไว้ตอนต้นไฟล์แล้ว
-    # templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
-    # static ถูก mount ที่ /static ในแอป (ดู main.py) 
-    base_dir = BASE_DIR
-    css_path = (base_dir / "static" / "css" / "invoice.css")
-    logo_path = (base_dir / "static" / "ss_logo.png")  # ไฟล์โลโก้ที่ template ใช้
-
     try:
         for variant_code, _name in variants:
+            # แนบ variant ลง payload
             payload["variant"] = variant_code
 
-            # 1) เรนเดอร์ HTML เดียวกับ preview (invoice.html)
-            #    -> ใช้ TemplateResponse เพื่อให้ตัวกรอง/ค่าคงเดิมทั้งหมด
+            # แปลงคีย์ให้ตรงกับเทมเพลตก่อนเรนเดอร์
+            view_payload = normalize_payload(payload)
+
+            # เรนเดอร์ HTML เดียวกับ preview
             html_resp = templates.TemplateResponse(
                 "invoice.html",
                 {
                     "request": request,
-                    "invoice": payload,
-                    "discount": payload.get("discount", 0),
-                    "vat_rate": payload.get("vat_rate", 7),
+                    "invoice": view_payload,
+                    "discount": view_payload.get("discount", 0),
+                    "vat_rate": view_payload.get("vat_rate", 7),
                 }
             )
             html_str = html_resp.body.decode("utf-8")
 
-            # 2) แก้ path asset แบบ /static/... ให้เป็น file://... ที่ WeasyPrint อ่านได้
-            #    - CSS: เราจะส่งผ่าน stylesheets โดยตรง (ไม่ต้องดึงจาก <link>)
-            #    - IMG โลโก้: แทน src="/static/ss_logo.png" เป็น file://...
+            # map asset logo เป็น file:// ให้ WeasyPrint อ่านได้
             html_str = html_str.replace(
-                'src="/static/ss_logo.png"',
-                f'src="{logo_path.as_uri()}"'
+                'src="/static/ss_logo.png"', logo_path.as_uri()
             )
-            # (ถ้าในเทมเพลตมี asset อื่น ๆ ใส่แบบ object storage/URL เต็มจะง่ายกว่า)
 
-            # 3) ให้ WeasyPrint เรนเดอร์ โดยกำหนด base_url เพื่อ resolve relative URL
-            #    และ **บังคับ stylesheet เป็น /static/css/invoice.css เดียวกับ preview**
+            # เรนเดอร์ PDF ชั่วคราว (บังคับ stylesheet = invoice.css)
             tmp_pdf = Path(tempfile.gettempdir()) / f"{uuid.uuid4()}.pdf"
             HTML(string=html_str, base_url=str(base_dir)).write_pdf(
                 str(tmp_pdf),
@@ -448,7 +469,7 @@ def export_merged_pdf(request: Request, payload: dict = Body(...)):
             )
             temp_pdf_paths.append(tmp_pdf)
 
-        # 4) รวม PDF ทั้งหมด
+        # รวม PDF ทั้งหมด
         for p in temp_pdf_paths:
             merger.append(str(p))
 
@@ -456,7 +477,6 @@ def export_merged_pdf(request: Request, payload: dict = Body(...)):
         merger.write(str(out_path))
         merger.close()
 
-        # 5) ส่งไฟล์ออก
         return FileResponse(
             path=out_path,
             media_type="application/pdf",
@@ -466,7 +486,7 @@ def export_merged_pdf(request: Request, payload: dict = Body(...)):
     finally:
         for p in temp_pdf_paths:
             try:
-                if p.exists(): p.unlink()
+                if p.exists():
+                    p.unlink()
             except Exception:
                 pass
-
