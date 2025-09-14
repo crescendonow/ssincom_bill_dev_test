@@ -69,7 +69,7 @@
         <div class="mt6">ชื่อลูกค้า: <b>{{ invoice.customer_name }}</b></div>
         <div class="mt6">เลขประจำตัวผู้เสียภาษี: <b>{{ invoice.customer_taxid }}</b> / {{ invoice.customer_branch or
           'สำนักงานใหญ่' }}</div>
-        <div class="mt6">ที่อยู่: <b>{{ invoice.customer_address }}</b></div>
+        <div class="mt6">ที่อยู่: <b>{{ invoice.customer_address }} {{ invoice.cf_provincename or '' }} {{ invoice.cf_personzipcode or '' }}</b></div>
         <div class="mt6">โทรศัพท์: <b>{{ invoice.tel or invoice.mobile or '' }}</b></div>
       </div>
 
