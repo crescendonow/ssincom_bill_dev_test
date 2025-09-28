@@ -239,7 +239,7 @@ class CustomerUpdate(BaseModel):
 
 @router.post("/api/customers")
 def api_customers_create(request: Request, db: Session = Depends(get_db)):
-    form = await request.form()  # ถ้าใช้ async route; ถ้า sync ให้ใช้ request.form() แบบ starlette
+    form = request.form()  
     data = dict(form)
 
     # --- สร้าง personid อัตโนมัติ ถ้าไม่ส่งมา ---
