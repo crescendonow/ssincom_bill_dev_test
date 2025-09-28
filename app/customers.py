@@ -1,6 +1,7 @@
 # app/customers.py
 from __future__ import annotations
 import os
+from datetime import datetime, timezone, timedelta
 from math import ceil
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
@@ -9,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse, HTMLResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
+from sqlalchemy.exc import IntegrityError
 
 from .database import SessionLocal
 from . import models
@@ -22,6 +24,37 @@ def get_db():
         yield db
     finally:
         db.close()
+
+def generate_personid(db: Session) -> str:
+    """PC + 2 หลักท้ายปี พ.ศ. + running 4 หลัก (รีเทิร์นค่าใหม่ที่ยังไม่ซ้ำ)"""
+    # ปี พ.ศ. จากเวลาประเทศไทย (หรือใช้ UTC + 543 ก็ได้)
+    th_year = datetime.now().year + 543
+    yy = th_year % 100
+    prefix = f"PC{yy:02d}"
+
+    # หา running สูงสุดของปีนั้น (ท้าย 4 หลัก) จาก personid ที่ขึ้นต้นด้วย prefix
+    # เช่น PC68xxxx -> ดึง xxxx มากสุด
+    q = (db.query(models.CustomerList.personid)
+           .filter(models.CustomerList.personid.like(f"{prefix}%")))
+    max_run = 0
+    for (pid,) in q.all():
+        if isinstance(pid, str) and len(pid) >= 8 and pid.startswith(prefix):
+            tail = pid[-4:]
+            if tail.isdigit():
+                max_run = max(max_run, int(tail))
+
+    # ลองจองเลขใหม่ (กันชนกันด้วย unique)
+    for _ in range(20):  # ลองสัก 20 ครั้งพอ
+        next_run = max_run + 1
+        candidate = f"{prefix}{next_run:04d}"
+        # ตรวจว่ามีหรือยัง
+        exists = db.query(models.CustomerList).filter(models.CustomerList.personid == candidate).first()
+        if not exists:
+            return candidate
+        max_run += 1
+
+    # ถ้าเกิน 20 ครั้ง (ไม่น่าเกิด) โยน error
+    raise RuntimeError("Cannot allocate new personid")
 
 # -------------- Helpers ---------------------
 def _row_to_dict(c: models.CustomerList) -> Dict[str, Any]:
@@ -201,6 +234,45 @@ class CustomerUpdate(BaseModel):
     tel: str | None = None
     mobile: str | None = None
     fmlpaymentcreditday: int | None = None
+    cf_hq: int | None = None
+    cf_branch: str | None = None
+
+@router.post("/api/customers")
+def api_customers_create(request: Request, db: Session = Depends(get_db)):
+    form = await request.form()  # ถ้าใช้ async route; ถ้า sync ให้ใช้ request.form() แบบ starlette
+    data = dict(form)
+
+    # --- สร้าง personid อัตโนมัติ ถ้าไม่ส่งมา ---
+    personid = (data.get("personid") or "").strip()
+    if not personid:
+        personid = generate_personid(db)
+
+    # --- อ่านค่า cf_hq / cf_branchname ---
+    # cf_hq รับเป็น '0'/'1' -> เก็บ int
+    cf_hq = data.get("cf_hq")
+    cf_branch = data.get("cf_branch")
+
+    # --- สร้างแถวใหม่ ---
+    obj = models.CustomerList(
+        # ฟิลด์อื่น ๆ ตามเดิมของคุณ...
+        personid=personid,
+        cf_hq=int(cf_hq) if cf_hq not in (None, "", "None") else None,
+        cf_branch=cf_branc or None,
+        # ...
+    )
+    db.add(obj)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        # ถ้าโดนชน personid (เผื่อ race) ลองสร้างใหม่อีกครั้ง
+        personid = generate_personid(db)
+        obj.personid = personid
+        db.add(obj)
+        db.commit()
+
+    return {"ok": True, "idx": obj.idx, "personid": obj.personid}
+
 
 @router.post("/api/customers/check-duplicate")
 def api_customers_check_duplicate(payload: dict):
@@ -215,20 +287,15 @@ def api_customers_update(idx: int, payload: CustomerUpdate, db: Session = Depend
     """
     อัปเดตข้อมูลลูกค้าในตาราง CustomerList ตาม idx
     """
+    def api_customers_update(idx: int, payload: CustomerUpdate, db: Session = Depends(get_db)):
     c = db.query(models.CustomerList).filter(models.CustomerList.idx == idx).first()
     if not c:
         raise HTTPException(status_code=404, detail="customer not found")
 
-    # map field จาก payload -> ORM
-    for field in [
-        "prename", "fname", "lname", "personid",
-        "cf_taxid",
-        "cf_personaddress", "cf_personzipcode", "cf_provincename",
-        "tel", "mobile",
-        "fmlpaymentcreditday",
-    ]:
-        val = getattr(payload, field)
-        if val is not None:
+    # อัปเดตฟิลด์ตามที่ส่งมา (เฉพาะไม่ None)
+    up = payload.dict()
+    for field, val in up.items():
+        if val is not None and hasattr(c, field):
             setattr(c, field, val)
 
     db.commit()

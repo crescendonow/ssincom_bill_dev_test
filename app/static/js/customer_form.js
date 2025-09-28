@@ -155,6 +155,16 @@ async function suggestProvinces() {
   }
 }
 
+// === ฟังก์ชันเปิด/ปิดช่องชื่อสาขาตาม cf_hq ===
+function toggleBranchBox() {
+  const hq = document.getElementById('cf_hq')?.value;
+  const box = document.getElementById('branchBox');
+  if (!box) return;
+  // cf_hq = "0" คือ สาขา -> แสดงช่องชื่อสาขา
+  if (hq === '0') box.classList.remove('hidden');
+  else box.classList.add('hidden');
+}
+
 // ===== ฟอร์ม =====
 function resetForm() {
   editing = null;
@@ -170,6 +180,9 @@ function fillForm(c) {
   if ($('cf_taxid') && !$('cf_taxid').value) $('cf_taxid').value = getTaxId(c);
   if ($('cf_provincename') && !$('cf_provincename').value) $('cf_provincename').value = getProvince(c);
   if ($('fname') && !$('fname').value) $('fname').value = displayName(c);
+  document.getElementById('cf_hq')?.value = (c.cf_hq ?? '').toString();
+  document.getElementById('cf_branch')?.value = c.cf_branch ?? '';
+  toggleBranchBox();
 }
 async function isDuplicate(payload, ignoreIdx = null) {
   const fd = new FormData();
@@ -264,5 +277,7 @@ function initCustomerForm() {
 
   loadAll();
 }
-
-document.addEventListener('DOMContentLoaded', initCustomerForm);
+document.addEventListener('DOMContentLoaded', ()=>{
+  initCustomerForm,
+  document.getElementById('cf_hq')?.addEventListener('change', toggleBranchBox);
+});

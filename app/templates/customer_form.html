@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
   <meta charset="UTF-8" />
   <title>จัดการลูกค้า</title>
@@ -11,11 +12,15 @@
     .input {
       width: 100%;
       padding: .6rem;
-      border: 1px solid #d1d5db; /* gray-300 */
+      border: 1px solid #d1d5db;
+      /* gray-300 */
       border-radius: .5rem;
       background: #fff;
     }
-    .row:hover { background: #f7fbff; }
+
+    .row:hover {
+      background: #f7fbff;
+    }
   </style>
 </head>
 
@@ -77,11 +82,31 @@
           <textarea name="cf_personaddress" id="cf_personaddress" class="input" rows="2"></textarea>
         </div>
 
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <!-- สำนักงานใหญ่/สาขา -->
+          <div>
+            <label class="block text-sm mb-1">ประเภทสำนักงาน</label>
+            <select id="cf_hq" name="cf_hq" class="w-full border rounded p-2">
+              <option value="">— เลือก —</option>
+              <option value="1">สำนักงานใหญ่</option>
+              <option value="0">สาขา</option>
+            </select>
+          </div>
+
+          <!-- ชื่อสาขา: เปิดเฉพาะตอนเลือกสาขา -->
+          <div id="branchBox" class="hidden">
+            <label class="block text-sm mb-1">ชื่อสาขา</label>
+            <input id="cf_branch" name="cf_branch" type="text" class="w-full border rounded p-2"
+              placeholder="กรอกชื่อสาขา">
+          </div>
+        </div>
+
         <!-- แถว 3 -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
           <div>
             <label for="cf_provincename" class="block text-sm text-gray-700 mb-1">จังหวัด</label>
-            <input name="cf_provincename" id="cf_provincename" class="input" list="province_datalist" autocomplete="off" />
+            <input name="cf_provincename" id="cf_provincename" class="input" list="province_datalist"
+              autocomplete="off" />
             <!-- datalist สำหรับ autocomplete จังหวัด -->
             <datalist id="province_datalist"></datalist>
           </div>
@@ -108,7 +133,8 @@
         <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <button type="submit" class="px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">💾 บันทึก</button>
           <button type="button" id="btnReset" class="px-5 py-2 border rounded hover:bg-gray-50">♻️ รีเซ็ต</button>
-          <button type="button" id="btnDelete" class="px-5 py-2 bg-red-600 text-white rounded hover:bg-red-700 hidden">🗑️ ลบ</button>
+          <button type="button" id="btnDelete"
+            class="px-5 py-2 bg-red-600 text-white rounded hover:bg-red-700 hidden">🗑️ ลบ</button>
         </div>
       </form>
     </section>
@@ -117,7 +143,8 @@
     <section class="bg-white rounded-xl shadow p-4 sm:p-6">
       <div class="flex items-center justify-between mb-3 gap-2 flex-wrap">
         <h3 class="text-base sm:text-lg font-semibold">ข้อมูลลูกค้า</h3>
-        <input id="search" placeholder="ค้นหา (ชื่อ / รหัสลูกค้า / จังหวัด / เบอร์ / เลขภาษี)" class="input w-full sm:w-64" />
+        <input id="search" placeholder="ค้นหา (ชื่อ / รหัสลูกค้า / จังหวัด / เบอร์ / เลขภาษี)"
+          class="input w-full sm:w-64" />
       </div>
 
       <!-- ตารางห่อด้วย container กันล้น -->
@@ -152,4 +179,5 @@
   <!-- JS -->
   <script src="/static/js/customer_form.js" defer></script>
 </body>
+
 </html>
