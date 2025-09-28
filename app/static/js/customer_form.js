@@ -15,6 +15,19 @@ const norm = (s) => (s ?? '').toString().trim().toLowerCase();
 const debounce = (fn, delay = 250) => { let t = null; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), delay); }; };
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
+// helper
+function $(id) { return document.getElementById(id); }
+function show(el) { if (!el) return; el.classList.remove('hidden'); el.style.display = ''; el.removeAttribute('hidden'); }
+function hide(el) { if (!el) return; el.classList.add('hidden'); el.style.display = 'none'; el.setAttribute('hidden', ''); }
+
+// แปลงค่าที่ได้จาก select ให้เป็น 0/1 เสมอ
+function parseHqValue(v) {
+  const s = String(v ?? '').trim();
+  if (s === '0' || s.toLowerCase() === 'branch' || s === 'สาขา') return 0;
+  if (s === '1' || s.toLowerCase() === 'hq' || s === 'สำนักงานใหญ่') return 1;
+  return s === '' ? null : Number.isNaN(Number(s)) ? null : Number(s);
+}
+
 // ใช้ customer_name เป็นหลัก; ถ้าไม่มีค่อย fallback prename/fname/lname
 function displayName(c) {
   const primary = (c.customer_name || '').toString().trim();
@@ -157,20 +170,27 @@ async function suggestProvinces() {
 
 // === ฟังก์ชันเปิด/ปิดช่องชื่อสาขาตาม cf_hq ===
 function toggleBranchBox() {
-  const v = document.getElementById('cf_hq')?.value ?? '';
-  const box = document.getElementById('branchBox');
-  if (!box) return;
-  if (Strindg(v) === '0') {
-    box.classList.remove('hidden');  // แสดงช่องสาขา
+  const sel = $('cf_hq');
+  const box = $('branchBox');
+  if (!sel || !box) return;
+
+  const val = parseHqValue(sel.value);
+  // DEBUG ชั่วคราว: ดูค่าใน console
+  console.debug('[toggleBranchBox] cf_hq=', sel.value, '->', val);
+
+  if (val === 0) {  // 0 = สาขา
+    show(box);
   } else {
-    box.classList.add('hidden');     // ซ่อนช่องสาขา
+    hide(box);
   }
 }
+
+// bind event ตอนโหลด
 document.addEventListener('DOMContentLoaded', () => {
-  const sel = document.getElementById('cf_hq');
+  const sel = $('cf_hq');
   if (sel) {
     sel.addEventListener('change', toggleBranchBox);
-    toggleBranchBox(); // เรียกครั้งแรกตามค่าที่มี
+    toggleBranchBox();
   }
 });
 
@@ -184,12 +204,26 @@ function resetForm() {
 }
 function fillForm(c) {
   // เติมค่าตามชื่อ field เดิม
+  const data = c || {};
   Object.keys(c || {}).forEach((k) => { const el = $(k); if (el) el.value = c[k] ?? ''; });
   // กรณีฟิลด์ที่ใช้หลายชื่อ ให้เติม fallback ด้วย
   if ($('cf_taxid') && !$('cf_taxid').value) $('cf_taxid').value = getTaxId(c);
   if ($('cf_provincename') && !$('cf_provincename').value) $('cf_provincename').value = getProvince(c);
   if ($('fname') && !$('fname').value) $('fname').value = displayName(c);
+
+  const hq = $('cf_hq');
+  if (hq){
+    hq.value = String(data.cf_hq ?? '');   // รองรับ 0/1 (number)
+    // ถ้าค่าใน option ไม่มี ให้เคลียร์เพื่อเลี่ยง Invalid value
+    if (![...hq.options].some(o => o.value === hq.value)) hq.value = '';
+    // กระตุ้นให้ toggle ทำงาน
+    hq.dispatchEvent(new Event('change', {bubbles:true}));
+  }
+
+  const br = $('cf_branch');
+  if (br) br.value = data.cf_branch ?? '';
 }
+
 async function isDuplicate(payload, ignoreIdx = null) {
   const fd = new FormData();
   fd.append('fname', payload.fname || '');
