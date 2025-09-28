@@ -211,12 +211,12 @@ function fillForm(c) {
   if ($('fname') && !$('fname').value) $('fname').value = displayName(c);
 
   const hq = $('cf_hq');
-  if (hq){
+  if (hq) {
     hq.value = String(data.cf_hq ?? '');   // รองรับ 0/1 (number)
     // ถ้าค่าใน option ไม่มี ให้เคลียร์เพื่อเลี่ยง Invalid value
     if (![...hq.options].some(o => o.value === hq.value)) hq.value = '';
     // กระตุ้นให้ toggle ทำงาน
-    hq.dispatchEvent(new Event('change', {bubbles:true}));
+    hq.dispatchEvent(new Event('change', { bubbles: true }));
   }
 
   const br = $('cf_branch');
@@ -238,18 +238,20 @@ async function saveCustomer(e) {
   e.preventDefault();
   const f = new FormData($('customerForm'));
   const payload = {
-    prename: $('#prename').value,
-    fname: $('#fname').value,
-    lname: $('#lname').value,
-    cf_taxid: $('#cf_taxid').value,
-    cf_personaddress: $('#cf_personaddress').value,
-    cf_personzipcode: $('#cf_personzipcode').value,
-    cf_provincename: $('#cf_provincename').value,
-    cf_personaddress_tel: $('#tel').value,
-    cf_personaddress_mobile: $('#mobile').value,
-    fmlpaymentcreditday: $('#fmlpaymentcreditday').value,
-    cf_hq: $('#cf_hq').value,         // "1" หรือ "0"
-    cf_branch: $('#cf_branch').value, // ชื่อสาขา
+    idx: $('#idx')?.value || null,
+    prename: $('#prename')?.value || '',
+    fname: $('#fname')?.value || '',
+    lname: $('#lname')?.value || '',
+    cf_taxid: $('#cf_taxid')?.value || '',
+    cf_personaddress: $('#cf_personaddress')?.value || '',
+    cf_personzipcode: $('#cf_personzipcode')?.value || '',
+    cf_provincename: $('#cf_provincename')?.value || '',
+    // <-- แก้ id ให้ตรงกับฟอร์มจริง
+    cf_personaddress_tel: $('#cf_personaddress_tel')?.value || '',
+    cf_personaddress_mobile: $('#cf_personaddress_mobile')?.value || '',
+    fmlpaymentcreditday: $('#fmlpaymentcreditday')?.value || '',
+    cf_hq: $('#cf_hq')?.value ?? '',
+    cf_branch: $('#cf_branch')?.value ?? '',
   };
   await fetch('/api/customers', {
     method: 'POST',
@@ -282,6 +284,8 @@ async function saveCustomer(e) {
     },
     body: JSON.stringify(payload), // <-- 2. แปลง JavaScript object เป็น JSON string
   });
+  submitBtn?.removeAttribute('disabled');
+  submitBtn?.classList.remove('opacity-60', 'cursor-not-allowed');
   if (res.redirected) { window.location.href = res.url; return; }
   if (!res.ok) { alert('บันทึกล้มเหลว'); return; }
 
