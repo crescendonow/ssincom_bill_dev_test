@@ -157,13 +157,19 @@ async function suggestProvinces() {
 
 // === ฟังก์ชันเปิด/ปิดช่องชื่อสาขาตาม cf_hq ===
 function toggleBranchBox() {
-  const hq = document.getElementById('cf_hq')?.value;
+  const v = document.getElementById('cf_hq')?.value ?? '';
   const box = document.getElementById('branchBox');
   if (!box) return;
-  // cf_hq = "0" คือ สาขา -> แสดงช่องชื่อสาขา
-  if (hq === '0') box.classList.remove('hidden');
-  else box.classList.add('hidden');
+  if (v === '0') {
+    box.classList.remove('hidden');  // แสดงช่องสาขา
+  } else {
+    box.classList.add('hidden');     // ซ่อนช่องสาขา
+  }
 }
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('cf_hq')?.addEventListener('change', toggleBranchBox);
+  toggleBranchBox();  // ให้เรียกครั้งแรกด้วย เพื่อรีเฟรชตอนโหลดหน้า
+});
 
 // ===== ฟอร์ม =====
 function resetForm() {
@@ -277,7 +283,4 @@ function initCustomerForm() {
 
   loadAll();
 }
-document.addEventListener('DOMContentLoaded', ()=>{
-  initCustomerForm,
-  document.getElementById('cf_hq')?.addEventListener('change', toggleBranchBox);
-});
+document.addEventListener('DOMContentLoaded', initCustomerForm); 
