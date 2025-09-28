@@ -225,7 +225,7 @@ def api_customers_list(
     }
 
 # ====== เพิ่ม: อัปเดต/เช็กซ้ำลูกค้า ======
-class CustomerUpdate(BaseModel):
+class CustomerPayload(BaseModel):
     prename: str | None = None
     fname: str | None = None
     lname: str | None = None
@@ -234,15 +234,16 @@ class CustomerUpdate(BaseModel):
     cf_personaddress: str | None = None
     cf_personzipcode: str | None = None
     cf_provincename: str | None = None
-    tel: str | None = None
-    mobile: str | None = None
+    # ใช้ Key ให้ตรงกับที่ JavaScript ส่งมา
+    cf_personaddress_tel: str | None = None
+    cf_personaddress_mobile: str | None = None
     fmlpaymentcreditday: int | None = None
     cf_hq: int | None = None
     cf_branch: str | None = None
 
 @router.post("/api/customers")
-async def api_customers_create(request: Request, db: Session = Depends(get_db)):
-    data = await request.json()  # <<-- เดิมใช้ form()
+async def api_customers_create(payload: CustomerPayload, db: Session = Depends(get_db)):
+    data = payload.dict()
     personid = (data.get("personid") or "").strip() or generate_personid(db)
 
     obj = models.CustomerList(
@@ -250,18 +251,22 @@ async def api_customers_create(request: Request, db: Session = Depends(get_db)):
         fname=data.get("fname"),
         lname=data.get("lname"),
         personid=personid,
-        tel=data.get("cf_personaddress_tel") or data.get("tel"),
-        mobile=data.get("cf_personaddress_mobile") or data.get("mobile"),
         cf_personaddress=data.get("cf_personaddress"),
         cf_personzipcode=data.get("cf_personzipcode"),
         cf_provincename=data.get("cf_provincename"),
         cf_taxid=data.get("cf_taxid"),
-        fmlpaymentcreditday=(int(data["fmlpaymentcreditday"]) if (data.get("fmlpaymentcreditday") not in (None, "", "None")) else None),
-        # สำคัญ: เก็บค่า HQ/Branch ให้ตรงกับฟรอนต์
-        cf_hq=(int(data["cf_hq"]) if data.get("cf_hq") not in (None, "", "None") else None),
-        cf_branch=(data.get("cf_branch") or None),   
+        fmlpaymentcreditday=data.get("fmlpaymentcreditday"),
+        cf_hq=data.get("cf_hq"),
+        cf_branch=data.get("cf_branch"),
+        # แก้ไข: Mapping field โทรศัพท์ให้ครบทั้ง 2 ชุดคอลัมน์
+        tel=data.get("cf_personaddress_tel"),
+        mobile=data.get("cf_personaddress_mobile"),
+        cf_personaddress_tel=data.get("cf_personaddress_tel"),
+        cf_personaddress_mobile=data.get("cf_personaddress_mobile"),
     )
-    db.add(obj); db.commit(); db.refresh(obj)
+    db.add(obj)
+    db.commit()
+    db.refresh(obj)
     return {"ok": True, "idx": obj.idx, "personid": obj.personid}
 
 
@@ -274,7 +279,7 @@ def api_customers_check_duplicate(payload: dict):
     return {"duplicate": False}
 
 @router.put("/api/customers/{idx}")
-def api_customers_update(idx: int, payload: CustomerUpdate, db: Session = Depends(get_db)):
+def api_customers_update(idx: int, payload: CustomerPayload, db: Session = Depends(get_db)):
     """
     อัปเดตข้อมูลลูกค้าในตาราง CustomerList ตาม idx
     """
@@ -282,10 +287,19 @@ def api_customers_update(idx: int, payload: CustomerUpdate, db: Session = Depend
     if not c:
         raise HTTPException(status_code=404, detail="customer not found")
 
-    # อัปเดตฟิลด์ตามที่ส่งมา (เฉพาะไม่ None)
-    up = payload.dict()
-    for field, val in up.items():
-        if val is not None and hasattr(c, field):
+    # ใช้ exclude_unset=True เพื่ออัปเดตเฉพาะฟิลด์ที่ถูกส่งมาเท่านั้น
+    update_data = payload.dict(exclude_unset=True)
+
+    # วนลูปเพื่ออัปเดตข้อมูลทีละฟิลด์
+    for field, val in update_data.items():
+        # กรณีพิเศษ: อัปเดตฟิลด์เบอร์โทรศัพท์ทั้ง 2 ชุด
+        if field == 'cf_personaddress_tel':
+            setattr(c, 'tel', val)
+            setattr(c, 'cf_personaddress_tel', val)
+        elif field == 'cf_personaddress_mobile':
+            setattr(c, 'mobile', val)
+            setattr(c, 'cf_personaddress_mobile', val)
+        elif hasattr(c, field):
             setattr(c, field, val)
 
     db.commit()
