@@ -10,7 +10,6 @@ let editing = null;
 let currentPage = 1;
 const PAGE_SIZE = 20;
 
-const $ = (id) => document.getElementById(id);
 const norm = (s) => (s ?? '').toString().trim().toLowerCase();
 const debounce = (fn, delay = 250) => { let t = null; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), delay); }; };
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
