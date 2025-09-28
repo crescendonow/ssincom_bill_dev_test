@@ -83,6 +83,7 @@ def suggest_province(q: str = Query(..., min_length=1), db: Session = Depends(ge
     return [p[0] for p in provinces]
 
 # install router 
+app.include_router(suggest_router)
 app.include_router(form_router)
 app.include_router(summary_router)
 app.include_router(customers_router)
