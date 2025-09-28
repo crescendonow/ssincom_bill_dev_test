@@ -160,15 +160,18 @@ function toggleBranchBox() {
   const v = document.getElementById('cf_hq')?.value ?? '';
   const box = document.getElementById('branchBox');
   if (!box) return;
-  if (v === '0') {
+  if (Strindg(v) === '0') {
     box.classList.remove('hidden');  // แสดงช่องสาขา
   } else {
     box.classList.add('hidden');     // ซ่อนช่องสาขา
   }
 }
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('cf_hq')?.addEventListener('change', toggleBranchBox);
-  toggleBranchBox();  // ให้เรียกครั้งแรกด้วย เพื่อรีเฟรชตอนโหลดหน้า
+  const sel = document.getElementById('cf_hq');
+  if (sel) {
+    sel.addEventListener('change', toggleBranchBox);
+    toggleBranchBox(); // เรียกครั้งแรกตามค่าที่มี
+  }
 });
 
 // ===== ฟอร์ม =====
@@ -186,9 +189,6 @@ function fillForm(c) {
   if ($('cf_taxid') && !$('cf_taxid').value) $('cf_taxid').value = getTaxId(c);
   if ($('cf_provincename') && !$('cf_provincename').value) $('cf_provincename').value = getProvince(c);
   if ($('fname') && !$('fname').value) $('fname').value = displayName(c);
-  document.getElementById('cf_hq')?.value = (c.cf_hq ?? '').toString();
-  document.getElementById('cf_branch')?.value = c.cf_branch ?? '';
-  toggleBranchBox();
 }
 async function isDuplicate(payload, ignoreIdx = null) {
   const fd = new FormData();
@@ -204,7 +204,25 @@ async function isDuplicate(payload, ignoreIdx = null) {
 async function saveCustomer(e) {
   e.preventDefault();
   const f = new FormData($('customerForm'));
-  const payload = Object.fromEntries(f.entries());
+  const payload = {
+    prename: $('#prename').value,
+    fname: $('#fname').value,
+    lname: $('#lname').value,
+    cf_taxid: $('#cf_taxid').value,
+    cf_personaddress: $('#cf_personaddress').value,
+    cf_personzipcode: $('#cf_personzipcode').value,
+    cf_provincename: $('#cf_provincename').value,
+    cf_personaddress_tel: $('#tel').value,
+    cf_personaddress_mobile: $('#mobile').value,
+    fmlpaymentcreditday: $('#fmlpaymentcreditday').value,
+    cf_hq: $('#cf_hq').value,         // "1" หรือ "0"
+    cf_branch: $('#cf_branch').value, // ชื่อสาขา
+  };
+  await fetch('/api/customers', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
 
   const duplicate = await isDuplicate(payload, payload.idx || null);
   const warn = $('dupWarn');
