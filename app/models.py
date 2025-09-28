@@ -93,7 +93,8 @@ class CustomerList(Base):
     cf_provincename = Column(String)
     cf_taxid = Column(String(13))
     fmlpaymentcreditday = Column(Integer)
-
+    cf_hq = Column(Integer)        # 1=สำนักงานใหญ่, 0=สาขา
+    cf_branch = Column(String)     # ชื่อสาขา
 # ------------------ Products (schema: products) ------------------
 
 class ProductList(Base):

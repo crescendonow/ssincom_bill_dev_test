@@ -6,7 +6,7 @@ from math import ceil
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import FileResponse, HTMLResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
@@ -95,6 +95,9 @@ def _row_to_dict(c: models.CustomerList) -> Dict[str, Any]:
 
         # เครดิต (วัน)
         "fmlpaymentcreditday": c.fmlpaymentcreditday,
+
+        "cf_hq": c.cf_hq,
+        "cf_branch": c.cf_branch,
     }
 
 def _find_template(filename: str) -> Optional[str]:
@@ -238,39 +241,27 @@ class CustomerUpdate(BaseModel):
     cf_branch: str | None = None
 
 @router.post("/api/customers")
-def api_customers_create(request: Request, db: Session = Depends(get_db)):
-    form = request.form()  
-    data = dict(form)
+async def api_customers_create(request: Request, db: Session = Depends(get_db)):
+    data = await request.json()  # <<-- เดิมใช้ form()
+    personid = (data.get("personid") or "").strip() or generate_personid(db)
 
-    # --- สร้าง personid อัตโนมัติ ถ้าไม่ส่งมา ---
-    personid = (data.get("personid") or "").strip()
-    if not personid:
-        personid = generate_personid(db)
-
-    # --- อ่านค่า cf_hq / cf_branchname ---
-    # cf_hq รับเป็น '0'/'1' -> เก็บ int
-    cf_hq = data.get("cf_hq")
-    cf_branch = data.get("cf_branch")
-
-    # --- สร้างแถวใหม่ ---
     obj = models.CustomerList(
-        # ฟิลด์อื่น ๆ ตามเดิมของคุณ...
+        prename=data.get("prename"),
+        fname=data.get("fname"),
+        lname=data.get("lname"),
         personid=personid,
-        cf_hq=int(cf_hq) if cf_hq not in (None, "", "None") else None,
-        cf_branch=cf_branc or None,
-        # ...
+        tel=data.get("cf_personaddress_tel") or data.get("tel"),
+        mobile=data.get("cf_personaddress_mobile") or data.get("mobile"),
+        cf_personaddress=data.get("cf_personaddress"),
+        cf_personzipcode=data.get("cf_personzipcode"),
+        cf_provincename=data.get("cf_provincename"),
+        cf_taxid=data.get("cf_taxid"),
+        fmlpaymentcreditday=(int(data["fmlpaymentcreditday"]) if (data.get("fmlpaymentcreditday") not in (None, "", "None")) else None),
+        # สำคัญ: เก็บค่า HQ/Branch ให้ตรงกับฟรอนต์
+        cf_hq=(int(data["cf_hq"]) if data.get("cf_hq") not in (None, "", "None") else None),
+        cf_branch=(data.get("cf_branch") or None),   
     )
-    db.add(obj)
-    try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        # ถ้าโดนชน personid (เผื่อ race) ลองสร้างใหม่อีกครั้ง
-        personid = generate_personid(db)
-        obj.personid = personid
-        db.add(obj)
-        db.commit()
-
+    db.add(obj); db.commit(); db.refresh(obj)
     return {"ok": True, "idx": obj.idx, "personid": obj.personid}
 
 
