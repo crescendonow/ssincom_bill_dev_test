@@ -61,6 +61,7 @@ async def dashboard(request: Request):
         return RedirectResponse(url="/login", status_code=303)
     return templates.TemplateResponse("dashboard.html", {"request": request, "user": request.session.get("user")})
 
+suggest_router = APIRouter()
 @suggest_router.get("/api/suggest/province", response_model=List[str])
 def suggest_province(q: str = Query(..., min_length=1), db: Session = Depends(get_db)):
     """
