@@ -287,7 +287,6 @@ def api_customers_update(idx: int, payload: CustomerUpdate, db: Session = Depend
     """
     อัปเดตข้อมูลลูกค้าในตาราง CustomerList ตาม idx
     """
-    def api_customers_update(idx: int, payload: CustomerUpdate, db: Session = Depends(get_db)):
     c = db.query(models.CustomerList).filter(models.CustomerList.idx == idx).first()
     if not c:
         raise HTTPException(status_code=404, detail="customer not found")
