@@ -236,20 +236,25 @@ async function isDuplicate(payload, ignoreIdx = null) {
 }
 async function saveCustomer(e) {
   e.preventDefault();
-  const f = new FormData($('customerForm'));
   const payload = {
     idx: $('#idx')?.value || null,
+    personid: $('#personid')?.value || '',
     prename: $('#prename')?.value || '',
     fname: $('#fname')?.value || '',
     lname: $('#lname')?.value || '',
+
     cf_taxid: $('#cf_taxid')?.value || '',
     cf_personaddress: $('#cf_personaddress')?.value || '',
     cf_personzipcode: $('#cf_personzipcode')?.value || '',
     cf_provincename: $('#cf_provincename')?.value || '',
-    // <-- แก้ id ให้ตรงกับฟอร์มจริง
+
+    // ตรงกับ HTML
     cf_personaddress_tel: $('#cf_personaddress_tel')?.value || '',
     cf_personaddress_mobile: $('#cf_personaddress_mobile')?.value || '',
+
     fmlpaymentcreditday: $('#fmlpaymentcreditday')?.value || '',
+
+    // HQ / Branch
     cf_hq: $('#cf_hq')?.value ?? '',
     cf_branch: $('#cf_branch')?.value ?? '',
   };
@@ -259,6 +264,7 @@ async function saveCustomer(e) {
     body: JSON.stringify(payload),
   });
 
+  console.debug('[saveCustomer] payload =', payload);
   const duplicate = await isDuplicate(payload, payload.idx || null);
   const warn = $('dupWarn');
   if (duplicate) { warn?.classList.remove('hidden'); return; }
@@ -275,17 +281,19 @@ async function saveCustomer(e) {
     payload.fmlpaymentcreditday = null;
   }
   // ถ้ามีฟิลด์ตัวเลขอื่นๆ ที่อาจเป็นค่าว่าง ก็ควรทำแบบเดียวกัน
-
+  const submitBtn = document.querySelector('#customerForm button[type="submit"]');
+  submitBtn?.setAttribute('disabled', 'disabled');
+  submitBtn?.classList.add('opacity-60', 'cursor-not-allowed');
   // --- เปลี่ยนจากการส่ง FormData เป็น JSON ---
   const res = await fetch(url, {
     method,
-    headers: {
-      'Content-Type': 'application/json', // <-- 1. ระบุ Content-Type ให้ถูกต้อง
-    },
-    body: JSON.stringify(payload), // <-- 2. แปลง JavaScript object เป็น JSON string
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
   });
+
   submitBtn?.removeAttribute('disabled');
   submitBtn?.classList.remove('opacity-60', 'cursor-not-allowed');
+
   if (res.redirected) { window.location.href = res.url; return; }
   if (!res.ok) { alert('บันทึกล้มเหลว'); return; }
 
