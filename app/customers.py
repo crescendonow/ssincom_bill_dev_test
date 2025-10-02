@@ -59,6 +59,8 @@ def _row_to_dict(c: models.CustomerList) -> Dict[str, Any]:
         "mobile": c.mobile,
         "cf_personaddress_tel": c.tel,
         "cf_personaddress_mobile": c.mobile,
+        "cf_hq": c.cf_hq,
+        "cf_branch": c.cf_branch,
 
         # เครดิต (วัน)
         "fmlpaymentcreditday": c.fmlpaymentcreditday,
