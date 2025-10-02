@@ -92,6 +92,8 @@ class CustomerList(Base):
     cf_personzipcode = Column(String)
     cf_provincename = Column(String)
     cf_taxid = Column(String(13))
+    cf_hq = Column(Integer)
+    cf_branch = Column(String) 
     fmlpaymentcreditday = Column(Integer)
 
 # ------------------ Products (schema: products) ------------------
