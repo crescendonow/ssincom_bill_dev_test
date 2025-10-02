@@ -18,7 +18,7 @@
       <div style="display: flex; flex: 1;">
         <div style="flex:0 0 120px; text-align:center;">
           <img src="/static/ss_logo.png" class="logo" alt="logo" />
-          <div class="muted" style="margin-top:4px;">สำนักงานใหญ่:</div>
+          <div class="muted" style="margin-top:4px;"><b>สำนักงานใหญ่:</b></div>
         </div>
         <div
           style="text-align:left; padding-left:10px; display:flex; flex-direction:column; justify-content:flex-start;">
@@ -30,7 +30,7 @@
           <div class="muted"><b>โทร. (035) 589 274, (081) 880 8840, (092) 265 9156</b></div>
           <!-- ✅ ใส่ id ที่บรรทัดอีเมล -->
           <div class="muted" id="company-email" style="font-size:12pt;">
-            website: www.ssincom.com <br> Email: mailtossincom@gmail.com
+            <b>website: www.ssincom.com</b> <br> Email: mailtossincom@gmail.com
           </div>
         </div>
       </div>
@@ -40,8 +40,8 @@
         {% set variant = (invoice.variant if invoice and invoice.variant is defined else 'invoice_original') %}
         {% set HEADERS = {
         'invoice_original': ['ต้นฉบับใบกำกับภาษี/ใบส่งของ/ใบแจ้งหนี้', 'TAX INVOICE/DELIVERY ORDER /INVOICE ORIGINAL'],
-        'invoice_copy': ['สำเนาใบกำกับภาษี/ใบส่งของ/ใบแจ้งหนี้', 'COPY TAX INVOICE/DELIVERY ORDER /INVOICE'],
         'receipt_original': ['ต้นฉบับใบเสร็จรับเงิน', 'RECEIPT ORIGINAL'],
+        'invoice_copy': ['สำเนาใบกำกับภาษี/ใบส่งของ/ใบแจ้งหนี้', 'COPY TAX INVOICE/DELIVERY ORDER /INVOICE'],
         'receipt_copy': ['สำเนาใบเสร็จรับเงิน', 'RECEIPT COPY']
         } %}
         {% set h = HEADERS.get(variant, HEADERS['invoice_original']) %}
@@ -50,7 +50,7 @@
         <div class="title" style="font-size:14pt; white-space:nowrap;">{{ h[1] }}</div>
 
         <!-- ✅ เว้นจากบรรทัด TAX... -->
-        <div id="tax-label" class="muted" style="margin-top:12px;">เลขประจำตัวผู้เสียภาษีอากร</div>
+        <div id="tax-label" class="muted" style="margin-top:12px;"><b>เลขประจำตัวผู้เสียภาษีอากร</b></div>
 
         <!-- ✅ เลขภาษี: จะจัดแนวให้ตรงกับบรรทัดอีเมลด้วย JS -->
         <div class="title" id="tax-id" style="font-size:18pt; white-space:nowrap;">
