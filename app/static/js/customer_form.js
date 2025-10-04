@@ -49,6 +49,27 @@ async function loadAll() {
   }
 }
 
+// +++ เพิ่ม: ฟังก์ชันสำหรับขอรหัสลูกค้าใหม่จาก API +++
+async function generateAndSetNewCustomerId() {
+  const personIdInput = $('personid');
+  if (!personIdInput) return;
+
+  try {
+    const response = await fetch('/api/customers/next-id');
+    if (!response.ok) throw new Error('Failed to fetch next customer ID');
+    
+    const data = await response.json();
+    personIdInput.value = data.next_id;
+    personIdInput.readOnly = true; // ล็อคช่องนี้ ไม่ให้แก้ไข
+    
+  } catch (error) {
+    console.error(error);
+    personIdInput.value = 'ไม่สามารถสร้างรหัสได้';
+    personIdInput.readOnly = true;
+  }
+}
+
+
 // ===== แสดงหน้าปัจจุบัน =====
 function renderPage() {
   const total = filtered.length;
@@ -160,11 +181,24 @@ function resetForm() {
   editing = null;
   $('customerForm')?.reset();
   const idxEl = $('idx'); if (idxEl) idxEl.value = '';
+
+  // ปลดล็อคช่องรหัสลูกค้าก่อน แล้วค่อยสร้างรหัสใหม่
+  const personIdInput = $('personid');
+  if (personIdInput) {
+    personIdInput.readOnly = false;
+  }
   $('btnDelete')?.classList.add('hidden');
   $('dupWarn')?.classList.add('hidden');
+
+  generateAndSetNewCustomerId();
   const hqSelect = $('cf_hq'); if (hqSelect) hqSelect.dispatchEvent(new Event('change'));
 }
 function fillForm(c) {
+  // +++ เพิ่ม: ปลดล็อคช่องรหัสลูกค้าเมื่ออยู่ในโหมดแก้ไข +++
+  const personIdInput = $('personid');
+  if (personIdInput) {
+    personIdInput.readOnly = false;
+  }
   // เติมค่าตามชื่อ field เดิม
   Object.keys(c || {}).forEach((k) => { const el = $(k); if (el) el.value = c[k] ?? ''; });
   // กรณีฟิลด์ที่ใช้หลายชื่อ ให้เติม fallback ด้วย

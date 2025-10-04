@@ -4,6 +4,7 @@ import os
 from math import ceil
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse, HTMLResponse
@@ -189,6 +190,41 @@ def api_customers_list(
         "pages": pages,
         "limit": limit,
     }
+
+@router.get("/api/customers/next-id")
+def api_get_next_customer_id(db: Session = Depends(get_db)):
+    """
+    สร้างรหัสลูกค้าใหม่ (personid) ตามรูปแบบ PC<YY><NNNN>
+    โดย YY คือ 2 หลักสุดท้ายของปี พ.ศ.
+    และ NNNN คือ running number ในปีนั้นๆ
+    """
+    # 1. หา 2 หลักสุดท้ายของปี พ.ศ. ปัจจุบัน
+    current_buddhist_year = datetime.now().year + 543
+    year_prefix = str(current_buddhist_year)[-2:]
+    
+    # 2. สร้าง Prefix สำหรับค้นหา เช่น "PC68"
+    search_prefix = f"PC{year_prefix}"
+    
+    # 3. ค้นหารหัสล่าสุดของปีนี้
+    latest_customer = db.query(models.CustomerList)\
+        .filter(models.CustomerList.personid.like(f"{search_prefix}%"))\
+        .order_by(models.CustomerList.personid.desc())\
+        .first()
+    
+    next_running_number = 1
+    if latest_customer and latest_customer.personid:
+        try:
+            # ดึงเลข 4 หลักสุดท้ายออกมา แล้ว +1
+            last_running_str = latest_customer.personid[4:]
+            next_running_number = int(last_running_str) + 1
+        except (ValueError, IndexError):
+            # ถ้า format เก่าไม่ถูกต้อง ให้เริ่มนับ 1 ใหม่
+            next_running_number = 1
+            
+    # 4. สร้างรหัสใหม่โดยเติม 0 ข้างหน้าให้ครบ 4 หลัก
+    new_id = f"{search_prefix}{next_running_number:04d}"
+    
+    return {"next_id": new_id}
 
 # ====== เพิ่ม: อัปเดต/เช็กซ้ำลูกค้า ======
 class CustomerUpdate(BaseModel):
