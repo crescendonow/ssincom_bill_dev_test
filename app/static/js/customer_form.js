@@ -162,6 +162,7 @@ function resetForm() {
   const idxEl = $('idx'); if (idxEl) idxEl.value = '';
   $('btnDelete')?.classList.add('hidden');
   $('dupWarn')?.classList.add('hidden');
+  const hqSelect = $('cf_hq'); if (hqSelect) hqSelect.dispatchEvent(new Event('change'));
 }
 function fillForm(c) {
   // เติมค่าตามชื่อ field เดิม
@@ -170,6 +171,8 @@ function fillForm(c) {
   if ($('cf_taxid') && !$('cf_taxid').value) $('cf_taxid').value = getTaxId(c);
   if ($('cf_provincename') && !$('cf_provincename').value) $('cf_provincename').value = getProvince(c);
   if ($('fname') && !$('fname').value) $('fname').value = displayName(c);
+
+  const hqSelect = $('cf_hq'); if (hqSelect) hqSelect.dispatchEvent(new Event('change'));
 }
 async function isDuplicate(payload, ignoreIdx = null) {
   const fd = new FormData();
@@ -186,6 +189,10 @@ async function saveCustomer(e) {
   e.preventDefault();
   const f = new FormData($('customerForm'));
   const payload = Object.fromEntries(f.entries());
+
+  if (payload.cf_hq === '1') {
+    payload.cf_branch = '';
+  }
 
   const duplicate = await isDuplicate(payload, payload.idx || null);
   const warn = $('dupWarn');
@@ -252,6 +259,18 @@ function initCustomerForm() {
     const btn = e.target.closest('.btn-edit');
     if (btn && btn.dataset.idx) editRowByIdx(btn.dataset.idx);
   });
+
+  // +++ เพิ่ม: จัดการการแสดงผลของช่องรหัสสาขา +++
+  const hqSelect = $('cf_hq');
+  const branchWrapper = $('branch_field_wrapper');
+  if (hqSelect && branchWrapper) {
+    hqSelect.addEventListener('change', () => {
+      // ถ้า cf_hq == 0 (สาขา) ให้แสดง, ถ้าเป็น 1 (สนง.ใหญ่) ให้ซ่อน
+      branchWrapper.style.display = hqSelect.value === '0' ? 'block' : 'none';
+    });
+    // เรียกครั้งแรกตอนโหลดหน้า
+    hqSelect.dispatchEvent(new Event('change'));
+  }
 
   const provInput = $('cf_provincename');
   if (provInput) {

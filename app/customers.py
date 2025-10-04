@@ -202,6 +202,8 @@ class CustomerUpdate(BaseModel):
     cf_provincename: str | None = None
     tel: str | None = None
     mobile: str | None = None
+    cf_hq: int | None = None
+    cf_branch: str | None = None
     fmlpaymentcreditday: int | None = None
 
 @router.post("/api/customers/check-duplicate")
@@ -228,10 +230,14 @@ def api_customers_update(idx: int, payload: CustomerUpdate, db: Session = Depend
         "cf_personaddress", "cf_personzipcode", "cf_provincename",
         "tel", "mobile",
         "fmlpaymentcreditday",
+        "cf_hq", "cf_branch",
     ]:
         val = getattr(payload, field)
         if val is not None:
-            setattr(c, field, val)
+            if field == "cf_branch" and not val:
+                setattr(c, field, None)
+            else:
+                setattr(c, field, val)
 
     db.commit()
     return {"ok": True, "idx": idx}

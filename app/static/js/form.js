@@ -51,6 +51,7 @@ function fillInvoiceForm(h) {
   setVal("fmlpaymentcreditday", h.fmlpaymentcreditday);
   setVal("due_date", h.due_date);
   setVal("car_numberplate", h.car_numberplate);
+  setVal("cf_branch", h.cf_branch);
   computeAndFillDueDate();
 }
 
@@ -151,6 +152,7 @@ async function fillCustomerFromSelected(label) {
   set('cf_personzipcode', c.zipcode);
   set('tel', c.tel);
   set('mobile', c.mobile);
+  set('cf_branch', c.cf_branch);
 
   // เติมเครดิตวันถ้ามี
   if (c.fmlpaymentcreditday != null && c.fmlpaymentcreditday !== '') {
@@ -456,6 +458,7 @@ function buildUpdatePayload() {
     dn_number: v('dn_number'),
     fmlpaymentcreditday: (v('fmlpaymentcreditday') ? parseInt(v('fmlpaymentcreditday'), 10) : null),
     car_numberplate: v('car_numberplate'),
+    cf_branch: v('cf_branch'),
     items: []
   };
   const idISO = normalizeDateInputValue('invoice_date');
