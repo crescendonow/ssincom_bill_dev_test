@@ -14,6 +14,7 @@
 @media print {
     body, .A4-page {
         margin: 0;
+        font-family: "TH Sarabun New", "Tahoma", "sans-serif", "Sukhumvit Set", "Thonburi","NotoSansThai", "Noto Sans Thai", "Noto Sans", "Arial";
         box-shadow: none;
     }
     #controls {

@@ -70,6 +70,45 @@ class InvoiceItem(Base):
         viewonly=True,
     )
 
+# ------------------ Billing Notes (schema: ss_bills) ------------------
+
+class BillNote(Base):
+    __tablename__ = "bill_note"
+    __table_args__ = {"schema": "ss_bills"}
+
+    idx = Column(Integer, primary_key=True)  # serial4 NOT NULL
+    billnote_number = Column(String, index=True, unique=True) # varchar NULL
+
+    # Customer fields snapshot
+    fname = Column(Text)                 # text NULL
+    personid = Column(Text)              # text NULL
+    tel = Column(Text)                   # text NULL
+    mobile = Column(Text)                # text NULL
+    cf_personaddress = Column(Text)      # text NULL
+    cf_personzipcode = Column(String)    # varchar NULL
+    cf_provincename = Column(String)     # varchar NULL
+    cf_taxid = Column(String(13))        # varchar(13) NULL
+
+    # Relationship to items
+    items = relationship(
+        "BillNoteItem",
+        primaryjoin="BillNote.billnote_number == foreign(BillNoteItem.billnote_number)",
+        cascade="all, delete-orphan"
+    )
+
+class BillNoteItem(Base):
+    __tablename__ = "bill_note_item"
+    __table_args__ = {"schema": "ss_bills"}
+
+    idx = Column(Integer, primary_key=True)
+    billnote_number = Column(String, index=True) # Foreign key to BillNote.billnote_number
+    
+    # Details from the original invoice
+    invoice_number = Column(String)
+    invoice_date = Column(Date)
+    due_date = Column(Date)
+    amount = Column(Float)
+
 # ------------------ Customers (schema: products) ------------------
 
 class CustomerList(Base):
