@@ -6,7 +6,7 @@ from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Form
 from fastapi.responses import FileResponse, HTMLResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
@@ -226,6 +226,25 @@ def api_get_next_customer_id(db: Session = Depends(get_db)):
     
     return {"next_id": new_id}
 
+@router.post("/api/customers")
+def api_customers_create(payload: CustomerUpdate, db: Session = Depends(get_db)):
+    """
+    สร้างข้อมูลลูกค้าใหม่ในตาราง CustomerList
+    """
+    # แปลง Pydantic model เป็น dictionary เพื่อสร้าง object ของ SQLAlchemy
+    customer_data = payload.dict(exclude_unset=True)
+    
+    # ตรวจสอบค่าว่างของ cf_branch
+    if "cf_branch" in customer_data and not customer_data["cf_branch"]:
+        customer_data["cf_branch"] = None
+        
+    new_customer = models.CustomerList(**customer_data)
+    db.add(new_customer)
+    db.commit()
+    db.refresh(new_customer)
+    
+    return {"ok": True, "idx": new_customer.idx}
+
 # ====== เพิ่ม: อัปเดต/เช็กซ้ำลูกค้า ======
 class CustomerUpdate(BaseModel):
     prename: str | None = None
@@ -243,13 +262,18 @@ class CustomerUpdate(BaseModel):
     fmlpaymentcreditday: int | None = None
 
 @router.post("/api/customers/check-duplicate")
-def api_customers_check_duplicate(payload: dict):
+def api_customers_check_duplicate(
+    fname: str = Form(None),
+    personid: str = Form(None),
+    cf_taxid: str = Form(None),
+    ignore_idx: str = Form(None)
+):
     """
     ทำให้เข้ากันได้กับฟรอนต์เก่า: ตอบว่าซ้ำหรือไม่
     โจทย์ต้องการ 'อัปเดตโดยไม่ต้องเช็กซ้ำ' เลยตอบให้ 'ไม่ซ้ำ' ตลอด
     """
     return {"duplicate": False}
-
+    
 @router.put("/api/customers/{idx}")
 def api_customers_update(idx: int, payload: CustomerUpdate, db: Session = Depends(get_db)):
     """
