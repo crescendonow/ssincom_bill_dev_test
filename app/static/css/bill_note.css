@@ -1,20 +1,27 @@
-/* /static/css/bill_note.css */
-
 /* A4 page styles */
 .A4-page {
     width: 210mm;
-    min-height: 297mm;
+    height: 297mm; /* <-- กำหนดความสูงคงที่ */
     padding: 10mm;
     margin: 10mm auto;
-    position: relative;
     box-sizing: border-box;
-    display: flex; /* +++ Add Flexbox */
-    flex-direction: column; /* +++ Arrange content vertically */
+
+    display: grid; /* <--- เปลี่ยนเป็น Grid */
+    grid-template-rows: auto 1fr auto; /* <--- กำหนดโครงสร้าง 3 แถว */
+    position: relative;
 }
 
-/* +++ Make the main content area flexible +++ */
+.A4-page header {
+    grid-row: 1; /* แถวที่ 1 */
+}
+
 .A4-page main {
-    flex-grow: 1; 
+    grid-row: 2; /* แถวที่ 2 (ยืดหยุ่น) */
+    overflow: hidden; /* ป้องกันเนื้อหาล้นออกจากกรอบ */
+}
+
+.A4-page footer {
+    grid-row: 3; /* แถวที่ 3 */
 }
 
 
@@ -22,13 +29,12 @@
 @media print {
     body, .A4-page {
         margin: 0;
-        font-family: "TH Sarabun New", "Tahoma", "sans-serif", "Sukhumvit Set", "Thonburi","NotoSansThai", "Noto Sans Thai", "Noto Sans", "Arial";
         box-shadow: none;
     }
     #controls {
-        display: none; /* Hide controls when printing */
+        display: none;
     }
     .A4-page {
-        display: flex !important; /* Ensure flex is active for printing */
+        display: grid !important; /* บังคับใช้ Grid ตอนพิมพ์ */
     }
 }
