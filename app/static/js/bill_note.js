@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const generateBtn = document.getElementById('generateBillBtn');
     const printBtn = document.getElementById('printPdfBtn');
     const loadingDiv = document.getElementById('loading');
-    const billDocument = document.getElementById('bill-note-document');
+    const billDocument = document.getElementById('bill-note-container');
     const saveBtn = document.getElementById('saveBillBtn');
 
     let customersCache = [];
@@ -25,9 +25,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!res.ok) throw new Error('Cannot load customers');
             customersCache = await res.json();
 
-            customerList.innerHTML = customersCache
-                .map(c => `<option value="${c.customer_name}" data-id="${c.idx}"></option>`)
-                .join('');
+            customerList.innerHTML = customersCache.map(c => {
+                const name = [c.prename, c.fname, c.lname].filter(Boolean).join(' ').trim();
+                return `<option value="${name}" data-id="${c.idx}"></option>`;
+            }).join('');
         } catch (error) {
             console.error(error);
         }
@@ -58,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         loadingDiv.style.display = 'block';
         generateBtn.disabled = true;
-        billDocument.style.display = 'none';
+        if (billContainer) billContainer.style.display = 'none';
 
         try {
             const params = new URLSearchParams({
@@ -82,6 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
             loadingDiv.style.display = 'none';
             generateBtn.disabled = false;
         }
+        if (billContainer) billContainer.style.display = 'block';
     }
 
     async function saveBillNote() {
@@ -119,7 +121,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const result = await res.json();
-            document.getElementById('bill-number').textContent = result.billnote_number;
+            document.querySelectorAll('.bill-number').forEach(el => {
+                el.textContent = result.billnote_number;
+            });
             alert(`บันทึกใบวางบิลสำเร็จ!\nเลขที่เอกสาร: ${result.billnote_number}`);
 
             // ซ่อนปุ่มบันทึกหลังบันทึกสำเร็จ เพื่อป้องกันการบันทึกซ้ำ
@@ -157,7 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
             pageElement.querySelector('.cust-address').textContent = data.customer.address || '-';
             pageElement.querySelector('.cust-tax-id').textContent = data.customer.tax_id || '-';
             pageElement.querySelector('.cust-branch').textContent = data.customer.branch || '-';
-            
+
             // --- เติมข้อมูลเฉพาะของแต่ละหน้า ---
             pageElement.querySelector('.bill-number').textContent = data.bill_note_number || '(ยังไม่ได้บันทึก)';
             pageElement.querySelector('.bill-date').textContent = new Date(data.bill_date || Date.now()).toLocaleDateString('th-TH', {
@@ -176,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td class="p-2 text-left">${inv.invoice_number}</td>
                     <td class="p-2 text-center">${formatDate(inv.invoice_date)}</td>
                     <td class="p-2 text-center">${formatDate(inv.due_date)}</td>
-                    <td class="p-2 text-right">${inv.amount.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                    <td class="p-2 text-right">${inv.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                 `;
                 tableBody.appendChild(tr);
             });
@@ -184,8 +188,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // --- แสดงยอดรวมและตัวอักษรเฉพาะหน้าสุดท้าย ---
             if (i === totalPages - 1) {
                 pageElement.querySelector('.summary-footer').classList.remove('hidden');
-                pageElement.querySelector('.summary-total').textContent = data.summary.total_amount.toLocaleString('en-US', {minimumFractionDigits: 2});
-                
+                pageElement.querySelector('.summary-total').textContent = data.summary.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2 });
+
                 const totalInWordsEl = pageElement.querySelector('.total-in-words');
                 totalInWordsEl.classList.remove('hidden');
                 totalInWordsEl.textContent = `(ตัวอักษร: ${thaiBahtText(data.summary.total_amount)})`;
@@ -194,8 +198,10 @@ document.addEventListener('DOMContentLoaded', () => {
             container.appendChild(pageElement);
         }
 
-        document.getElementById('printPdfBtn').style.display = 'inline-block';
-        document.getElementById('saveBillBtn').style.display = 'inline-block';
+        const printBtnEl = document.getElementById('printPdfBtn');
+        const saveBtnEl = document.getElementById('saveBillBtn');
+        if (printBtnEl) { printBtnEl.classList.remove('hidden'); printBtnEl.style.display = 'inline-block'; }
+        if (saveBtnEl) { saveBtnEl.classList.remove('hidden'); saveBtnEl.style.display = 'inline-block'; }
     }
 
     function formatDate(isoDate) {
@@ -264,7 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Event Listeners ---
-    customerSearch.addEventListener('change', onCustomerSelect);
+    customerSearch.addEventListener('input', onCustomerSelect);
     generateBtn.addEventListener('click', generateBill);
     printBtn.addEventListener('click', () => window.print());
     saveBtn.addEventListener('click', saveBillNote);
