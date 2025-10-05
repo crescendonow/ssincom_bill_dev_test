@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
     <meta charset="UTF-8">
     <title>สร้างใบวางบิล</title>
@@ -7,14 +8,22 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/static/css/bill_note.css">
 </head>
+
 <body class="bg-gray-100">
+
+    <div class="max-w-4xl mx-auto px-4 pt-8">
+        <a href="/dashboard" class="inline-flex items-center gap-2 text-blue-700 hover:underline">
+            <span>←</span> กลับ Dashboard
+        </a>
+    </div>
 
     <div id="controls" class="max-w-4xl mx-auto p-4 bg-white shadow-lg my-8 rounded-lg">
         <h1 class="text-2xl font-bold mb-4 text-gray-700">สร้างใบวางบิล</h1>
         <div class="grid md:grid-cols-3 gap-4 items-end">
             <div>
                 <label for="customerSearch" class="block text-sm font-medium text-gray-600">ค้นหาลูกค้า</label>
-                <input type="text" id="customerSearch" list="customerList" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2" autocomplete="off">
+                <input type="text" id="customerSearch" list="customerList"
+                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2" autocomplete="off">
                 <datalist id="customerList"></datalist>
                 <input type="hidden" id="customerId">
             </div>
@@ -28,8 +37,10 @@
             </div>
         </div>
         <div class="mt-4 flex gap-4">
-            <button id="generateBillBtn" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">สร้างเอกสาร</button>
-            <button id="printPdfBtn" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 hidden">🖨️ พิมพ์ PDF</button>
+            <button id="generateBillBtn"
+                class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">สร้างเอกสาร</button>
+            <button id="printPdfBtn" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 hidden">🖨️
+                พิมพ์ PDF</button>
         </div>
         <div id="loading" class="mt-2 text-gray-500 hidden">กำลังโหลดข้อมูล...</div>
     </div>
@@ -60,11 +71,13 @@
                     <p><strong>หน้า:</strong> 1 / 1</p>
                 </div>
             </div>
-             <p class="mt-2"><strong>เลขประจำตัวผู้เสียภาษีอากร:</strong> <span id="cust-tax-id"></span> / <span id="cust-branch"></span></p>
+            <p class="mt-2"><strong>เลขประจำตัวผู้เสียภาษีอากร:</strong> <span id="cust-tax-id"></span> / <span
+                    id="cust-branch"></span></p>
         </section>
 
         <main class="m-8">
-            <p class="mb-4 text-sm">ได้รับการวางบิลจาก "บริษัท เอส แอนด์ เอส อินคอม จำกัด" โดยมีรายละเอียดรายการค้างชำระเพื่อตรวจสอบและนัดชำระเงิน ดังนี้ -</p>
+            <p class="mb-4 text-sm">ได้รับการวางบิลจาก "บริษัท เอส แอนด์ เอส อินคอม จำกัด"
+                โดยมีรายละเอียดรายการค้างชำระเพื่อตรวจสอบและนัดชำระเงิน ดังนี้ -</p>
             <table class="w-full text-sm border-collapse">
                 <thead>
                     <tr class="border-y-2 border-black">
@@ -76,7 +89,7 @@
                     </tr>
                 </thead>
                 <tbody id="invoice-table-body">
-                    </tbody>
+                </tbody>
                 <tfoot>
                     <tr class="border-t-2 border-black font-bold">
                         <td colspan="4" class="p-2 text-right">ยอดเงินสุทธิ</td>
@@ -88,14 +101,14 @@
                 (ยอดเงินสุทธิสี่ร้อยห้าสิบหกบาทถ้วน)
             </div>
         </main>
-        
+
         <footer class="absolute bottom-0 w-full grid grid-cols-2 gap-8 text-center text-sm p-8">
             <div>
                 <p class="mt-12">...................................</p>
                 <p>(ผู้รับวางบิล)</p>
                 <p>วันที่รับวางบิล</p>
             </div>
-             <div>
+            <div>
                 <p class="mt-12">...................................</p>
                 <p>(ผู้วางบิล)</p>
                 <p>วันที่</p>
@@ -105,4 +118,5 @@
 
     <script src="/static/js/bill_note.js"></script>
 </body>
+
 </html>

@@ -100,6 +100,14 @@ def products_page(request: Request):
     except TemplateNotFound:
         return HTMLResponse("<h3>templates/product_form.html not found</h3>", status_code=200)
 
+# หน้า: สร้างใบวางบิล
+@app.get("/bill_note.html", response_class=HTMLResponse)
+def bill_note_page(request: Request):
+    try:
+        return templates.TemplateResponse("bill_note.html", {"request": request})
+    except TemplateNotFound:
+        raise HTTPException(status_code=404, detail="Template not found")
+
 # ========= (ตัวอย่าง) export-pdf ใช้ ORM แทน crud =========
 @app.get("/export-pdf/{invoice_id}")
 async def export_pdf(invoice_id: int):
