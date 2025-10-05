@@ -25,10 +25,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!res.ok) throw new Error('Cannot load customers');
             customersCache = await res.json();
 
-            customerList.innerHTML = customersCache.map(c => {
-                const name = [c.prename, c.fname, c.lname].filter(Boolean).join(' ').trim();
-                return `<option value="${name}" data-id="${c.idx}"></option>`;
-            }).join('');
+            customerList.innerHTML = customersCache
+                .map(c => `<option value="${c.customer_name}" data-id="${c.idx}"></option>`)
+                .join('');
         } catch (error) {
             console.error(error);
         }
