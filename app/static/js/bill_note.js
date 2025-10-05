@@ -47,6 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // สร้างใบวางบิล
     async function generateBill() {
+        const billContainer = document.getElementById('bill-note-container');
         const custId = customerIdInput.value;
         const start = startDateInput.value;
         const end = endDateInput.value;
@@ -73,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.error) throw new Error(data.error);
 
             currentBillData = data;
-            renderBillDocument(data);
+            await renderBillDocument(data);
 
         } catch (error) {
             console.error(error);
