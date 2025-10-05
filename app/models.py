@@ -25,6 +25,7 @@ class Invoice(Base):
     cf_personzipcode = Column(String)
     cf_provincename = Column(String)
     cf_taxid = Column(String(13))
+    cf_branch = Column(String)
 
     fmlpaymentcreditday = Column(Integer)
     due_date = Column(Date)

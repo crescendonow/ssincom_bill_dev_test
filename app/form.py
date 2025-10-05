@@ -184,6 +184,7 @@ def submit(
     fm_payment: str = Form("cash"),
     due_date: str = Form(None),
     car_numberplate: str = Form(None),
+    cf_branch: str = Form(None),
 
     product_code: List[str] = Form(...),
     description: List[str] = Form(...),
@@ -281,6 +282,7 @@ def api_invoice_detail(inv_id: int, db: Session = Depends(get_db)):
         "fmlpaymentcreditday": inv.fmlpaymentcreditday,
         "due_date": inv.due_date.isoformat() if inv.due_date else None,
         "car_numberplate": inv.car_numberplate,
+        "cf_branch": inv.cf_branch,
     }
 
     rows = db.query(models.InvoiceItem)\
@@ -327,6 +329,7 @@ class InvoiceUpdate(BaseModel):
     fmlpaymentcreditday: Optional[int] = None
     due_date: Optional[str] = None
     car_numberplate: Optional[str] = None
+    cf_branch: Optional[str] = None
     items: Optional[list[InvoiceItemIn]] = None
 
 @router.put("/api/invoices/{inv_id}")
@@ -339,7 +342,8 @@ def api_update_invoice(inv_id: int, payload: InvoiceUpdate, db: Session = Depend
         "invoice_number","fname","personid","tel","mobile",
         "cf_personaddress","cf_personzipcode","cf_provincename","cf_taxid",
         "po_number","grn_number","dn_number",
-        "fmlpaymentcreditday","car_numberplate"
+        "fmlpaymentcreditday","car_numberplate",
+        "cf_branch",
     ]:
         val = getattr(payload, field)
         if val is not None:

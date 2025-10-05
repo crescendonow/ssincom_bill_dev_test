@@ -403,6 +403,7 @@ function previewInvoice(evt) {
     due_date: document.getElementById("due_date")?.value || fd.get("due_date"),
     car_numberplate: fd.get("car_numberplate"),
     variant: document.getElementById("variant")?.value || "invoice_original",
+    cf_branch: fd.get("cf_branch"),
     items: []
   };
 

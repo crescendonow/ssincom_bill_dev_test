@@ -33,22 +33,6 @@ function getProvince(c) {
   return c.cf_provincename ?? c.province ?? '';
 }
 
-// ===== โหลดทั้งหมด =====
-async function loadAll() {
-  try {
-    const res = await fetch('/api/customers/all');
-    if (!res.ok) throw new Error('โหลดรายการลูกค้าไม่สำเร็จ');
-    all = await res.json();
-    filtered = all.slice();
-    currentPage = 1;
-    renderPage();
-  } catch (e) {
-    console.error(e);
-    all = []; filtered = [];
-    renderPage();
-  }
-}
-
 // +++ เพิ่ม: ฟังก์ชันสำหรับขอรหัสลูกค้าใหม่จาก API +++
 async function generateAndSetNewCustomerId() {
   const personIdInput = $('personid');
@@ -69,6 +53,21 @@ async function generateAndSetNewCustomerId() {
   }
 }
 
+// ===== โหลดทั้งหมด =====
+async function loadAll() {
+  try {
+    const res = await fetch('/api/customers/all');
+    if (!res.ok) throw new Error('โหลดรายการลูกค้าไม่สำเร็จ');
+    all = await res.json();
+    filtered = all.slice();
+    currentPage = 1;
+    renderPage();
+  } catch (e) {
+    console.error(e);
+    all = []; filtered = [];
+    renderPage();
+  }
+}
 
 // ===== แสดงหน้าปัจจุบัน =====
 function renderPage() {
