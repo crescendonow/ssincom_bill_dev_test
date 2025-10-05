@@ -81,26 +81,42 @@ class BillNotePayload(BaseModel):
 @router.get("/api/billing-notes/{bill_note_number}")
 def get_billing_note_details(bill_note_number: str, db: Session = Depends(get_db)):
     """
-    ดึงข้อมูลใบวางบิลที่บันทึกแล้วจากฐานข้อมูลตาม billnote_number
+    ดึงข้อมูลใบวางบิลที่บันทึกแล้ว (ปรับปรุงใหม่ให้เร็วและถูกต้อง)
     """
-    # 1. ดึงข้อมูลหัวบิล
     bill_note = db.query(models.BillNote).filter(models.BillNote.billnote_number == bill_note_number).first()
     if not bill_note:
         raise HTTPException(status_code=404, detail="Bill Note not found")
 
-    # 2. ดึงรายการใบกำกับภาษีที่อยู่ในบิลนั้น
-    items = db.query(models.BillNoteItem).filter(models.BillNoteItem.billnote_number == bill_note_number).order_by(models.BillNoteItem.invoice_date.asc()).all()
+    # --- Step 1: ดึงรายการ invoice number ทั้งหมดในบิล ---
+    items = db.query(models.BillNoteItem).filter(
+        models.BillNoteItem.billnote_number == bill_note_number
+    ).order_by(models.BillNoteItem.invoice_date.asc()).all()
 
+    if not items:
+        # กรณีไม่มีรายการ ให้ trả về ข้อมูลพื้นฐาน
+        return {
+            "customer": { "name": bill_note.fname, "tax_id": bill_note.cf_taxid, "branch": "สำนักงานใหญ่", "address": bill_note.cf_personaddress, "person_id": bill_note.personid },
+            "invoices": [], "summary": { "total_amount": 0 }, "bill_note_number": bill_note.billnote_number, "bill_date": datetime.now().date().isoformat()
+        }
+
+    invoice_numbers = [item.invoice_number for item in items]
+    
+    # --- Step 2: คำนวณยอดรวมของทุกใบใน Query เดียว (เหมือนตอนสร้าง) ---
+    itm = models.InvoiceItem
+    amount_subquery = db.query(
+        itm.invoice_number,
+        func.sum(func.coalesce(itm.quantity, 0) * func.coalesce(itm.cf_itempricelevel_price, 0)).label("sub_total")
+    ).filter(
+        itm.invoice_number.in_(invoice_numbers)
+    ).group_by(itm.invoice_number).subquery()
+    
+    amounts = { row.invoice_number: float(row.sub_total or 0) for row in db.query(amount_subquery).all() }
+
+    # --- Step 3: ประกอบร่างข้อมูลใน Python ---
     invoice_details = []
     total_amount = 0
     for item in items:
-        # คำนวณยอดเงินใหม่จากตาราง invoice_items เพื่อความถูกต้องล่าสุด
-        itm = models.InvoiceItem
-        sub_q = db.query(
-            (func.coalesce(itm.quantity, 0) * func.coalesce(itm.cf_itempricelevel_price, 0)).label('amount')
-        ).filter(models.InvoiceItem.invoice_number == item.invoice_number).all()
-
-        sub_total = sum(i.amount for i in sub_q)
+        sub_total = amounts.get(item.invoice_number, 0.0)
         vat = sub_total * 0.07
         grand_total = sub_total + vat
         total_amount += grand_total
@@ -111,22 +127,20 @@ def get_billing_note_details(bill_note_number: str, db: Session = Depends(get_db
             "due_date": item.due_date.isoformat() if item.due_date else None,
             "amount": round(grand_total, 2)
         })
+        
+    # ดึงข้อมูลลูกค้าล่าสุดเพื่อความถูกต้องของ "สาขา"
+    customer = db.query(models.CustomerList).filter(models.CustomerList.personid == bill_note.personid).first()
+    branch_info = "สำนักงานใหญ่"
+    if customer and customer.cf_hq == 0:
+        branch_info = f"สาขาที่ {customer.cf_branch}"
 
-    # 3. จัดรูปแบบข้อมูลเพื่อส่งกลับ
     return {
         "customer": {
-            "name": bill_note.fname,
-            "tax_id": bill_note.cf_taxid,
-            "branch": "สำนักงานใหญ่", # หมายเหตุ: ข้อมูลสาขาไม่ได้เก็บใน bill_note, อาจต้องดึงใหม่
-            "address": bill_note.cf_personaddress,
-            "person_id": bill_note.personid
+            "name": bill_note.fname, "tax_id": bill_note.cf_taxid, "branch": branch_info,
+            "address": bill_note.cf_personaddress, "person_id": bill_note.personid
         },
-        "invoices": invoice_details,
-        "summary": {
-            "total_amount": round(total_amount, 2)
-        },
-        "bill_note_number": bill_note.billnote_number,
-        "bill_date": datetime.now().date().isoformat() # ใช้วันที่ปัจจุบันในการแสดงผล
+        "invoices": invoice_details, "summary": { "total_amount": round(total_amount, 2) },
+        "bill_note_number": bill_note.billnote_number, "bill_date": datetime.now().date().isoformat()
     }
 
 @router.get("/api/billing-note-invoices")

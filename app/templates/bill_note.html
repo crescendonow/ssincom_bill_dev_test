@@ -52,11 +52,21 @@
     <template id="bill-note-template">
         <div class="A4-page mx-auto bg-white shadow-lg my-8 relative">
             <header class="flex justify-between items-start p-8">
+                <div class="text-xs">
+                    <h1 class="text-2xl font-bold">บริษัท เอส แอนด์ เอส อินคอม จำกัด</h1>
+                    <p>69 หมู่ 10 ต.พังตรุ อ.พนมทวน จ.กาญจนบุรี 71140</p>
+                    <p>Tel.0-3558-9274 Fax.0-3558-9273</p>
+                </div>
+                <div class="text-center">
+                    <h2 class="text-3xl font-bold">ใบวางบิล</h2>
+                    <p class="text-lg">BILLING NOTE</p>
+                </div>
             </header>
-
             <section class="border-t-2 border-b-2 border-black mx-8 p-4 text-sm">
                 <div class="grid grid-cols-2 gap-x-8">
                     <div>
+                        <p><strong>เลขประจำตัวผู้เสียภาษีอากร:</strong> <span class="cust-tax-id"></span> / <span
+                                class="cust-branch"></span></p>
                         <p><strong>รหัส:</strong> <span class="cust-person-id"></span></p>
                         <p><strong>ชื่อ / บริษัท:</strong> <span class="cust-name"></span></p>
                         <p><span class="cust-address"></span></p>
@@ -67,8 +77,6 @@
                         <p><strong>หน้า:</strong> <span class="page-number"></span></p>
                     </div>
                 </div>
-                <p class="mt-2"><strong>เลขประจำตัวผู้เสียภาษีอากร:</strong> <span class="cust-tax-id"></span> / <span
-                        class="cust-branch"></span></p>
             </section>
 
             <main class="m-8">
