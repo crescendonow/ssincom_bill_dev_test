@@ -1,6 +1,6 @@
 /* /static/css/bill_note.css */
 
-/* สไตล์สำหรับเอกสาร A4 */
+/* A4 page styles */
 .A4-page {
     width: 210mm;
     min-height: 297mm;
@@ -8,9 +8,17 @@
     margin: 10mm auto;
     position: relative;
     box-sizing: border-box;
+    display: flex; /* +++ Add Flexbox */
+    flex-direction: column; /* +++ Arrange content vertically */
 }
 
-/* สไตล์สำหรับการพิมพ์ */
+/* +++ Make the main content area flexible +++ */
+.A4-page main {
+    flex-grow: 1; 
+}
+
+
+/* Print styles */
 @media print {
     body, .A4-page {
         margin: 0;
@@ -18,9 +26,9 @@
         box-shadow: none;
     }
     #controls {
-        display: none; /* ซ่อนส่วนควบคุมเมื่อพิมพ์ */
+        display: none; /* Hide controls when printing */
     }
     .A4-page {
-        display: block !important; /* แสดงเอกสารเมื่อพิมพ์ */
+        display: flex !important; /* Ensure flex is active for printing */
     }
 }

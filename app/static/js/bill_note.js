@@ -144,8 +144,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const template = document.getElementById('bill-note-template');
         container.innerHTML = ''; // ล้างข้อมูลเก่า
 
-        const ITEMS_PER_PAGE = 12;
-        const totalPages = Math.ceil(data.invoices.length / ITEMS_PER_PAGE);
+        const ITEMS_PER_PAGE = 15;
+        const totalPages = Math.ceil(data.invoices.length / ITEMS_PER_PAGE) || 1; 
 
         for (let i = 0; i < totalPages; i++) {
             const pageNode = template.content.cloneNode(true);
