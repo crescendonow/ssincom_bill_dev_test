@@ -10,6 +10,7 @@ from .summary_invoices import router as summary_router
 from .customers import router as customers_router
 from .products import router as products_router
 from .cars import router as cars_router
+from .bill_note import router as bill_note_router
 from sqlalchemy.orm import joinedload
 
 from pathlib import Path
@@ -64,6 +65,7 @@ app.include_router(summary_router)
 app.include_router(customers_router)
 app.include_router(products_router)
 app.include_router(cars_router)
+app.include_router(bill_note_router)
 
 # หน้า: รายการใบกำกับภาษี
 @app.get("/summary_invoices.html", response_class=HTMLResponse)

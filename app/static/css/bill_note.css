@@ -1,0 +1,25 @@
+/* /static/css/bill_note.css */
+
+/* สไตล์สำหรับเอกสาร A4 */
+.A4-page {
+    width: 210mm;
+    min-height: 297mm;
+    padding: 10mm;
+    margin: 10mm auto;
+    position: relative;
+    box-sizing: border-box;
+}
+
+/* สไตล์สำหรับการพิมพ์ */
+@media print {
+    body, .A4-page {
+        margin: 0;
+        box-shadow: none;
+    }
+    #controls {
+        display: none; /* ซ่อนส่วนควบคุมเมื่อพิมพ์ */
+    }
+    .A4-page {
+        display: block !important; /* แสดงเอกสารเมื่อพิมพ์ */
+    }
+}
