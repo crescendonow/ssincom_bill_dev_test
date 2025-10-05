@@ -273,7 +273,7 @@ def api_customers_check_duplicate(
     โจทย์ต้องการ 'อัปเดตโดยไม่ต้องเช็กซ้ำ' เลยตอบให้ 'ไม่ซ้ำ' ตลอด
     """
     return {"duplicate": False}
-    
+
 @router.put("/api/customers/{idx}")
 def api_customers_update(idx: int, payload: CustomerUpdate, db: Session = Depends(get_db)):
     """
@@ -301,4 +301,23 @@ def api_customers_update(idx: int, payload: CustomerUpdate, db: Session = Depend
 
     db.commit()
     return {"ok": True, "idx": idx}
+
+@router.delete("/api/customers/{idx}")
+def api_customers_delete(idx: int, db: Session = Depends(get_db)):
+    """
+    ลบข้อมูลลูกค้าตาม idx
+    """
+    # 1. ค้นหาลูกค้าที่ต้องการลบ
+    customer_to_delete = db.query(models.CustomerList).filter(models.CustomerList.idx == idx).first()
+    
+    # 2. ตรวจสอบว่ามีลูกค้านี้ในระบบหรือไม่
+    if not customer_to_delete:
+        raise HTTPException(status_code=404, detail="Customer not found")
+
+    # 3. สั่งลบข้อมูล
+    db.delete(customer_to_delete)
+    db.commit()
+    
+    # 4. ส่งผลลัพธ์กลับไป
+    return {"ok": True, "message": f"Customer with idx {idx} deleted."}
 
