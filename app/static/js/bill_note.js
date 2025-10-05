@@ -165,11 +165,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Summary
-        document.getElementById('summary-total').textContent = data.summary.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2 });
+        const totalAmount = data.summary.total_amount;
+        document.getElementById('summary-total').textContent = totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 });
 
-        // --- ส่วนแปลงตัวเลขเป็นคำอ่าน (Thai Baht Text) ---
-        // (ส่วนนี้อาจจะต้องใช้ไลบรารีหรือฟังก์ชันที่ซับซ้อนกว่านี้ ถ้าต้องการความแม่นยำสูง)
-        document.getElementById('total-in-words').textContent = `(ตัวอักษร: ยอดเงินสุทธิ...บาทถ้วน)`; // Placeholder
+        // Convert number to Thai Baht text
+        document.getElementById('total-in-words').textContent = `(ตัวอักษร: ${thaiBahtText(totalAmount)})`;
+
 
         billDocument.style.display = 'block';
         printBtn.style.display = 'inline-block';
@@ -183,6 +184,62 @@ document.addEventListener('DOMContentLoaded', () => {
         const month = String(d.getMonth() + 1).padStart(2, '0');
         const year = d.getFullYear() + 543;
         return `${day}/${month}/${String(year).slice(-2)}`;
+    }
+
+    function thaiBahtText(num) {
+        num = Number(num).toFixed(2);
+        let [integerPart, fractionalPart] = num.split('.');
+
+        const THAI_NUMBERS = ['ศูนย์', 'หนึ่ง', 'สอง', 'สาม', 'สี่', 'ห้า', 'หก', 'เจ็ด', 'แปด', 'เก้า'];
+        const UNIT_MAP = ['', 'สิบ', 'ร้อย', 'พัน', 'หมื่น', 'แสน', 'ล้าน'];
+
+        const readChunk = (chunk) => {
+            let result = '';
+            const len = chunk.length;
+            for (let i = 0; i < len; i++) {
+                const digit = parseInt(chunk[i]);
+                if (digit === 0) continue;
+
+                const position = len - i - 1;
+                if (position === 1 && digit === 2) {
+                    result += 'ยี่';
+                } else if (position === 1 && digit === 1) {
+                    // No number needed for ten
+                } else if (position === 0 && digit === 1 && len > 1) {
+                    result += 'เอ็ด';
+                } else {
+                    result += THAI_NUMBERS[digit];
+                }
+                result += UNIT_MAP[position];
+            }
+            return result;
+        };
+
+        let integerText = '';
+        if (integerPart === '0') {
+            integerText = 'ศูนย์';
+        } else {
+            const millions = Math.floor(integerPart.length / 6);
+            const remainder = integerPart.length % 6;
+            let start = 0;
+            if (remainder > 0) {
+                integerText += readChunk(integerPart.substring(0, remainder)) + (millions > 0 ? 'ล้าน' : '');
+                start = remainder;
+            }
+            for (let i = 0; i < millions; i++) {
+                integerText += readChunk(integerPart.substring(start + i * 6, start + (i + 1) * 6)) + (i < millions - 1 ? 'ล้าน' : '');
+            }
+        }
+        integerText += 'บาท';
+
+        let fractionalText = '';
+        if (fractionalPart === '00') {
+            fractionalText = 'ถ้วน';
+        } else {
+            fractionalText = readChunk(fractionalPart) + 'สตางค์';
+        }
+
+        return integerText + fractionalText;
     }
 
     // --- Event Listeners ---
