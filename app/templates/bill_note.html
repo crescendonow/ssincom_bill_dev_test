@@ -39,89 +39,84 @@
         <div class="mt-4 flex gap-4">
             <button id="generateBillBtn"
                 class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">สร้างเอกสาร</button>
-            <button id="saveBillBtn" class="bg-purple-600 text-white px-6 py-2 rounded-md hover:bg-purple-700 hidden">💾 บันทึกใบวางบิล</button>
+            <button id="saveBillBtn" class="bg-purple-600 text-white px-6 py-2 rounded-md hover:bg-purple-700 hidden">💾
+                บันทึกใบวางบิล</button>
             <button id="printPdfBtn" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 hidden">🖨️
                 พิมพ์ PDF</button>
         </div>
         <div id="loading" class="mt-2 text-gray-500 hidden">กำลังโหลดข้อมูล...</div>
     </div>
 
-    <div id="bill-note-document" class="A4-page mx-auto bg-white shadow-lg my-8 hidden">
-        <header class="flex justify-between items-start p-8">
-            <div class="text-xs">
-                <h1 class="text-2xl font-bold">บริษัท เอส แอนด์ เอส อินคอม จำกัด</h1>
-                <p>69 หมู่ 10 ต.พังตรุ อ.พนมทวน จ.กาญจนบุรี 71140</p>
-                <p>Tel.0-3558-9274 Fax.0-3558-9273</p>
-            </div>
-            <div class="text-center">
-                <h2 class="text-3xl font-bold">ใบวางบิล</h2>
-                <p class="text-lg">BILLING NOTE</p>
-            </div>
-        </header>
-
-        <section class="border-t-2 border-b-2 border-black mx-8 p-4 text-sm">
-            <div class="grid grid-cols-2 gap-x-8">
-                <div>
-                    <p><strong>รหัส:</strong> <span id="cust-person-id"></span></p>
-                    <p><strong>ชื่อ / บริษัท:</strong> <span id="cust-name"></span></p>
-                    <p><span id="cust-address"></span></p>
-                </div>
-                <div class="text-right">
-                    <p><strong>เลขที่:</strong> <span id="bill-number">BNT...</span></p>
-                    <p><strong>วันที่:</strong> <span id="bill-date"></span></p>
-                    <p><strong>หน้า:</strong> 1 / 1</p>
-                </div>
-            </div>
-            <p class="mt-2"><strong>เลขประจำตัวผู้เสียภาษีอากร:</strong> <span id="cust-tax-id"></span> / <span
-                    id="cust-branch"></span></p>
-        </section>
-
-        <main class="m-8">
-            <p class="mb-4 text-sm">ได้รับการวางบิลจาก "บริษัท เอส แอนด์ เอส อินคอม จำกัด"
-                โดยมีรายละเอียดรายการค้างชำระเพื่อตรวจสอบและนัดชำระเงิน ดังนี้ -</p>
-            <table class="w-full text-sm border-collapse">
-                <thead>
-                    <tr class="border-y-2 border-black">
-                        <th class="p-2 text-center w-16">ลำดับ</th>
-                        <th class="p-2 text-left">เลขที่ใบกำกับภาษี</th>
-                        <th class="p-2 text-center">ลงวันที่</th>
-                        <th class="p-2 text-center">วันครบกำหนดชำระ</th>
-                        <th class="p-2 text-right">จำนวนเงิน</th>
-                    </tr>
-                </thead>
-                <tbody id="invoice-table-body">
-                </tbody>
-                <tfoot>
-                    <tr class="border-t-2 border-black font-bold">
-                        <td colspan="4" class="p-2 text-right">ยอดเงินสุทธิ</td>
-                        <td id="summary-total" class="p-2 text-right">0.00</td>
-                    </tr>
-                </tfoot>
-            </table>
-            <div id="total-in-words" class="text-center font-bold mt-2 p-2 border-t-2 border-b-2 border-black">
-                (ยอดเงินสุทธิสี่ร้อยห้าสิบหกบาทถ้วน)
-            </div>
-        </main>
-
-        <footer class="absolute bottom-0 w-full grid grid-cols-4 gap-4 text-center text-sm p-8">
-            <div>
-                <p class="mt-12">...................................</p>
-                <p>(ผู้รับวางบิล)</p>
-            </div>
-            <div>
-                <p class="mt-12">...................................</p>
-                <p>วันที่รับวางบิล</p>
-            </div>
-            <div>
-                <p class="mt-12">...................................</p>
-                <p>(ผู้วางบิล)</p>
-            </div>
-            <div>
-                <p class="mt-12">...................................</p>
-                <p>วันที่</p>
-            </div>
-        </footer>
+    <div id="bill-note-container">
     </div>
+    <template id="bill-note-template">
+        <div class="A4-page mx-auto bg-white shadow-lg my-8 relative">
+            <header class="flex justify-between items-start p-8">
+            </header>
+
+            <section class="border-t-2 border-b-2 border-black mx-8 p-4 text-sm">
+                <div class="grid grid-cols-2 gap-x-8">
+                    <div>
+                        <p><strong>รหัส:</strong> <span class="cust-person-id"></span></p>
+                        <p><strong>ชื่อ / บริษัท:</strong> <span class="cust-name"></span></p>
+                        <p><span class="cust-address"></span></p>
+                    </div>
+                    <div class="text-right">
+                        <p><strong>เลขที่:</strong> <span class="bill-number"></span></p>
+                        <p><strong>วันที่:</strong> <span class="bill-date"></span></p>
+                        <p><strong>หน้า:</strong> <span class="page-number"></span></p>
+                    </div>
+                </div>
+                <p class="mt-2"><strong>เลขประจำตัวผู้เสียภาษีอากร:</strong> <span class="cust-tax-id"></span> / <span
+                        class="cust-branch"></span></p>
+            </section>
+
+            <main class="m-8">
+                <p class="mb-4 text-sm">ได้รับการวางบิลจาก "บริษัท เอส แอนด์ เอส อินคอม จำกัด"
+                    โดยมีรายละเอียดรายการค้างชำระเพื่อตรวจสอบและนัดชำระเงิน ดังนี้ -</p>
+                <table class="w-full text-sm border-collapse">
+                    <thead>
+                        <tr class="border-y-2 border-black">
+                            <th class="p-2 text-center w-16">ลำดับ</th>
+                            <th class="p-2 text-left">เลขที่ใบกำกับภาษี</th>
+                            <th class="p-2 text-center">ลงวันที่</th>
+                            <th class="p-2 text-center">วันครบกำหนดชำระ</th>
+                            <th class="p-2 text-right">จำนวนเงิน</th>
+                        </tr>
+                    </thead>
+                    <tbody class="invoice-table-body">
+                    </tbody>
+                    <tfoot class="summary-footer hidden">
+                        <tr class="border-t-2 border-black font-bold">
+                            <td colspan="4" class="p-2 text-right">ยอดเงินสุทธิ</td>
+                            <td class="summary-total p-2 text-right">0.00</td>
+                        </tr>
+                    </tfoot>
+                </table>
+                <div class="total-in-words text-center font-bold mt-2 p-2 border-t-2 border-b-2 border-black hidden">
+                </div>
+            </main>
+
+            <footer class="absolute bottom-0 w-full grid grid-cols-4 gap-4 text-center text-sm p-8">
+                <div>
+                    <p class="mt-12">...................................</p>
+                    <p>(ผู้รับวางบิล)</p>
+                </div>
+                <div>
+                    <p class="mt-12">...................................</p>
+                    <p>วันที่รับวางบิล</p>
+                </div>
+                <div>
+                    <p class="mt-12">...................................</p>
+                    <p>(ผู้วางบิล)</p>
+                </div>
+                <div>
+                    <p class="mt-12">...................................</p>
+                    <p>วันที่</p>
+                </div>
+            </footer>
+        </div>
+    </template>
 
     <script src="/static/js/bill_note.js"></script>
 </body>

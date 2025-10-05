@@ -136,45 +136,66 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // แสดงผลข้อมูลลงใน Template
     function renderBillDocument(data) {
-        // Customer Info
-        document.getElementById('cust-person-id').textContent = data.customer.person_id || '-';
-        document.getElementById('cust-name').textContent = data.customer.name || '-';
-        document.getElementById('cust-address').textContent = data.customer.address || '-';
-        document.getElementById('cust-tax-id').textContent = data.customer.tax_id || '-';
-        document.getElementById('cust-branch').textContent = data.customer.branch || '-';
+        const container = document.getElementById('bill-note-container');
+        const template = document.getElementById('bill-note-template');
+        container.innerHTML = ''; // ล้างข้อมูลเก่า
 
-        // Bill Info
-        document.getElementById('bill-date').textContent = new Date().toLocaleDateString('th-TH', {
-            year: 'numeric', month: 'long', day: 'numeric'
-        });
+        const ITEMS_PER_PAGE = 12;
+        const totalPages = Math.ceil(data.invoices.length / ITEMS_PER_PAGE);
 
-        // Invoice Table
-        const tableBody = document.getElementById('invoice-table-body');
-        tableBody.innerHTML = '';
-        data.invoices.forEach((inv, index) => {
-            const tr = document.createElement('tr');
-            tr.className = 'border-b border-gray-300';
-            tr.innerHTML = `
-                <td class="p-2 text-center">${index + 1}</td>
-                <td class="p-2 text-left">${inv.invoice_number}</td>
-                <td class="p-2 text-center">${formatDate(inv.invoice_date)}</td>
-                <td class="p-2 text-center">${formatDate(inv.due_date)}</td>
-                <td class="p-2 text-right">${inv.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-            `;
-            tableBody.appendChild(tr);
-        });
+        for (let i = 0; i < totalPages; i++) {
+            const pageNode = template.content.cloneNode(true);
+            const pageElement = pageNode.querySelector('.A4-page');
 
-        // Summary
-        const totalAmount = data.summary.total_amount;
-        document.getElementById('summary-total').textContent = totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 });
+            const startIdx = i * ITEMS_PER_PAGE;
+            const endIdx = startIdx + ITEMS_PER_PAGE;
+            const pageInvoices = data.invoices.slice(startIdx, endIdx);
 
-        // Convert number to Thai Baht text
-        document.getElementById('total-in-words').textContent = `(ตัวอักษร: ${thaiBahtText(totalAmount)})`;
+            // --- เติมข้อมูล Header และ Customer (เหมือนกันทุกหน้า) ---
+            pageElement.querySelector('.cust-person-id').textContent = data.customer.person_id || '-';
+            pageElement.querySelector('.cust-name').textContent = data.customer.name || '-';
+            pageElement.querySelector('.cust-address').textContent = data.customer.address || '-';
+            pageElement.querySelector('.cust-tax-id').textContent = data.customer.tax_id || '-';
+            pageElement.querySelector('.cust-branch').textContent = data.customer.branch || '-';
+            
+            // --- เติมข้อมูลเฉพาะของแต่ละหน้า ---
+            pageElement.querySelector('.bill-number').textContent = data.bill_note_number || '(ยังไม่ได้บันทึก)';
+            pageElement.querySelector('.bill-date').textContent = new Date(data.bill_date || Date.now()).toLocaleDateString('th-TH', {
+                year: 'numeric', month: 'long', day: 'numeric'
+            });
+            pageElement.querySelector('.page-number').textContent = `${i + 1} / ${totalPages}`;
 
+            // --- เติมรายการ Invoice ในตาราง ---
+            const tableBody = pageElement.querySelector('.invoice-table-body');
+            tableBody.innerHTML = '';
+            pageInvoices.forEach((inv, index) => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-gray-300';
+                tr.innerHTML = `
+                    <td class="p-2 text-center">${startIdx + index + 1}</td>
+                    <td class="p-2 text-left">${inv.invoice_number}</td>
+                    <td class="p-2 text-center">${formatDate(inv.invoice_date)}</td>
+                    <td class="p-2 text-center">${formatDate(inv.due_date)}</td>
+                    <td class="p-2 text-right">${inv.amount.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
 
-        billDocument.style.display = 'block';
-        printBtn.style.display = 'inline-block';
-        saveBtn.style.display = 'inline-block';
+            // --- แสดงยอดรวมและตัวอักษรเฉพาะหน้าสุดท้าย ---
+            if (i === totalPages - 1) {
+                pageElement.querySelector('.summary-footer').classList.remove('hidden');
+                pageElement.querySelector('.summary-total').textContent = data.summary.total_amount.toLocaleString('en-US', {minimumFractionDigits: 2});
+                
+                const totalInWordsEl = pageElement.querySelector('.total-in-words');
+                totalInWordsEl.classList.remove('hidden');
+                totalInWordsEl.textContent = `(ตัวอักษร: ${thaiBahtText(data.summary.total_amount)})`;
+            }
+
+            container.appendChild(pageElement);
+        }
+
+        document.getElementById('printPdfBtn').style.display = 'inline-block';
+        document.getElementById('saveBillBtn').style.display = 'inline-block';
     }
 
     function formatDate(isoDate) {
