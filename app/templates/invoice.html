@@ -67,7 +67,7 @@
       <div class="col box-light col-left" style="font-size:14pt;">
         <div class="mt6">รหัสลูกค้า: <b>{{ invoice.customer_code or invoice.personid }}</b></div>
         <div class="mt6">ชื่อลูกค้า: <b>บริษัท {{ invoice.customer_name }}</b></div>
-        <div class="mt6">เลขประจำตัวผู้เสียภาษี: <b>{{ invoice.customer_taxid }}</b> / {{ 'สาขาที่ 'invoice.cf_branch or 'สำนักงานใหญ่' }}</div>
+        <div class="mt6">เลขประจำตัวผู้เสียภาษี: <b>{{ invoice.customer_taxid }}</b> / {{ 'สาขาที่ ' + invoice.cf_branch if invoice.cf_branch else 'สำนักงานใหญ่' }}</div>
         <div class="mt6">ที่อยู่: <b>{{ invoice.customer_address }} {{ invoice.cf_provincename or '' }} {{
             invoice.cf_personzipcode or '' }}</b></div>
         <div class="mt6">โทรศัพท์: <b>{{ invoice.tel or invoice.mobile or '' }}</b></div>
