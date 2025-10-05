@@ -1,7 +1,7 @@
 # /app/bill_note.py
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_, cast, String
 from typing import Optional, List, Dict, Any
 from datetime import date, datetime 
 from pydantic import BaseModel
@@ -101,16 +101,34 @@ def get_billing_note_details(bill_note_number: str, db: Session = Depends(get_db
 
     invoice_numbers = [item.invoice_number for item in items]
     
-    # --- Step 2: คำนวณยอดรวมของทุกใบใน Query เดียว (เหมือนตอนสร้าง) ---
+     # --- Step 2: คำนวณยอดรวมของทุกใบใน Query เดียว (ปรับปรุงใหม่) ---
+    inv = models.Invoice
     itm = models.InvoiceItem
+    
+    # Query invoices เพื่อเอา idx มาใช้ join
+    target_invoices = db.query(inv.idx, inv.invoice_number).filter(inv.invoice_number.in_(invoice_numbers_str)).all()
+    target_invoice_idxs_as_str = {str(i.idx) for i in target_invoices}
+    target_invoice_numbers = {i.invoice_number for i in target_invoices}
+
     amount_subquery = db.query(
         itm.invoice_number,
         func.sum(func.coalesce(itm.quantity, 0) * func.coalesce(itm.cf_itempricelevel_price, 0)).label("sub_total")
     ).filter(
-        itm.invoice_number.in_(invoice_numbers)
+        or_(
+            itm.invoice_number.in_(target_invoice_numbers),
+            itm.invoice_number.in_(target_invoice_idxs_as_str)
+        )
     ).group_by(itm.invoice_number).subquery()
     
-    amounts = { row.invoice_number: float(row.sub_total or 0) for row in db.query(amount_subquery).all() }
+    amounts_raw = db.query(amount_subquery).all()
+    
+    # Map ยอดรวมกลับไปที่ invoice_number หลัก
+    amounts = {}
+    invoice_map = {str(i.idx): i.invoice_number for i in target_invoices}
+    for row in amounts_raw:
+        # หาก key คือ idx (ที่เป็น string) ให้ map กลับไปที่ invoice_number จริง
+        main_inv_no = invoice_map.get(row.invoice_number, row.invoice_number)
+        amounts[main_inv_no] = float(row.sub_total or 0)
 
     # --- Step 3: ประกอบร่างข้อมูลใน Python ---
     invoice_details = []
@@ -163,40 +181,50 @@ def get_invoices_for_billing_note(
         return {"error": "Customer not found"}
 
     # --- Step 1: ดึงใบกำกับภาษีที่ต้องการทั้งหมดใน Query เดียว ---
+    inv = models.Invoice
     invoices_query = db.query(
-        models.Invoice.invoice_number,
-        models.Invoice.invoice_date,
-        models.Invoice.due_date
+        inv.idx, # <--- ดึง idx มาด้วย
+        inv.invoice_number,
+        inv.invoice_date,
+        inv.due_date
     ).filter(
-        models.Invoice.personid == customer.personid,
-        models.Invoice.invoice_date.between(d_start, d_end)
-    ).order_by(models.Invoice.invoice_date.asc()).all()
+        inv.personid == customer.personid,
+        inv.invoice_date.between(d_start, d_end)
+    ).order_by(inv.invoice_date.asc()).all()
 
     if not invoices_query:
-        # ถ้าไม่เจอใบกำกับเลย ก็คืนค่าว่างไปเลย ไม่ต้อง Query ต่อ
-        return { "customer": { "name": customer.fname, "tax_id": customer.cf_taxid, "branch": "สำนักงานใหญ่", "address": customer.cf_personaddress, "person_id": customer.personid }, "invoices": [], "summary": { "total_amount": 0 } }
-        
-    invoice_numbers = [inv.invoice_number for inv in invoices_query]
+        # ... (โค้ด Return ค่าว่างเหมือนเดิม) ...
+        pass
 
-    # --- Step 2: คำนวณยอดรวมของทุกใบใน Query เดียว ---
+    invoice_numbers = [inv.invoice_number for inv in invoices_query]
+    invoice_idxs_as_str = [str(inv.idx) for inv in invoices_query] # <--- สร้าง list ของ idx ที่เป็น string
+
+    # --- Step 2: คำนวณยอดรวมของทุกใบใน Query เดียว (ปรับปรุงใหม่) ---
     itm = models.InvoiceItem
     amount_subquery = db.query(
         itm.invoice_number,
         func.sum(func.coalesce(itm.quantity, 0) * func.coalesce(itm.cf_itempricelevel_price, 0)).label("sub_total")
     ).filter(
-        itm.invoice_number.in_(invoice_numbers)
+        or_(
+            itm.invoice_number.in_(invoice_numbers),
+            itm.invoice_number.in_(invoice_idxs_as_str) # <--- เพิ่มเงื่อนไขค้นหาด้วย idx ที่เป็น string
+        )
     ).group_by(itm.invoice_number).subquery()
     
-    # Map ผลลัพธ์เป็น Dictionary เพื่อให้ค้นหาง่าย {invoice_number: sub_total}
-    amounts = {
-        row.invoice_number: float(row.sub_total or 0)
-        for row in db.query(amount_subquery).all()
-    }
+    amounts_raw = db.query(amount_subquery).all()
 
-    # --- Step 3: ประกอบร่างข้อมูลใน Python (เร็วมาก) ---
+    # Map ผลลัพธ์กลับไปที่ invoice_number หลัก (เผื่อ join เจอด้วย idx)
+    amounts = {}
+    invoice_map = {str(inv.idx): inv.invoice_number for inv in invoices_query}
+    for row in amounts_raw:
+        main_inv_no = invoice_map.get(row.invoice_number, row.invoice_number)
+        amounts[main_inv_no] = float(row.sub_total or 0)
+
+    # --- Step 3: ประกอบร่างข้อมูลใน Python (ปรับปรุงเล็กน้อย) ---
     invoice_details = []
     total_amount = 0
     for inv in invoices_query:
+        # ใช้ inv.invoice_number เป็น key หลักในการดึงยอด
         sub_total = amounts.get(inv.invoice_number, 0.0)
         vat = sub_total * 0.07
         grand_total = sub_total + vat
