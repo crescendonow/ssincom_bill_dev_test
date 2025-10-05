@@ -128,7 +128,7 @@ def get_billing_note_details(bill_note_number: str, db: Session = Depends(get_db
         "bill_note_number": bill_note.billnote_number,
         "bill_date": datetime.now().date().isoformat() # ใช้วันที่ปัจจุบันในการแสดงผล
     }
-    
+
 @router.get("/api/billing-note-invoices")
 def get_invoices_for_billing_note(
     start: str = Query(..., description="YYYY-MM-DD"),
@@ -148,37 +148,50 @@ def get_invoices_for_billing_note(
     if not customer:
         return {"error": "Customer not found"}
 
-    # ดึงข้อมูลใบกำกับภาษี
+    # --- Step 1: ดึงใบกำกับภาษีที่ต้องการทั้งหมดใน Query เดียว ---
     invoices_query = db.query(
         models.Invoice.invoice_number,
         models.Invoice.invoice_date,
         models.Invoice.due_date
     ).filter(
         models.Invoice.personid == customer.personid,
-        models.Invoice.invoice_date >= d_start,
-        models.Invoice.invoice_date <= d_end
-    ).order_by(models.Invoice.invoice_date.asc())
+        models.Invoice.invoice_date.between(d_start, d_end)
+    ).order_by(models.Invoice.invoice_date.asc()).all()
+
+    if not invoices_query:
+        # ถ้าไม่เจอใบกำกับเลย ก็คืนค่าว่างไปเลย ไม่ต้อง Query ต่อ
+        return { "customer": { "name": customer.fname, "tax_id": customer.cf_taxid, "branch": "สำนักงานใหญ่", "address": customer.cf_personaddress, "person_id": customer.personid }, "invoices": [], "summary": { "total_amount": 0 } }
+        
+    invoice_numbers = [inv.invoice_number for inv in invoices_query]
+
+    # --- Step 2: คำนวณยอดรวมของทุกใบใน Query เดียว ---
+    itm = models.InvoiceItem
+    amount_subquery = db.query(
+        itm.invoice_number,
+        func.sum(func.coalesce(itm.quantity, 0) * func.coalesce(itm.cf_itempricelevel_price, 0)).label("sub_total")
+    ).filter(
+        itm.invoice_number.in_(invoice_numbers)
+    ).group_by(itm.invoice_number).subquery()
     
-    # คำนวณยอดรวมของแต่ละใบ
+    # Map ผลลัพธ์เป็น Dictionary เพื่อให้ค้นหาง่าย {invoice_number: sub_total}
+    amounts = {
+        row.invoice_number: float(row.sub_total or 0)
+        for row in db.query(amount_subquery).all()
+    }
+
+    # --- Step 3: ประกอบร่างข้อมูลใน Python (เร็วมาก) ---
     invoice_details = []
     total_amount = 0
-    for inv_number, inv_date, due_date in invoices_query.all():
-        # Logic คำนวณยอดรวมสุทธิ (grand total) ของแต่ละใบ
-        # (ดึงมาจากโค้ด summary_invoices.py ที่เคยทำ)
-        itm = models.InvoiceItem
-        sub_q = db.query(
-            (func.coalesce(itm.quantity, 0) * func.coalesce(itm.cf_itempricelevel_price, 0)).label('amount')
-        ).filter(models.InvoiceItem.invoice_number == inv_number)
-        
-        sub_total = sum(item.amount for item in sub_q.all())
+    for inv in invoices_query:
+        sub_total = amounts.get(inv.invoice_number, 0.0)
         vat = sub_total * 0.07
         grand_total = sub_total + vat
         total_amount += grand_total
         
         invoice_details.append({
-            "invoice_number": inv_number,
-            "invoice_date": inv_date.isoformat() if inv_date else None,
-            "due_date": due_date.isoformat() if due_date else None,
+            "invoice_number": inv.invoice_number,
+            "invoice_date": inv.invoice_date.isoformat() if inv.invoice_date else None,
+            "due_date": inv.due_date.isoformat() if inv.due_date else None,
             "amount": round(grand_total, 2)
         })
 
@@ -191,9 +204,7 @@ def get_invoices_for_billing_note(
             "person_id": customer.personid
         },
         "invoices": invoice_details,
-        "summary": {
-            "total_amount": round(total_amount, 2)
-        }
+        "summary": { "total_amount": round(total_amount, 2) }
     }
 
 @router.post("/api/billing-notes")

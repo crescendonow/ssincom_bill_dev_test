@@ -11,14 +11,14 @@ class Invoice(Base):
 
     idx = Column(Integer, primary_key=True)          # PK (int)
     invoice_number = Column(String, index=True)      # เลขที่ใบกำกับ (varchar)
-    invoice_date = Column(Date)
+    invoice_date = Column(Date,index=True)         # วันที่ใบกำกับ (date)
     grn_number = Column(String)
     dn_number = Column(String)
     po_number = Column(String)
 
     # Customer fields snapshot ที่เก็บมากับบิล
     fname = Column(String)                 # ชื่อลูกค้า
-    personid = Column(String)              # รหัสลูกค้า
+    personid = Column(String,index=True)   # รหัสลูกค้า
     tel = Column(String)
     mobile = Column(String)
     cf_personaddress = Column(String)
