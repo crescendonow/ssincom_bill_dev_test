@@ -67,6 +67,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // All invoices actions
     document.getElementById("btnAllApply").addEventListener("click", () => { state.allPage = 1; loadAllInvoices(); });
+    document.getElementById("btnExportAllExcel").addEventListener("click", exportAllToExcel);
     document.getElementById("allPrevPage").addEventListener("click", () => { if (state.allPage > 1) { state.allPage--; renderAllTable(); } });
     document.getElementById("allNextPage").addEventListener("click", () => { state.allPage++; renderAllTable(true); });
 
@@ -84,6 +85,58 @@ document.addEventListener("DOMContentLoaded", () => {
     applyFilter();     // load summary
     loadAllInvoices(); // load all invoices
 });
+
+function exportAllToExcel() {
+    if (!state.allRows.length) {
+        alert("ไม่มีข้อมูลสำหรับส่งออก");
+        return;
+    }
+
+    // 1. กำหนดหัวข้อคอลัมน์ให้ตรงกับที่แสดงบนหน้าเว็บ
+    const headers = [
+        "วันที่",
+        "เลขที่",
+        "ลูกค้า",
+        "PO",
+        "ยอดก่อนส่วนลด",
+        "VAT",
+        "สุทธิ"
+    ];
+
+    // 2. เตรียมข้อมูลแต่ละแถวให้ตรงกับหัวข้อ
+    const dataForExport = state.allRows.map(r => ({
+        "วันที่": r.invoice_date ?? "-",
+        "เลขที่": r.invoice_number ?? "-",
+        "ลูกค้า": r.fname ?? "-",
+        "PO": r.po_number ?? "-",
+        "ยอดก่อนส่วนลด": Number(r.amount) || 0,
+        "VAT": Number(r.vat) || 0,
+        "สุทธิ": Number(r.grand) || 0
+    }));
+
+    // 3. สร้าง Worksheet จากข้อมูล
+    const ws = XLSX.utils.json_to_sheet(dataForExport, { header: headers });
+
+    // 4. (Optional) ปรับความกว้างของคอลัมน์ให้อ่านง่ายขึ้น
+    ws['!cols'] = [
+        { wch: 12 }, // วันที่
+        { wch: 15 }, // เลขที่
+        { wch: 40 }, // ลูกค้า
+        { wch: 15 }, // PO
+        { wch: 18 }, // ยอดก่อนส่วนลด
+        { wch: 15 }, // VAT
+        { wch: 18 }  // สุทธิ
+    ];
+
+    // 5. สร้าง Workbook และเพิ่ม Worksheet เข้าไป
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "รายการใบกำกับภาษี");
+
+    // 6. สร้างไฟล์ Excel และให้ผู้ใช้ดาวน์โหลด
+    const f_start = document.getElementById("allFrom")?.value || 'start';
+    const f_end = document.getElementById("allTo")?.value || 'end';
+    XLSX.writeFile(wb, `Invoices_${f_start}_to_${f_end}.xlsx`);
+}
 
 function switchTab(which) {
     const tabSummary = document.getElementById("tabSummary");
