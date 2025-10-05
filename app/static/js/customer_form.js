@@ -313,7 +313,7 @@ function initCustomerForm() {
       if (provInput.value) suggestProvinces();
     });
   }
-
+  generateAndSetNewCustomerId();
   loadAll();
 }
 
