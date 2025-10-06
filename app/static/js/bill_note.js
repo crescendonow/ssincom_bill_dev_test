@@ -231,6 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
             pageInvoices.forEach((inv, index) => {
                 const tr = document.createElement('tr');
                 tr.className = 'border-b border-gray-300';
+                tr.dataset.invNumber = inv.invoice_number; 
                 tr.innerHTML = `
                     <td class="p-2 text-center">${startIdx + index + 1}</td>
                     <td class="p-2 text-left">${inv.invoice_number}</td>
@@ -415,7 +416,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.invoice-table-body tr').forEach(tr => {
             const deleteCell = document.createElement('td');
             deleteCell.className = 'p-2 text-center noprint'; 
-            deleteCell.className = 'p-2 text-center';
             deleteCell.innerHTML = '<button class="btn-remove-item text-red-500">✖</button>';
             tr.appendChild(deleteCell);
         });

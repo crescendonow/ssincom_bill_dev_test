@@ -67,7 +67,10 @@
         display: none !important;
     }
 
-    .noprint {
+    .noprint,
+    .btn-remove-item,
+    td.action-cell,
+    th.action-cell {
         display: none !important;
     }
 
