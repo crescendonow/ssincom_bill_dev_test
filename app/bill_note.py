@@ -158,8 +158,11 @@ def get_billing_note_details(bill_note_number: str, db: Session = Depends(get_db
             "name": bill_note.fname, "tax_id": bill_note.cf_taxid, "branch": branch_info,
             "address": bill_note.cf_personaddress, "person_id": bill_note.personid
         },
-        "invoices": invoice_details, "summary": { "total_amount": round(total_amount, 2) },
-        "bill_note_number": bill_note.billnote_number, "bill_date": datetime.now().date().isoformat()
+        "invoices": invoice_details, 
+        "summary": { "total_amount": round(total_amount, 2) },
+        "bill_note_number": bill_note.billnote_number, 
+        "bill_date": bill_note.bill_date.isoformat() if bill_note.bill_date else None, 
+        "payment_duedate": bill_note.payment_duedate.isoformat() if bill_note.payment_duedate else None 
     }
 
 @router.get("/api/billing-note-invoices")
