@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateBtn.id = 'updateBillBtn';
     updateBtn.className = 'bg-amber-600 text-white px-6 py-2 rounded-md hover:bg-amber-700 hidden';
     updateBtn.textContent = '🔄 อัปเดตใบวางบิล';
-    
+
     let currentEditingBillNumber = null;
 
     let customersCache = [];
@@ -88,8 +88,8 @@ document.addEventListener('DOMContentLoaded', () => {
             data.bill_date = new Date().toISOString().split('T')[0]; // ตั้ง bill_date เป็นวันปัจจุบัน
             if (data.invoices && data.invoices.length > 0) {
                 // หา invoice_date ล่าสุด
-                const latestInvoiceDate = data.invoices.reduce((max, inv) => 
-                    inv.invoice_date > max ? inv.invoice_date : max, 
+                const latestInvoiceDate = data.invoices.reduce((max, inv) =>
+                    inv.invoice_date > max ? inv.invoice_date : max,
                     data.invoices[0].invoice_date
                 );
                 data.payment_duedate = latestInvoiceDate;
@@ -169,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
         container.innerHTML = ''; // ล้างข้อมูลเก่า
 
         const ITEMS_PER_PAGE = 15;
-        const totalPages = Math.ceil(data.invoices.length / ITEMS_PER_PAGE) || 1; 
+        const totalPages = Math.ceil(data.invoices.length / ITEMS_PER_PAGE) || 1;
 
         for (let i = 0; i < totalPages; i++) {
             const pageNode = template.content.cloneNode(true);
@@ -192,7 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 year: 'numeric', month: 'long', day: 'numeric'
             });
             pageElement.querySelector('.page-number').textContent = `${i + 1} / ${totalPages}`;
-            pageElement.querySelector('.payment-due-date').textContent = formatDate(data.payment_duedate) || '-';
+            pageElement.querySelector('.payment-due-date').textContent = formatLongThaiDate(data.payment_duedate) || '-';
 
             // --- เติมรายการ Invoice ในตาราง ---
             const tableBody = pageElement.querySelector('.invoice-table-body');
@@ -236,6 +236,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const month = String(d.getMonth() + 1).padStart(2, '0');
         const year = d.getFullYear() + 543;
         return `${day}/${month}/${String(year).slice(-2)}`;
+    }
+
+    function formatLongThaiDate(isoDate) {
+        if (!isoDate) return null;
+        const d = new Date(isoDate);
+
+        // ใช้ toLocaleDateString ของ Browser เพื่อแปลงเป็นรูปแบบภาษาไทย
+        // จะได้ผลลัพธ์เช่น "6 ตุลาคม 2025"
+        const formattedDate = d.toLocaleDateString('th-TH', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+            timeZone: 'UTC' // ป้องกันปัญหา Timezone ทำให้วันที่ผิดเพี้ยน
+        });
+
+        // แปลงปี ค.ศ. เป็น พ.ศ. โดยการแทนที่ตัวเลขปี
+        const adYear = d.getFullYear();
+        const beYear = adYear + 543;
+
+        return formattedDate.replace(String(adYear), String(beYear));
     }
 
     function thaiBahtText(num) {
@@ -313,17 +333,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const start = document.getElementById('searchStartDate').value;
         const end = document.getElementById('searchEndDate').value;
         const q = document.getElementById('searchQuery').value;
-        
+
         const params = new URLSearchParams({ start, end, q });
         const res = await fetch(`/api/search-billing-notes?${params.toString()}`);
         const results = await res.json();
-        
+
         searchResultsBody.innerHTML = '';
         if (results.length === 0) {
             searchResultsBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500">ไม่พบข้อมูล</td></tr>';
             return;
         }
-        
+
         results.forEach(bill => {
             const tr = document.createElement('tr');
             tr.className = 'border-b';
@@ -350,16 +370,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const data = await res.json();
         currentBillData = data;
-        
+
         renderBillDocument(data);
-        
+
         // สลับปุ่มเป็นโหมดแก้ไข
         saveBtn.style.display = 'none';
         updateBtn.style.display = 'inline-block';
         printBtn.style.display = 'inline-block';
-        
+
         switchTab('create');
-        
+
         // เพิ่มปุ่มลบรายการในตาราง
         document.querySelectorAll('.invoice-table-body tr').forEach(tr => {
             const deleteCell = document.createElement('td');
@@ -368,26 +388,26 @@ document.addEventListener('DOMContentLoaded', () => {
             tr.appendChild(deleteCell);
         });
     }
-    
+
     // vvvvvv เพิ่มฟังก์ชันอัปเดตใบวางบิล vvvvvv
     async function updateBillNote() {
         if (!currentEditingBillNumber) return;
-        
+
         // รวบรวมข้อมูลรายการที่เหลืออยู่
         const items = [];
         document.querySelectorAll('.invoice-table-body tr').forEach(tr => {
             const inv = currentBillData.invoices.find(i => i.invoice_number === tr.dataset.invNumber);
-            if(inv) items.push(inv);
+            if (inv) items.push(inv);
         });
 
         const payload = { ...currentBillData, items };
-        
+
         const res = await fetch(`/api/billing-notes/${currentEditingBillNumber}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        
+
         if (res.ok) {
             alert('อัปเดตใบวางบิลสำเร็จ!');
             loadBillForEditing(currentEditingBillNumber); // โหลดซ้ำเพื่อแสดงผลล่าสุด
@@ -426,7 +446,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('bill-note-container').addEventListener('click', (e) => {
-        if(e.target.classList.contains('btn-remove-item')) {
+        if (e.target.classList.contains('btn-remove-item')) {
             e.target.closest('tr').remove();
         }
     });
