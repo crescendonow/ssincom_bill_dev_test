@@ -448,7 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Event Listeners ---
-    customerSearch.addEventListener('input', onCustomerSelect);
+    customerSearch.addEventListener('change', onCustomerSelect);
     generateBtn.addEventListener('click', generateBill);
     printBtn.addEventListener('click', () => window.print());
     saveBtn.addEventListener('click', saveBillNote);
@@ -456,6 +456,8 @@ document.addEventListener('DOMContentLoaded', () => {
     tabSearch.addEventListener('click', () => switchTab('search'));
     searchBillBtn.addEventListener('click', searchBillNotes);
     updateBtn.addEventListener('click', updateBillNote);
+
+    searchQueryInput.addEventListener('input', debounce(suggestBillNotes, 300));
 
     searchResultsBody.addEventListener('click', async (e) => {
         if (e.target.classList.contains('btn-view-edit')) {
