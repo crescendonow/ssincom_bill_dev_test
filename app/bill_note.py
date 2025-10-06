@@ -73,7 +73,6 @@ class BillNoteItemPayload(BaseModel):
 
 class BillNotePayload(BaseModel):
     customer_id: int
-    bill_date: date
     items: List[BillNoteItemPayload]
     total_amount: float
 
@@ -261,10 +260,18 @@ def create_billing_note(payload: BillNotePayload, db: Session = Depends(get_db))
         
     # 2. สร้างเลขที่ใบวางบิลใหม่
     new_bill_number = generate_next_billnote_number(db)
+
+    bill_date_today = datetime.now().date()
+    payment_due = None
+    if payload.items:
+        latest_invoice_date = max(item.invoice_date for item in payload.items if item.invoice_date)
+        payment_due = latest_invoice_date
     
     # 3. สร้าง Record หลักของใบวางบิล
     new_bill = models.BillNote(
         billnote_number=new_bill_number,
+        bill_date=bill_date_today,          
+        payment_duedate=payment_due,
         fname=customer.fname,
         personid=customer.personid,
         tel=customer.tel,
@@ -291,3 +298,75 @@ def create_billing_note(payload: BillNotePayload, db: Session = Depends(get_db))
     db.refresh(new_bill)
     
     return {"ok": True, "billnote_number": new_bill.billnote_number, "idx": new_bill.idx}
+
+#------------------- API Search ---------------------#
+@router.get("/api/search-billing-notes")
+def search_billing_notes(
+    start: Optional[str] = None,
+    end: Optional[str] = None,
+    q: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(models.BillNote)
+    if start:
+        query = query.filter(models.BillNote.bill_date >= _to_date(start))
+    if end:
+        query = query.filter(models.BillNote.bill_date <= _to_date(end))
+    if q:
+        search_term = f"%{q.strip()}%"
+        query = query.filter(
+            or_(
+                models.BillNote.billnote_number.ilike(search_term),
+                models.BillNote.fname.ilike(search_term),
+                models.BillNote.personid.ilike(search_term)
+            )
+        )
+    
+    results = query.order_by(models.BillNote.bill_date.desc(), models.BillNote.billnote_number.desc()).limit(100).all()
+    return results
+
+#------------------- API update bill ---------------------#
+@router.put("/api/billing-notes/{bill_note_number}")
+def update_billing_note(bill_note_number: str, payload: BillNotePayload, db: Session = Depends(get_db)):
+    # ตรวจสอบว่ามี Bill Note นี้อยู่จริง
+    bill_note = db.query(models.BillNote).filter(models.BillNote.billnote_number == bill_note_number).first()
+    if not bill_note:
+        raise HTTPException(status_code=404, detail="Bill Note not found")
+
+    bill_note.bill_date = datetime.now().date()
+    if payload.items:
+        # หา invoice_date ล่าสุดจากรายการ items
+        latest_invoice_date = max(item.invoice_date for item in payload.items if item.invoice_date)
+        bill_note.payment_duedate = latest_invoice_date
+    else:
+        bill_note.payment_duedate = None
+
+    # ลบรายการเก่าทั้งหมด
+    db.query(models.BillNoteItem).filter(models.BillNoteItem.billnote_number == bill_note_number).delete()
+
+    # เพิ่มรายการใหม่เข้าไป
+    for item_data in payload.items:
+        bill_item = models.BillNoteItem(
+            billnote_number=bill_note_number,
+            invoice_number=item_data.invoice_number,
+            invoice_date=item_data.invoice_date,
+            due_date=item_data.due_date,
+            amount=item_data.amount
+        )
+        db.add(bill_item)
+    
+    db.commit()
+    return {"ok": True, "billnote_number": bill_note_number}
+
+#------------------- API delete bill ---------------------#
+@router.delete("/api/billing-notes/{bill_note_number}")
+def delete_billing_note(bill_note_number: str, db: Session = Depends(get_db)):
+    bill_note = db.query(models.BillNote).filter(models.BillNote.billnote_number == bill_note_number).first()
+    if not bill_note:
+        raise HTTPException(status_code=404, detail="Bill Note not found")
+        
+    # Cascade delete จะลบ items ที่เกี่ยวข้องโดยอัตโนมัติ
+    db.delete(bill_note)
+    db.commit()
+    return {"ok": True}
+

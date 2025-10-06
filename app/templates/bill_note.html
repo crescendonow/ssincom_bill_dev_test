@@ -18,7 +18,59 @@
     </div>
 
     <div id="controls" class="max-w-4xl mx-auto p-4 bg-white shadow-lg my-8 rounded-lg">
-        <h1 class="text-2xl font-bold mb-4 text-gray-700">สร้างใบวางบิล</h1>
+        <div class="border-b border-gray-200 mb-4">
+            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                <button id="tab-create"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-blue-500 text-blue-600">
+                    สร้าง / แก้ไขใบวางบิล
+                </button>
+                <button id="tab-search"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                    ค้นหารายการ
+                </button>
+            </nav>
+        </div>
+        <div id="panel-create">
+            <h1 class="text-2xl font-bold mb-4 text-gray-700">สร้างใบวางบิล</h1>
+        </div>
+        <div id="panel-search" class="hidden">
+            <h1 class="text-2xl font-bold mb-4 text-gray-700">ค้นหาใบวางบิล</h1>
+            <div class="grid md:grid-cols-3 gap-4 items-end">
+                <div>
+                    <label for="searchStartDate" class="block text-sm font-medium text-gray-600">วันที่เริ่มต้น</label>
+                    <input type="date" id="searchStartDate"
+                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+                </div>
+                <div>
+                    <label for="searchEndDate" class="block text-sm font-medium text-gray-600">วันที่สิ้นสุด</label>
+                    <input type="date" id="searchEndDate"
+                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+                </div>
+                <div>
+                    <label for="searchQuery" class="block text-sm font-medium text-gray-600">คำค้นหา</label>
+                    <input type="text" id="searchQuery" placeholder="เลขที่บิล / ชื่อลูกค้า"
+                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+                </div>
+            </div>
+            <div class="mt-4">
+                <button id="searchBillBtn"
+                    class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">ค้นหา</button>
+            </div>
+            <div class="mt-6 overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-gray-50">
+                            <th class="p-2 text-left">วันที่</th>
+                            <th class="p-2 text-left">เลขที่ใบวางบิล</th>
+                            <th class="p-2 text-left">ลูกค้า</th>
+                            <th class="p-2 text-center">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="searchResultsBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
         <div class="grid md:grid-cols-3 gap-4 items-end">
             <div>
                 <label for="customerSearch" class="block text-sm font-medium text-gray-600">ค้นหาลูกค้า</label>

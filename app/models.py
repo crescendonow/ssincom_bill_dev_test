@@ -78,6 +78,8 @@ class BillNote(Base):
 
     idx = Column(Integer, primary_key=True)  # serial4 NOT NULL
     billnote_number = Column(String, index=True, unique=True) # varchar NULL
+    bill_date = Column(Date, index=True)
+    payment_duedate = Column(Date)
 
     # Customer fields snapshot
     fname = Column(Text)                 # text NULL

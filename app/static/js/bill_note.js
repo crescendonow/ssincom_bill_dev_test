@@ -12,6 +12,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadingDiv = document.getElementById('loading');
     const billDocument = document.getElementById('bill-note-container');
     const saveBtn = document.getElementById('saveBillBtn');
+    const tabCreate = document.getElementById('tab-create');
+    const tabSearch = document.getElementById('tab-search');
+    const panelCreate = document.getElementById('panel-create');
+    const panelSearch = document.getElementById('panel-search');
+    const searchBillBtn = document.getElementById('searchBillBtn');
+    const searchResultsBody = document.getElementById('searchResultsBody');
+    const updateBtn = document.createElement('button'); // สร้างปุ่ม Update เตรียมไว้
+    updateBtn.id = 'updateBillBtn';
+    updateBtn.className = 'bg-amber-600 text-white px-6 py-2 rounded-md hover:bg-amber-700 hidden';
+    updateBtn.textContent = '🔄 อัปเดตใบวางบิล';
+    
+    let currentEditingBillNumber = null;
 
     let customersCache = [];
     let currentBillData = null;
@@ -72,6 +84,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
 
             if (data.error) throw new Error(data.error);
+
+            data.bill_date = new Date().toISOString().split('T')[0]; // ตั้ง bill_date เป็นวันปัจจุบัน
+            if (data.invoices && data.invoices.length > 0) {
+                // หา invoice_date ล่าสุด
+                const latestInvoiceDate = data.invoices.reduce((max, inv) => 
+                    inv.invoice_date > max ? inv.invoice_date : max, 
+                    data.invoices[0].invoice_date
+                );
+                data.payment_duedate = latestInvoiceDate;
+            } else {
+                data.payment_duedate = null;
+            }
 
             currentBillData = data;
             await renderBillDocument(data);
@@ -168,6 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 year: 'numeric', month: 'long', day: 'numeric'
             });
             pageElement.querySelector('.page-number').textContent = `${i + 1} / ${totalPages}`;
+            pageElement.querySelector('.payment-due-date').textContent = formatDate(data.payment_duedate) || '-';
 
             // --- เติมรายการ Invoice ในตาราง ---
             const tableBody = pageElement.querySelector('.invoice-table-body');
@@ -268,12 +293,143 @@ document.addEventListener('DOMContentLoaded', () => {
 
         return integerText + fractionalText;
     }
+    function switchTab(target) {
+        if (target === 'create') {
+            tabCreate.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-blue-500 text-blue-600';
+            tabSearch.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300';
+            panelCreate.style.display = 'block';
+            panelSearch.style.display = 'none';
+        } else {
+            tabSearch.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-blue-500 text-blue-600';
+            tabCreate.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300';
+            panelSearch.style.display = 'block';
+            panelCreate.style.display = 'none';
+            document.getElementById('bill-note-container').innerHTML = ''; // ล้างเอกสารเมื่อสลับไปหน้าค้นหา
+        }
+    }
+
+    // vvvvvv เพิ่มฟังก์ชันค้นหาใบวางบิล vvvvvv
+    async function searchBillNotes() {
+        const start = document.getElementById('searchStartDate').value;
+        const end = document.getElementById('searchEndDate').value;
+        const q = document.getElementById('searchQuery').value;
+        
+        const params = new URLSearchParams({ start, end, q });
+        const res = await fetch(`/api/search-billing-notes?${params.toString()}`);
+        const results = await res.json();
+        
+        searchResultsBody.innerHTML = '';
+        if (results.length === 0) {
+            searchResultsBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500">ไม่พบข้อมูล</td></tr>';
+            return;
+        }
+        
+        results.forEach(bill => {
+            const tr = document.createElement('tr');
+            tr.className = 'border-b';
+            tr.innerHTML = `
+                <td class="p-2">${formatDate(bill.bill_date)}</td>
+                <td class="p-2">${bill.billnote_number}</td>
+                <td class="p-2">${bill.fname}</td>
+                <td class="p-2 text-center">
+                    <button class="btn-view-edit text-blue-600 hover:underline text-sm" data-bill-number="${bill.billnote_number}">ดู/แก้ไข</button>
+                    <button class="btn-delete text-red-600 hover:underline text-sm ml-2" data-bill-number="${bill.billnote_number}">ลบ</button>
+                </td>
+            `;
+            searchResultsBody.appendChild(tr);
+        });
+    }
+
+    // vvvvvv เพิ่มฟังก์ชันโหลดใบวางบิลมาแสดงเพื่อแก้ไข vvvvvv
+    async function loadBillForEditing(billNumber) {
+        currentEditingBillNumber = billNumber;
+        const res = await fetch(`/api/billing-notes/${billNumber}`);
+        if (!res.ok) {
+            alert('ไม่สามารถโหลดข้อมูลใบวางบิลได้');
+            return;
+        }
+        const data = await res.json();
+        currentBillData = data;
+        
+        renderBillDocument(data);
+        
+        // สลับปุ่มเป็นโหมดแก้ไข
+        saveBtn.style.display = 'none';
+        updateBtn.style.display = 'inline-block';
+        printBtn.style.display = 'inline-block';
+        
+        switchTab('create');
+        
+        // เพิ่มปุ่มลบรายการในตาราง
+        document.querySelectorAll('.invoice-table-body tr').forEach(tr => {
+            const deleteCell = document.createElement('td');
+            deleteCell.className = 'p-2 text-center';
+            deleteCell.innerHTML = '<button class="btn-remove-item text-red-500">✖</button>';
+            tr.appendChild(deleteCell);
+        });
+    }
+    
+    // vvvvvv เพิ่มฟังก์ชันอัปเดตใบวางบิล vvvvvv
+    async function updateBillNote() {
+        if (!currentEditingBillNumber) return;
+        
+        // รวบรวมข้อมูลรายการที่เหลืออยู่
+        const items = [];
+        document.querySelectorAll('.invoice-table-body tr').forEach(tr => {
+            const inv = currentBillData.invoices.find(i => i.invoice_number === tr.dataset.invNumber);
+            if(inv) items.push(inv);
+        });
+
+        const payload = { ...currentBillData, items };
+        
+        const res = await fetch(`/api/billing-notes/${currentEditingBillNumber}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        if (res.ok) {
+            alert('อัปเดตใบวางบิลสำเร็จ!');
+            loadBillForEditing(currentEditingBillNumber); // โหลดซ้ำเพื่อแสดงผลล่าสุด
+        } else {
+            alert('การอัปเดตล้มเหลว');
+        }
+    }
 
     // --- Event Listeners ---
     customerSearch.addEventListener('input', onCustomerSelect);
     generateBtn.addEventListener('click', generateBill);
     printBtn.addEventListener('click', () => window.print());
     saveBtn.addEventListener('click', saveBillNote);
+    tabCreate.addEventListener('click', () => switchTab('create'));
+    tabSearch.addEventListener('click', () => switchTab('search'));
+    searchBillBtn.addEventListener('click', searchBillNotes);
+    updateBtn.addEventListener('click', updateBillNote);
+
+    searchResultsBody.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('btn-view-edit')) {
+            const billNumber = e.target.dataset.billNumber;
+            await loadBillForEditing(billNumber);
+        }
+        if (e.target.classList.contains('btn-delete')) {
+            const billNumber = e.target.dataset.billNumber;
+            if (confirm(`คุณต้องการลบใบวางบิลเลขที่ ${billNumber} ใช่หรือไม่?`)) {
+                const res = await fetch(`/api/billing-notes/${billNumber}`, { method: 'DELETE' });
+                if (res.ok) {
+                    alert('ลบสำเร็จ!');
+                    searchBillNotes(); // โหลดผลลัพธ์ใหม่
+                } else {
+                    alert('การลบล้มเหลว');
+                }
+            }
+        }
+    });
+
+    document.getElementById('bill-note-container').addEventListener('click', (e) => {
+        if(e.target.classList.contains('btn-remove-item')) {
+            e.target.closest('tr').remove();
+        }
+    });
 
     // --- Initial Load ---
     const today = new Date();
@@ -281,4 +437,5 @@ document.addEventListener('DOMContentLoaded', () => {
     today.setDate(1);
     startDateInput.value = today.toISOString().split('T')[0];
     loadAllCustomers();
+    saveBtn.parentElement.appendChild(updateBtn);
 });
