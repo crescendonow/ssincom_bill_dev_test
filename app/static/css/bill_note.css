@@ -1,14 +1,18 @@
 /* A4 page styles */
+
+
 .A4-page {
     width: 210mm;
     height: 297mm; /* <-- กำหนดความสูงคงที่ */
     padding: 10mm;
-    margin: 10mm auto;
+    margin: 1 cm auto;
     box-sizing: border-box;
 
     display: grid; /* <--- เปลี่ยนเป็น Grid */
     grid-template-rows: auto auto 1fr auto;  /* <--- กำหนดโครงสร้าง 4 แถว */
     position: relative;
+    border: 1px solid #eee; /* เพิ่มเส้นขอบบางๆ ตอนดูบนเว็บ */
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
 }
 
 .A4-page header {
@@ -31,15 +35,20 @@
 
 /* Print styles */
 @media print {
-    body, .A4-page {
+   body {
+        background: white; /* ตั้งพื้นหลังเป็นสีขาว */
+        margin: 0;
+    }
+    #controls, .page-controls {
+        display: none !important;
+    }
+    .A4-page {
         margin: 0;
         font-family: "TH Sarabun New", "Tahoma", "sans-serif", "Sukhumvit Set", "Thonburi","NotoSansThai", "Noto Sans Thai", "Noto Sans", "Arial";
         box-shadow: none;
-    }
-    #controls {
-        display: none;
-    }
-    .A4-page {
-        display: grid !important; /* บังคับใช้ Grid ตอนพิมพ์ */
+        border: none;
+        width: 100%;
+        height: 100vh; /* <--- บังคับให้ความสูงเต็มหน้าตอนพิมพ์ */
+        padding: 10mm; /* <--- กำหนด padding สำหรับพิมพ์ */
     }
 }
