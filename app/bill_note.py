@@ -91,6 +91,8 @@ def get_billing_note_details(bill_note_number: str, db: Session = Depends(get_db
         models.BillNoteItem.billnote_number == bill_note_number
     ).order_by(models.BillNoteItem.invoice_date.asc()).all()
 
+    invoice_numbers_str = [item.invoice_number for item in items]
+
     if not items:
         # กรณีไม่มีรายการ ให้ trả về ข้อมูลพื้นฐาน
         return {
