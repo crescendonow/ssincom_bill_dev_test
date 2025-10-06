@@ -18,6 +18,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const panelSearch = document.getElementById('panel-search');
     const searchBillBtn = document.getElementById('searchBillBtn');
     const searchResultsBody = document.getElementById('searchResultsBody');
+    const searchQueryInput = document.getElementById('searchQuery');
+    const billNoteList = document.getElementById('billNoteList');
+
+    const debounce = (fn, delay = 300) => {
+        let t;
+        return (...a) => {
+            clearTimeout(t);
+            t = setTimeout(() => fn(...a), delay);
+        };
+    };
+
     const updateBtn = document.createElement('button'); // สร้างปุ่ม Update เตรียมไว้
     updateBtn.id = 'updateBillBtn';
     updateBtn.className = 'bg-amber-600 text-white px-6 py-2 rounded-md hover:bg-amber-700 hidden';
@@ -42,6 +53,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 .join('');
         } catch (error) {
             console.error(error);
+        }
+    }
+
+    async function suggestBillNotes() {
+        const query = searchQueryInput.value.trim();
+        if (query.length < 2) {
+            billNoteList.innerHTML = '';
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/suggest/bill-notes?q=${encodeURIComponent(query)}`);
+            if (!res.ok) return;
+            const suggestions = await res.json();
+
+            billNoteList.innerHTML = suggestions
+                .map(s => `<option value="${s}"></option>`)
+                .join('');
+        } catch (error) {
+            console.error('Suggestion fetch error:', error);
         }
     }
 

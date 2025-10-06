@@ -48,8 +48,11 @@
                 </div>
                 <div>
                     <label for="searchQuery" class="block text-sm font-medium text-gray-600">คำค้นหา</label>
+
                     <input type="text" id="searchQuery" placeholder="เลขที่บิล / ชื่อลูกค้า"
-                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2" list="billNoteList"
+                        autocomplete="off">
+                    <datalist id="billNoteList"></datalist>
                 </div>
             </div>
             <div class="mt-4">

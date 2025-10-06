@@ -304,6 +304,23 @@ def create_billing_note(payload: BillNotePayload, db: Session = Depends(get_db))
     
     return {"ok": True, "billnote_number": new_bill.billnote_number, "idx": new_bill.idx}
 
+@router.get("/api/suggest/bill-notes")
+def suggest_bill_note_numbers(q: Optional[str] = None, db: Session = Depends(get_db)):
+    """
+    API สำหรับค้นหา billnote_number เพื่อใช้ใน Autocomplete
+    """
+    if not q or len(q.strip()) < 2:
+        return []
+        
+    search_term = f"%{q.strip()}%"
+    query = db.query(models.BillNote.billnote_number)\
+        .filter(models.BillNote.billnote_number.ilike(search_term))\
+        .order_by(models.BillNote.billnote_number.desc())\
+        .limit(10)
+        
+    # [r[0] for r in query.all()] เพื่อดึงค่า string ออกมาจาก tuple
+    return [r[0] for r in query.all()]
+
 #------------------- API Search ---------------------#
 @router.get("/api/search-billing-notes")
 def search_billing_notes(
