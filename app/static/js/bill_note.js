@@ -414,6 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // เพิ่มปุ่มลบรายการในตาราง
         document.querySelectorAll('.invoice-table-body tr').forEach(tr => {
             const deleteCell = document.createElement('td');
+            deleteCell.className = 'p-2 text-center noprint'; 
             deleteCell.className = 'p-2 text-center';
             deleteCell.innerHTML = '<button class="btn-remove-item text-red-500">✖</button>';
             tr.appendChild(deleteCell);

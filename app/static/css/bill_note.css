@@ -67,6 +67,10 @@
         display: none !important;
     }
 
+    .noprint {
+        display: none !important;
+    }
+
     .A4-page {
         margin: 0;
         font-family: "TH Sarabun New", "Tahoma", "sans-serif", "Sukhumvit Set", "Thonburi", "NotoSansThai", "Noto Sans Thai", "Noto Sans", "Arial";
