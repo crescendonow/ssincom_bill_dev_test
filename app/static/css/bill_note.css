@@ -1,53 +1,86 @@
 /* A4 page styles */
-
+@page {
+    size: A4 portrait;
+    margin: 10mm;
+    /* ปรับได้ตามต้องการ */
+}
 
 .A4-page {
-    width: 210mm;
-    height: 297mm; /* <-- กำหนดความสูงคงที่ */
-    padding: 10mm;
-    margin: 1 cm auto;
+    width: 190mm;
+    min-height: 277mm;
+    height: 277mm;
+    /* <-- กำหนดความสูงคงที่ */
+    padding: 0;
+    margin: 0 auto;
     box-sizing: border-box;
 
-    display: grid; /* <--- เปลี่ยนเป็น Grid */
-    grid-template-rows: auto auto 1fr auto;  /* <--- กำหนดโครงสร้าง 4 แถว */
+    display: grid;
+    /* <--- เปลี่ยนเป็น Grid */
+    grid-template-rows: auto auto 1fr auto;
+    /* <--- กำหนดโครงสร้าง 4 แถว */
     position: relative;
-    border: 1px solid #eee; /* เพิ่มเส้นขอบบางๆ ตอนดูบนเว็บ */
+    border: 1px solid #eee;
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
 }
 
 .A4-page header {
-    grid-row: 1; /* แถวที่ 1 */
+    grid-row: 1;
+    padding: 8mm;
 }
 
-.A4-page section { /* section ของข้อมูลลูกค้า */
-    grid-row: 2; /* แถวที่ 2 */
+.A4-page section {
+    /* section ของข้อมูลลูกค้า */
+    grid-row: 2;
+    padding: 4mm 8mm;
 }
 
 .A4-page main {
-    grid-row: 3; /* แถวที่ 3 (ยืดหยุ่น) */
-    overflow: hidden; 
+    grid-row: 3;
+    padding: 0 8mm 0 8mm;
+    overflow: hidden;
 }
 
 .A4-page .page-ender {
-    grid-row: 4; /* แถวที่ 4 */
+    min-height: 38mm;
 }
 
+.invoice-table-body tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+.summary-footer {
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
 
 /* Print styles */
 @media print {
-   body {
-        background: white; /* ตั้งพื้นหลังเป็นสีขาว */
+    body {
+        background: white;
+        /* ตั้งพื้นหลังเป็นสีขาว */
         margin: 0;
     }
-    #controls, .page-controls {
+
+    #controls,
+    .page-controls {
         display: none !important;
     }
+
     .A4-page {
         margin: 0;
-        font-family: "TH Sarabun New", "Tahoma", "sans-serif", "Sukhumvit Set", "Thonburi","NotoSansThai", "Noto Sans Thai", "Noto Sans", "Arial";
+        font-family: "TH Sarabun New", "Tahoma", "sans-serif", "Sukhumvit Set", "Thonburi", "NotoSansThai", "Noto Sans Thai", "Noto Sans", "Arial";
         box-shadow: none;
         border: none;
-        width: 100%;
-        height: 100vh;
+        width: 190mm;
+        height: 277mm;
+    }
+
+    .A4-page {
+        page-break-after: always;
+    }
+
+    .A4-page:last-of-type {
+        page-break-after: auto;
     }
 }
