@@ -7,7 +7,7 @@
     box-sizing: border-box;
 
     display: grid; /* <--- เปลี่ยนเป็น Grid */
-    grid-template-rows: auto 1fr auto; /* <--- กำหนดโครงสร้าง 3 แถว */
+    grid-template-rows: auto auto 1fr auto;  /* <--- กำหนดโครงสร้าง 4 แถว */
     position: relative;
 }
 
@@ -15,13 +15,17 @@
     grid-row: 1; /* แถวที่ 1 */
 }
 
-.A4-page main {
-    grid-row: 2; /* แถวที่ 2 (ยืดหยุ่น) */
-    overflow: hidden; /* ป้องกันเนื้อหาล้นออกจากกรอบ */
+.A4-page section { /* section ของข้อมูลลูกค้า */
+    grid-row: 2; /* แถวที่ 2 */
 }
 
-.A4-page footer {
-    grid-row: 3; /* แถวที่ 3 */
+.A4-page main {
+    grid-row: 3; /* แถวที่ 3 (ยืดหยุ่น) */
+    overflow: hidden; 
+}
+
+.A4-page .page-ender {
+    grid-row: 4; /* แถวที่ 4 */
 }
 
 
