@@ -13,12 +13,9 @@ from .customers import router as customers_router
 from .customers import get_db
 from .products import router as products_router
 from .cars import router as cars_router
-<<<<<<< HEAD
 from .bill_note import router as bill_note_router
 from sqlalchemy.orm import joinedload
-=======
 from sqlalchemy.orm import joinedload, Session
->>>>>>> 01fab89be1e19f29a5821729c819e7fdd153faa8
 
 from pathlib import Path
 import os
