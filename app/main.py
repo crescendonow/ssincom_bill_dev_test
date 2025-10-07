@@ -2,16 +2,23 @@ from fastapi import FastAPI, Form, Request, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from fastapi import APIRouter, Depends, Query
+from typing import List
 from jinja2 import TemplateNotFound 
 from . import models, database, pdf_generator
 from .database import SessionLocal
 from .form import router as form_router
 from .summary_invoices import router as summary_router
 from .customers import router as customers_router
+from .customers import get_db
 from .products import router as products_router
 from .cars import router as cars_router
+<<<<<<< HEAD
 from .bill_note import router as bill_note_router
 from sqlalchemy.orm import joinedload
+=======
+from sqlalchemy.orm import joinedload, Session
+>>>>>>> 01fab89be1e19f29a5821729c819e7fdd153faa8
 
 from pathlib import Path
 import os
@@ -59,7 +66,29 @@ async def dashboard(request: Request):
         return RedirectResponse(url="/login", status_code=303)
     return templates.TemplateResponse("dashboard.html", {"request": request, "user": request.session.get("user")})
 
+suggest_router = APIRouter()
+@suggest_router.get("/api/suggest/province", response_model=List[str])
+def suggest_province(q: str = Query(..., min_length=1), db: Session = Depends(get_db)):
+    """
+    API สำหรับค้นหาและแนะนำรายชื่อจังหวัด (Autocomplete)
+    """
+    search_pattern = f"%{q}%"
+    
+    # Query จาก Model ProvinceNostra ที่มีอยู่แล้วใน models.py
+    provinces = (
+        db.query(models.ProvinceNostra.prov_nam_t)
+        .filter(models.ProvinceNostra.prov_nam_t.ilike(search_pattern))
+        .order_by(models.ProvinceNostra.prov_nam_t)
+        .limit(15) # แสดงผลสูงสุด 15 รายการ
+        .all()
+    )
+    
+    # แปลงผลลัพธ์จาก list of tuples -> list of strings
+    # เช่น จาก [('กรุงเทพมหานคร',), ('กระบี่',)] เป็น ['กรุงเทพมหานคร', 'กระบี่']
+    return [p[0] for p in provinces]
+
 # install router 
+app.include_router(suggest_router)
 app.include_router(form_router)
 app.include_router(summary_router)
 app.include_router(customers_router)

@@ -1,15 +1,21 @@
 # app/customers.py
 from __future__ import annotations
 import os
+from datetime import datetime, timezone, timedelta
 from math import ceil
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
 from datetime import datetime
 
+<<<<<<< HEAD
 from fastapi import APIRouter, Depends, HTTPException, Query, Form
+=======
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+>>>>>>> 01fab89be1e19f29a5821729c819e7fdd153faa8
 from fastapi.responses import FileResponse, HTMLResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
+from sqlalchemy.exc import IntegrityError
 
 from .database import SessionLocal
 from . import models
@@ -23,6 +29,37 @@ def get_db():
         yield db
     finally:
         db.close()
+
+def generate_personid(db: Session) -> str:
+    """PC + 2 หลักท้ายปี พ.ศ. + running 4 หลัก (รีเทิร์นค่าใหม่ที่ยังไม่ซ้ำ)"""
+    # ปี พ.ศ. จากเวลาประเทศไทย (หรือใช้ UTC + 543 ก็ได้)
+    th_year = datetime.now().year + 543
+    yy = th_year % 100
+    prefix = f"PC{yy:02d}"
+
+    # หา running สูงสุดของปีนั้น (ท้าย 4 หลัก) จาก personid ที่ขึ้นต้นด้วย prefix
+    # เช่น PC68xxxx -> ดึง xxxx มากสุด
+    q = (db.query(models.CustomerList.personid)
+           .filter(models.CustomerList.personid.like(f"{prefix}%")))
+    max_run = 0
+    for (pid,) in q.all():
+        if isinstance(pid, str) and len(pid) >= 8 and pid.startswith(prefix):
+            tail = pid[-4:]
+            if tail.isdigit():
+                max_run = max(max_run, int(tail))
+
+    # ลองจองเลขใหม่ (กันชนกันด้วย unique)
+    for _ in range(20):  # ลองสัก 20 ครั้งพอ
+        next_run = max_run + 1
+        candidate = f"{prefix}{next_run:04d}"
+        # ตรวจว่ามีหรือยัง
+        exists = db.query(models.CustomerList).filter(models.CustomerList.personid == candidate).first()
+        if not exists:
+            return candidate
+        max_run += 1
+
+    # ถ้าเกิน 20 ครั้ง (ไม่น่าเกิด) โยน error
+    raise RuntimeError("Cannot allocate new personid")
 
 # -------------- Helpers ---------------------
 def _row_to_dict(c: models.CustomerList) -> Dict[str, Any]:
@@ -65,6 +102,9 @@ def _row_to_dict(c: models.CustomerList) -> Dict[str, Any]:
 
         # เครดิต (วัน)
         "fmlpaymentcreditday": c.fmlpaymentcreditday,
+
+        "cf_hq": c.cf_hq,
+        "cf_branch": c.cf_branch,
     }
 
 def _find_template(filename: str) -> Optional[str]:
@@ -246,7 +286,7 @@ def api_customers_create(payload: CustomerUpdate, db: Session = Depends(get_db))
     return {"ok": True, "idx": new_customer.idx}
 
 # ====== เพิ่ม: อัปเดต/เช็กซ้ำลูกค้า ======
-class CustomerUpdate(BaseModel):
+class CustomerPayload(BaseModel):
     prename: str | None = None
     fname: str | None = None
     lname: str | None = None
@@ -255,11 +295,48 @@ class CustomerUpdate(BaseModel):
     cf_personaddress: str | None = None
     cf_personzipcode: str | None = None
     cf_provincename: str | None = None
+<<<<<<< HEAD
     tel: str | None = None
     mobile: str | None = None
     cf_hq: int | None = None
     cf_branch: str | None = None
+=======
+    # ใช้ Key ให้ตรงกับที่ JavaScript ส่งมา
+    cf_personaddress_tel: str | None = None
+    cf_personaddress_mobile: str | None = None
+>>>>>>> 01fab89be1e19f29a5821729c819e7fdd153faa8
     fmlpaymentcreditday: int | None = None
+    cf_hq: int | None = None
+    cf_branch: str | None = None
+
+@router.post("/api/customers")
+async def api_customers_create(payload: CustomerPayload, db: Session = Depends(get_db)):
+    data = payload.dict()
+    personid = (data.get("personid") or "").strip() or generate_personid(db)
+
+    obj = models.CustomerList(
+        prename=data.get("prename"),
+        fname=data.get("fname"),
+        lname=data.get("lname"),
+        personid=personid,
+        cf_personaddress=data.get("cf_personaddress"),
+        cf_personzipcode=data.get("cf_personzipcode"),
+        cf_provincename=data.get("cf_provincename"),
+        cf_taxid=data.get("cf_taxid"),
+        fmlpaymentcreditday=data.get("fmlpaymentcreditday"),
+        cf_hq=data.get("cf_hq"),
+        cf_branch=data.get("cf_branch"),
+        # แก้ไข: Mapping field โทรศัพท์ให้ครบทั้ง 2 ชุดคอลัมน์
+        tel=data.get("cf_personaddress_tel"),
+        mobile=data.get("cf_personaddress_mobile"),
+        cf_personaddress_tel=data.get("cf_personaddress_tel"),
+        cf_personaddress_mobile=data.get("cf_personaddress_mobile"),
+    )
+    db.add(obj)
+    db.commit()
+    db.refresh(obj)
+    return {"ok": True, "idx": obj.idx, "personid": obj.personid}
+
 
 @router.post("/api/customers/check-duplicate")
 def api_customers_check_duplicate(
@@ -275,7 +352,7 @@ def api_customers_check_duplicate(
     return {"duplicate": False}
 
 @router.put("/api/customers/{idx}")
-def api_customers_update(idx: int, payload: CustomerUpdate, db: Session = Depends(get_db)):
+def api_customers_update(idx: int, payload: CustomerPayload, db: Session = Depends(get_db)):
     """
     อัปเดตข้อมูลลูกค้าในตาราง CustomerList ตาม idx
     """
@@ -283,6 +360,7 @@ def api_customers_update(idx: int, payload: CustomerUpdate, db: Session = Depend
     if not c:
         raise HTTPException(status_code=404, detail="customer not found")
 
+<<<<<<< HEAD
     # map field จาก payload -> ORM
     for field in [
         "prename", "fname", "lname", "personid",
@@ -298,6 +376,22 @@ def api_customers_update(idx: int, payload: CustomerUpdate, db: Session = Depend
                 setattr(c, field, None)
             else:
                 setattr(c, field, val)
+=======
+    # ใช้ exclude_unset=True เพื่ออัปเดตเฉพาะฟิลด์ที่ถูกส่งมาเท่านั้น
+    update_data = payload.dict(exclude_unset=True)
+
+    # วนลูปเพื่ออัปเดตข้อมูลทีละฟิลด์
+    for field, val in update_data.items():
+        # กรณีพิเศษ: อัปเดตฟิลด์เบอร์โทรศัพท์ทั้ง 2 ชุด
+        if field == 'cf_personaddress_tel':
+            setattr(c, 'tel', val)
+            setattr(c, 'cf_personaddress_tel', val)
+        elif field == 'cf_personaddress_mobile':
+            setattr(c, 'mobile', val)
+            setattr(c, 'cf_personaddress_mobile', val)
+        elif hasattr(c, field):
+            setattr(c, field, val)
+>>>>>>> 01fab89be1e19f29a5821729c819e7fdd153faa8
 
     db.commit()
     return {"ok": True, "idx": idx}

@@ -1,38 +1,56 @@
-// /static/js/customer_form.js
+// /static/js/customer_form.js (reorganized)
+// ————————————————————————————————————————————
+// Key fixes
+// 1) Use $(id) helper = document.getElementById(id) — DO NOT prefix with '#'
+// 2) Single submit flow (no double POST). Duplicate-check happens before submit.
+// 3) Robust field serialization + type normalization (e.g., cf_hq to 0/1/null)
+// 4) Clean pagination + search + edit-fill + province suggestions (fallback)
+// 5) Defensive fetch wrappers + small UX helpers
+// ————————————————————————————————————————————
 
-// ===== Config / Endpoints =====
-const ENDPOINT_PROV_SUGGEST = '/api/suggest/province';
+// ===== Endpoints =====
+const ENDPOINT_LIST = '/api/customers';
+const ENDPOINT_ALL = '/api/customers/all';
+const ENDPOINT_DETAIL = '/api/customers/detail';
+const ENDPOINT_DUPCHK = '/api/customers/check-duplicate';
+const ENDPOINT_PROV_SUGGEST = '/api/suggest/province'; // if backend not present, we fallback
 
-// ===== State & Helpers =====
-let all = [];
-let filtered = [];
-let editing = null;
-let currentPage = 1;
+// ===== State =====
+let ALL_CACHE = []; // for datalist fallback & client-side utilities
+let CURRENT_ITEMS = []; // current page items for table
+let CURRENT_PAGE = 1;
+let TOTAL_PAGES = 1;
+let TOTAL_ITEMS = 0;
 const PAGE_SIZE = 20;
+let EDITING_IDX = null; // when editing existing row
 
+// ===== Tiny utils =====
 const $ = (id) => document.getElementById(id);
-const norm = (s) => (s ?? '').toString().trim().toLowerCase();
-const debounce = (fn, delay = 250) => { let t = null; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), delay); }; };
-const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const norm = (s) => (s ?? '').toString().trim();
+const lower = (s) => norm(s).toLowerCase();
+const esc = (s) => String(s ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
+const debounce = (fn, delay = 250) => {
+  let t = null;
+  return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), delay); };
+};
 
-// ใช้ customer_name เป็นหลัก; ถ้าไม่มีค่อย fallback prename/fname/lname
-function displayName(c) {
-  const primary = (c.customer_name || '').toString().trim();
-  if (primary) return primary;
-  const combo = [c.prename, c.fname, c.lname].filter(Boolean).join(' ').trim();
-  return combo || c.fname || '';
-}
-function displayPhone(c) {
-  return c.mobile || c.tel || c.cf_personaddress_mobile || '';
-}
-// เลขภาษี รองรับหลายคีย์จาก backend
-function getTaxId(c) {
-  return c.cf_taxid ?? c.tax_id ?? c.taxid ?? '';
-}
-function getProvince(c) {
-  return c.cf_provincename ?? c.province ?? '';
+// Parse cf_hq input into 0/1/null consistently
+function parseHqValue(v) {
+  const s = lower(v);
+  if (s === '') return null;
+  if (s === '1' || s === 'hq' || s === 'สำนักงานใหญ่') return 1;
+  if (s === '0' || s === 'branch' || s === 'สาขา') return 0;
+  // numeric fallback
+  const n = Number(v);
+  return Number.isNaN(n) ? null : (n === 0 ? 0 : 1);
 }
 
+<<<<<<< HEAD
 // +++ เพิ่ม: ฟังก์ชันสำหรับขอรหัสลูกค้าใหม่จาก API +++
 async function generateAndSetNewCustomerId() {
   const personIdInput = $('personid');
@@ -55,62 +73,151 @@ async function generateAndSetNewCustomerId() {
 
 // ===== โหลดทั้งหมด =====
 async function loadAll() {
+=======
+function setDisabled(el, disabled = true) {
+  if (!el) return;
+  if (disabled) {
+    el.setAttribute('disabled', 'disabled');
+    el.classList.add('opacity-60', 'cursor-not-allowed');
+  } else {
+    el.removeAttribute('disabled');
+    el.classList.remove('opacity-60', 'cursor-not-allowed');
+  }
+}
+
+// ===== Fetch helpers =====
+async function jget(url, params = {}) {
+  const q = new URLSearchParams(params);
+  const res = await fetch(q.size ? `${url}?${q}` : url);
+  if (!res.ok) throw new Error(`${url} ${res.status}`);
+  return await res.json();
+}
+async function jpost(url, body) {
+  const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(`${url} ${res.status}`);
+  return await res.json().catch(() => ({}));
+}
+async function jput(url, body) {
+  const res = await fetch(url, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(`${url} ${res.status}`);
+  return await res.json().catch(() => ({}));
+}
+
+// ===== Form serialization =====
+function readForm() {
+  const payload = {
+    idx: norm($('idx')?.value) || null,
+    personid: norm($('personid')?.value),
+    prename: norm($('prename')?.value),
+    fname: norm($('fname')?.value),
+    lname: norm($('lname')?.value),
+    cf_taxid: norm($('cf_taxid')?.value),
+    cf_personaddress: norm($('cf_personaddress')?.value),
+    cf_personzipcode: norm($('cf_personzipcode')?.value),
+    cf_provincename: norm($('cf_provincename')?.value),
+    cf_personaddress_tel: norm($('cf_personaddress_tel')?.value),
+    cf_personaddress_mobile: norm($('cf_personaddress_mobile')?.value),
+    fmlpaymentcreditday: norm($('fmlpaymentcreditday')?.value),
+    cf_hq: $('cf_hq') ? $('cf_hq').value : '',
+    cf_branch: norm($('cf_branch')?.value),
+  };
+
+  // normalize types
+  payload.fmlpaymentcreditday = payload.fmlpaymentcreditday === '' ? null : Number(payload.fmlpaymentcreditday);
+  payload.cf_hq = parseHqValue(payload.cf_hq);
+
+  // personid: allow backend generation if empty
+  if (!payload.personid) payload.personid = '';
+
+  return payload;
+}
+
+function writeForm(c) {
+  $('idx').value = c.idx ?? '';
+  $('personid').value = c.personid ?? '';
+  $('prename').value = c.prename ?? '';
+  $('fname').value = c.fname ?? '';
+  $('lname').value = c.lname ?? '';
+  $('cf_taxid').value = c.cf_taxid ?? c.tax_id ?? c.taxid ?? '';
+  $('cf_personaddress').value = c.cf_personaddress ?? c.address ?? '';
+  $('cf_personzipcode').value = c.cf_personzipcode ?? c.zipcode ?? '';
+  $('cf_provincename').value = c.cf_provincename ?? c.province ?? '';
+  $('cf_personaddress_tel').value = c.cf_personaddress_tel ?? c.tel ?? '';
+  $('cf_personaddress_mobile').value = c.cf_personaddress_mobile ?? c.mobile ?? '';
+  $('fmlpaymentcreditday').value = c.fmlpaymentcreditday ?? '';
+  const hq = (c.cf_hq ?? null);
+  $('cf_hq').value = (hq === null ? '' : String(hq));
+  $('cf_branch').value = c.cf_branch ?? '';
+  toggleBranchBox();
+}
+
+function resetForm() {
+  EDITING_IDX = null;
+  $('customerForm').reset();
+  $('idx').value = '';
+  $('personid').value = '';
+  toggleBranchBox();
+  hideDupWarn();
+}
+
+// ===== Duplicate check =====
+async function isDuplicate(payload, excludeIdx = null) {
+>>>>>>> 01fab89be1e19f29a5821729c819e7fdd153faa8
   try {
-    const res = await fetch('/api/customers/all');
-    if (!res.ok) throw new Error('โหลดรายการลูกค้าไม่สำเร็จ');
-    all = await res.json();
-    filtered = all.slice();
-    currentPage = 1;
-    renderPage();
+    const body = {
+      personid: payload.personid || null,
+      fname: payload.fname || null,
+      lname: payload.lname || null,
+      cf_taxid: payload.cf_taxid || null,
+      exclude_idx: excludeIdx,
+    };
+    const out = await jpost(ENDPOINT_DUPCHK, body);
+    return !!out.duplicate; // backend returns { duplicate: false } for now
   } catch (e) {
-    console.error(e);
-    all = []; filtered = [];
-    renderPage();
+    console.warn('dup-check failed (treat as not duplicate)', e);
+    return false;
   }
 }
 
-// ===== แสดงหน้าปัจจุบัน =====
-function renderPage() {
-  const total = filtered.length;
-  const maxPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  if (currentPage > maxPage) currentPage = maxPage;
+// ===== Province suggest (with fallback) =====
+async function suggestProvinces() {
+  const input = $('cf_provincename');
+  const dl = $('province_datalist');
+  if (!input || !dl) return;
+  const q = norm(input.value);
+  if (!q) { dl.innerHTML = ''; return; }
 
-  const startIdx = (currentPage - 1) * PAGE_SIZE;
-  const endIdx = Math.min(total, startIdx + PAGE_SIZE);
-  const pageRows = filtered.slice(startIdx, endIdx);
-
-  renderTable(pageRows);
-
-  const resultInfo = $('resultInfo');
-  if (resultInfo) {
-    const from = total === 0 ? 0 : startIdx + 1;
-    resultInfo.textContent = `แสดง ${from}-${endIdx} จากทั้งหมด ${total} รายการ`;
+  // try server suggest first
+  try {
+    const list = await jget(ENDPOINT_PROV_SUGGEST, { q });
+    dl.innerHTML = list.map(p => `<option value="${esc(p)}"></option>`).join('');
+    return;
+  } catch {
+    // fallback from ALL_CACHE
+    const cand = Array.from(new Set(ALL_CACHE.map(c => c.cf_provincename || c.province || '')))
+      .filter(Boolean)
+      .filter(p => lower(p).includes(lower(q)))
+      .slice(0, 15);
+    dl.innerHTML = cand.map(p => `<option value="${esc(p)}"></option>`).join('');
   }
-  const pageInfo = $('pageInfo');
-  if (pageInfo) pageInfo.textContent = `หน้า ${currentPage} / ${maxPage}`;
-
-  const prevBtn = $('prevPage'), nextBtn = $('nextPage');
-  if (prevBtn) prevBtn.disabled = currentPage <= 1;
-  if (nextBtn) nextBtn.disabled = currentPage >= maxPage;
 }
 
-// ===== เรนเดอร์ตารางของหน้า =====
-function renderTable(rows) {
+// ===== Table render helpers =====
+function displayName(c) {
+  const pre = c.prename ? `${c.prename}` : '';
+  return `${pre}${pre ? ' ' : ''}${c.fname || ''} ${c.lname || ''}`.trim();
+}
+function displayPhone(c) { return c.cf_personaddress_mobile || c.mobile || c.cf_personaddress_tel || c.tel || ''; }
+function getTaxId(c) { return c.cf_taxid ?? c.tax_id ?? c.taxid ?? ''; }
+function getProvince(c) { return c.cf_provincename ?? c.province ?? ''; }
+
+function renderTable(items) {
   const tb = $('tbody');
   if (!tb) return;
   tb.innerHTML = '';
-
-  if (!rows || rows.length === 0) {
+  items.forEach((c) => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td class="p-2 text-center text-gray-500" colspan="6">ไม่พบข้อมูล</td>`;
-    tb.appendChild(tr);
-    return;
-  }
-
-  rows.forEach((c) => {
-    const tr = document.createElement('tr');
-    tr.className = 'row border-b';
-
+    tr.className = 'border-b';
     tr.innerHTML = `
       <td class="p-2">${esc(displayName(c))}</td>
       <td class="p-2 hidden sm:table-cell">${esc(c.personid || '')}</td>
@@ -119,62 +226,40 @@ function renderTable(rows) {
       <td class="p-2 hidden md:table-cell">${esc(getProvince(c))}</td>
       <td class="p-2 w-24">
         <button type="button" class="text-blue-600 hover:underline btn-edit" data-idx="${c.idx}">แก้ไข</button>
-      </td>
-    `;
+      </td>`;
     tb.appendChild(tr);
+  });
+
+  // wire edit buttons
+  tb.querySelectorAll('.btn-edit').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const idx = e.currentTarget.getAttribute('data-idx');
+      const row = CURRENT_ITEMS.find(x => String(x.idx) === String(idx));
+      if (row) {
+        EDITING_IDX = row.idx;
+        writeForm(row);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
   });
 }
 
-// ===== ค้นหา (รวม customer_name/เลขภาษี/จังหวัด) =====
-function doSearch() {
-  const q = norm($('search')?.value);
-  if (!q) {
-    filtered = all.slice();
-  } else {
-    filtered = all.filter((c) =>
-      (c.customer_name || '').toLowerCase().includes(q) ||
-      displayName(c).toLowerCase().includes(q) ||
-      (c.personid || '').toLowerCase().includes(q) ||
-      String(getTaxId(c)).toLowerCase().includes(q) ||
-      displayPhone(c).toLowerCase().includes(q) ||
-      String(getProvince(c)).toLowerCase().includes(q)
-    );
-  }
-  currentPage = 1;
-  renderPage();
+function renderPager() {
+  $('pageInfo').textContent = `หน้า ${CURRENT_PAGE} / ${TOTAL_PAGES}`;
+  $('resultInfo').textContent = `${TOTAL_ITEMS.toLocaleString()} รายการ`;
 }
 
-// ===== Province autocomplete =====
-async function suggestProvinces() {
-  const input = $('cf_provincename');
-  const list = $('province_datalist');
-  if (!input || !list) return;
-  const q = (input.value || '').trim();
-  list.innerHTML = '';
-  if (q.length < 1) return;
-
+// ===== Loading data =====
+async function loadAllCache() {
   try {
-    const url = new URL('/api/suggest/province', location.origin);
-    url.searchParams.set('q', q);
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('โหลดจังหวัดไม่สำเร็จ');
-
-    const data = await res.json(); // [{ prov_nam_t }]
-    const seen = new Set();
-    data.forEach(r => {
-      const name = r.prov_nam_t;
-      if (name && !seen.has(name)) {
-        seen.add(name);
-        const opt = document.createElement('option');
-        opt.value = name;
-        list.appendChild(opt);
-      }
-    });
+    ALL_CACHE = await jget(ENDPOINT_ALL);
   } catch (e) {
-    console.error(e);
+    console.warn('loadAllCache failed', e);
+    ALL_CACHE = [];
   }
 }
 
+<<<<<<< HEAD
 // ===== ฟอร์ม =====
 function resetForm() {
   editing = null;
@@ -219,10 +304,30 @@ async function isDuplicate(payload, ignoreIdx = null) {
   return !!data.duplicate;
 }
 async function saveCustomer(e) {
-  e.preventDefault();
-  const f = new FormData($('customerForm'));
-  const payload = Object.fromEntries(f.entries());
+=======
+async function loadPage(page = 1) {
+  const q = $('search')?.value || '';
+  const params = { page, limit: PAGE_SIZE };
+  if (q) params.q = q;
+  const data = await jget(ENDPOINT_LIST, params);
+  CURRENT_ITEMS = data.items || [];
+  CURRENT_PAGE = data.page || page;
+  TOTAL_PAGES = data.pages || 1;
+  TOTAL_ITEMS = data.total || (CURRENT_ITEMS?.length || 0);
+  renderTable(CURRENT_ITEMS);
+  renderPager();
+}
 
+// ===== Submit =====
+function hideDupWarn() { $('dupWarn')?.classList.add('hidden'); }
+function showDupWarn() { $('dupWarn')?.classList.remove('hidden'); }
+
+async function onSubmit(e) {
+>>>>>>> 01fab89be1e19f29a5821729c819e7fdd153faa8
+  e.preventDefault();
+  hideDupWarn();
+
+<<<<<<< HEAD
   if (payload.cf_hq === '1') {
     payload.cf_branch = '';
   }
@@ -231,68 +336,79 @@ async function saveCustomer(e) {
   const warn = $('dupWarn');
   if (duplicate) { warn?.classList.remove('hidden'); return; }
   warn?.classList.add('hidden');
+=======
+  const btnSubmit = $('customerForm')?.querySelector('button[type="submit"]');
+  setDisabled(btnSubmit, true);
+>>>>>>> 01fab89be1e19f29a5821729c819e7fdd153faa8
 
-  const toDash = $('redirectDash')?.checked ? '1' : null;
-  let url = '/api/customers', method = 'POST';
-  if (payload.idx) {
-    url = `/api/customers/${payload.idx}`;
-    method = 'PUT'; // <--- เพิ่มบรรทัดนี้เพื่อเปลี่ยนเมธอดเป็น PUT
+  try {
+    const payload = readForm();
+    const duplicate = await isDuplicate(payload, payload.idx || null);
+    if (duplicate) { showDupWarn(); return; }
+
+    let res;
+    if (payload.idx) {
+      // UPDATE
+      const idx = payload.idx; const body = { ...payload }; delete body.idx;
+      res = await jput(`${ENDPOINT_LIST}/${idx}`, body);
+    } else {
+      // CREATE
+      res = await jpost(ENDPOINT_LIST, payload);
+    }
+
+    // Backend may redirect (fastapi can also return json). Handle both.
+    if (res && res.redirected && res.url) {
+      window.location.href = res.url; return;
+    }
+
+    await loadPage(CURRENT_PAGE);
+    if (!payload.idx) resetForm();
+    alert('บันทึกเรียบร้อย');
+  } catch (err) {
+    console.error(err);
+    alert('บันทึกล้มเหลว');
+  } finally {
+    setDisabled(btnSubmit, false);
   }
+}
 
-  if (payload.fmlpaymentcreditday === '') {
-    payload.fmlpaymentcreditday = null;
+// ===== Edit helpers =====
+async function fillFromDetailByPersonId(pid) {
+  if (!pid) return;
+  try {
+    const c = await jget(ENDPOINT_DETAIL, { personid: pid });
+    writeForm(c);
+  } catch (e) {
+    // ignore if not found
   }
-  // ถ้ามีฟิลด์ตัวเลขอื่นๆ ที่อาจเป็นค่าว่าง ก็ควรทำแบบเดียวกัน
-
-  // --- เปลี่ยนจากการส่ง FormData เป็น JSON ---
-  const res = await fetch(url, {
-    method,
-    headers: {
-      'Content-Type': 'application/json', // <-- 1. ระบุ Content-Type ให้ถูกต้อง
-    },
-    body: JSON.stringify(payload), // <-- 2. แปลง JavaScript object เป็น JSON string
-  });
-  if (res.redirected) { window.location.href = res.url; return; }
-  if (!res.ok) { alert('บันทึกล้มเหลว'); return; }
-
-  await loadAll();
-  if (!payload.idx) resetForm();
-  alert('บันทึกเรียบร้อย');
-}
-function editRowByIdx(idx) {
-  const c = all.find((it) => String(it.idx) === String(idx));
-  if (!c) return;
-  editing = c.idx;
-  fillForm(c);
-  const idxEl = $('idx'); if (idxEl) idxEl.value = c.idx;
-  $('btnDelete')?.classList.remove('hidden');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-async function deleteCustomer() {
-  if (!editing) return;
-  if (!confirm('ยืนยันลบลูกค้ารายนี้?')) return;
-  const res = await fetch(`/api/customers/${editing}`, { method: 'DELETE' });
-  if (!res.ok) { alert('ลบไม่สำเร็จ'); return; }
-  await loadAll(); resetForm(); alert('ลบเรียบร้อย');
 }
 
-// ===== Events =====
-function initCustomerForm() {
-  $('customerForm')?.addEventListener('submit', saveCustomer);
-  const resetBtn = $('btnReset') || $('btnNew');
-  resetBtn?.addEventListener('click', resetForm);
-  $('btnDelete')?.addEventListener('click', deleteCustomer);
+// ===== UI wiring =====
+function toggleBranchBox() {
+  const sel = $('cf_hq');
+  const box = $('branchBox');
+  if (!sel || !box) return;
+  const v = parseHqValue(sel.value);
+  if (v === 0) box.classList.remove('hidden');
+  else box.classList.add('hidden');
+}
 
-  $('search')?.addEventListener('input', doSearch);
+function wireUI() {
+  // search + pager
+  $('search')?.addEventListener('input', debounce(() => loadPage(1), 300));
+  $('prevPage')?.addEventListener('click', () => { if (CURRENT_PAGE > 1) loadPage(CURRENT_PAGE - 1); });
+  $('nextPage')?.addEventListener('click', () => { if (CURRENT_PAGE < TOTAL_PAGES) loadPage(CURRENT_PAGE + 1); });
 
-  $('prevPage')?.addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderPage(); } });
-  $('nextPage')?.addEventListener('click', () => { currentPage++; renderPage(); });
+  // form
+  $('customerForm')?.addEventListener('submit', onSubmit);
+  $('btnReset')?.addEventListener('click', (e) => { e.preventDefault(); resetForm(); });
+  $('btnDelete')?.addEventListener('click', (e) => { e.preventDefault(); alert('ยังไม่ได้เปิดใช้การลบ'); });
+  $('redirectDash')?.addEventListener('click', (e) => { e.preventDefault(); window.location.href = '/'; });
 
-  $('tbody')?.addEventListener('click', (e) => {
-    const btn = e.target.closest('.btn-edit');
-    if (btn && btn.dataset.idx) editRowByIdx(btn.dataset.idx);
-  });
+  // HQ/Branch toggle
+  $('cf_hq')?.addEventListener('change', toggleBranchBox);
 
+<<<<<<< HEAD
   // +++ เพิ่ม: จัดการการแสดงผลของช่องรหัสสาขา +++
   const hqSelect = $('cf_hq');
   const branchWrapper = $('branch_field_wrapper');
@@ -307,14 +423,31 @@ function initCustomerForm() {
 
   const provInput = $('cf_provincename');
   if (provInput) {
+=======
+  // Province suggest (typeahead)
+  const prov = $('cf_provincename');
+  if (prov) {
+>>>>>>> 01fab89be1e19f29a5821729c819e7fdd153faa8
     const deb = debounce(suggestProvinces, 200);
-    provInput.addEventListener('input', deb);
-    provInput.addEventListener('focus', () => {
-      if (provInput.value) suggestProvinces();
-    });
+    prov.addEventListener('input', deb);
+    prov.addEventListener('focus', () => { if (prov.value) suggestProvinces(); });
   }
+<<<<<<< HEAD
   generateAndSetNewCustomerId();
   loadAll();
+=======
+
+  // Optional: auto-fill by personid change
+  $('personid')?.addEventListener('change', (e) => fillFromDetailByPersonId(e.target.value));
+>>>>>>> 01fab89be1e19f29a5821729c819e7fdd153faa8
 }
 
-document.addEventListener('DOMContentLoaded', initCustomerForm);
+// ===== Init =====
+async function init() {
+  wireUI();
+  toggleBranchBox();
+  await loadAllCache();
+  await loadPage(1);
+}
+
+document.addEventListener('DOMContentLoaded', init);
