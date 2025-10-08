@@ -401,8 +401,8 @@ def export_merged_pdf(request: Request, payload: dict = Body(...)):
     """
     variants = [
         ("invoice_original", "ใบกำกับ/ส่งของ/แจ้งหนี้ (ต้นฉบับ)"),
-        ("invoice_copy",     "ใบกำกับ/ส่งของ/ใบแจ้งหนี้ (สำเนา)"),
         ("receipt_original", "ใบเสร็จรับเงิน (ต้นฉบับ)"),
+        ("invoice_copy",     "ใบกำกับ/ส่งของ/ใบแจ้งหนี้ (สำเนา)"),
         ("receipt_copy",     "ใบเสร็จรับเงิน (สำเนา)"),
     ]
 
