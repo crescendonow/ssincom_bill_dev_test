@@ -129,47 +129,118 @@ function selectCustomer() {
   if (el) fillCustomerFromSelected(el.value);
 }
 
+// ========== [NEW] Central function to fetch details by PID ==========
+/**
+ * ดึงข้อมูลลูกค้าแบบเต็มจาก API โดยใช้ personid แล้วเติมลงในฟอร์ม
+ * @param {string} pid รหัสลูกค้า (personid)
+ */
+async function fetchAndFillCustomerByPersonId(pid) {
+  if (!pid) return; // ไม่ต้องทำอะไรถ้า pid ว่าง
+  try {
+    // ใช้ API /detail ที่มีอยู่ (จาก logic เดิมในการดึง credit day)
+    const res = await fetch(`/api/customers/detail?personid=${encodeURIComponent(pid)}`);
+    if (!res.ok) {
+      console.warn(`Customer ${pid} not found`);
+      // อาจจะเคลียร์ฟอร์มส่วนลูกค้าทิ้งถ้าต้องการ
+      return;
+    }
+
+    const c = await res.json(); // 'c' for customer data
+    if (c) {
+      const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
+
+      // เติมข้อมูลลงฟอร์ม (ใช้ key-mapping แบบเดียวกับในโค้ดเดิม)
+      set('personid', c.personid);
+      set('customer_name', c.customer_name || c.fname || '');
+      set('customer_taxid', c.taxid || c.cf_taxid);
+      set('customer_address', c.address || c.cf_personaddress);
+      set('cf_provincename', c.province || c.cf_provincename);
+      set('cf_personzipcode', c.zipcode || c.cf_personzipcode);
+      set('tel', c.tel);
+      set('mobile', c.mobile);
+      set('cf_branch', c.cf_branch);
+
+      // เติมเครดิตวันถ้ามี และคำนวณ due date
+      if (c.fmlpaymentcreditday != null && c.fmlpaymentcreditday !== '') {
+        set('fmlpaymentcreditday', c.fmlpaymentcreditday);
+        computeAndFillDueDate();
+      }
+    }
+  } catch (e) {
+    console.error("Failed to fetch customer detail:", e);
+  }
+}
+
+// ========== [NEW] Add listener to 'personid' input field ==========
+function bindPersonIdListener() {
+  const input = document.getElementById('personid');
+  if (!input) return;
+
+  // ทำงานเมื่อผู้ใช้ออกจากช่อง (blur) หรือกด Enter (change)
+  input.addEventListener('change', () => {
+    fetchAndFillCustomerByPersonId(input.value.trim());
+  });
+}
+// เรียกใช้ binder ใหม่
+document.addEventListener('DOMContentLoaded', bindPersonIdListener);
+
 async function fillCustomerFromSelected(label) {
   let c = _customerCache.get(label);
 
-  // ตัด (PCxxxx) และ trim
-  const bareName = (label || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
-
-  // fallback หาใน /all
-  if (!c) {
-    const found = customers.find(x => ((x.customer_name || x.fname || '').trim() === bareName));
-    if (found) c = found;
-  }
-
-  if (!c) return;
-
-  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
-  set('personid', c.personid);
-  set('customer_name', c.customer_name || bareName);
-  set('customer_taxid', c.taxid);
-  set('customer_address', c.address);
-  set('cf_provincename', c.province);
-  set('cf_personzipcode', c.zipcode);
-  set('tel', c.tel);
-  set('mobile', c.mobile);
-  set('cf_branch', c.cf_branch);
-
-  // เติมเครดิตวันถ้ามี
-  if (c.fmlpaymentcreditday != null && c.fmlpaymentcreditday !== '') {
-    set('fmlpaymentcreditday', c.fmlpaymentcreditday);
-    computeAndFillDueDate();
-  } else if (c.personid) {
+  // ========== [NEW] Central function to fetch details by PID ==========
+  /**
+   * ดึงข้อมูลลูกค้าแบบเต็มจาก API โดยใช้ personid แล้วเติมลงในฟอร์ม
+   * @param {string} pid รหัสลูกค้า (personid)
+   */
+  async function fetchAndFillCustomerByPersonId(pid) {
+    if (!pid) return; // ไม่ต้องทำอะไรถ้า pid ว่าง
     try {
-      const res = await fetch(`/api/customers/detail?personid=${encodeURIComponent(c.personid)}`);
-      if (res.ok) {
-        const d = await res.json();
-        if (d && d.fmlpaymentcreditday != null) {
-          set('fmlpaymentcreditday', d.fmlpaymentcreditday);
+      // ใช้ API /detail ที่มีอยู่ (จาก logic เดิมในการดึง credit day)
+      const res = await fetch(`/api/customers/detail?personid=${encodeURIComponent(pid)}`);
+      if (!res.ok) {
+        console.warn(`Customer ${pid} not found`);
+        // อาจจะเคลียร์ฟอร์มส่วนลูกค้าทิ้งถ้าต้องการ
+        return;
+      }
+
+      const c = await res.json(); // 'c' for customer data
+      if (c) {
+        const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
+
+        // เติมข้อมูลลงฟอร์ม (ใช้ key-mapping แบบเดียวกับในโค้ดเดิม)
+        set('personid', c.personid);
+        set('customer_name', c.customer_name || c.fname || '');
+        set('customer_taxid', c.taxid || c.cf_taxid);
+        set('customer_address', c.address || c.cf_personaddress);
+        set('cf_provincename', c.province || c.cf_provincename);
+        set('cf_personzipcode', c.zipcode || c.cf_personzipcode);
+        set('tel', c.tel);
+        set('mobile', c.mobile);
+        set('cf_branch', c.cf_branch);
+
+        // เติมเครดิตวันถ้ามี และคำนวณ due date
+        if (c.fmlpaymentcreditday != null && c.fmlpaymentcreditday !== '') {
+          set('fmlpaymentcreditday', c.fmlpaymentcreditday);
           computeAndFillDueDate();
         }
       }
-    } catch { }
+    } catch (e) {
+      console.error("Failed to fetch customer detail:", e);
+    }
   }
+
+  // ========== [NEW] Add listener to 'personid' input field ==========
+  function bindPersonIdListener() {
+    const input = document.getElementById('personid');
+    if (!input) return;
+
+    // ทำงานเมื่อผู้ใช้ออกจากช่อง (blur) หรือกด Enter (change)
+    input.addEventListener('change', () => {
+      fetchAndFillCustomerByPersonId(input.value.trim());
+    });
+  }
+  // เรียกใช้ binder ใหม่
+  document.addEventListener('DOMContentLoaded', bindPersonIdListener);
 }
 
 /* ===========================
