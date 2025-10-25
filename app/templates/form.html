@@ -86,17 +86,16 @@
 
         <!-- ลูกค้า -->
         <div>
-          <label for="customer_name" class="block mb-1 text-sm font-medium text-gray-900">ชื่อลูกค้า</label>
-          <input type="text" name="customer_name" id="customer_name" list="customerList" oninput="selectCustomer()"
+          <label for="personid" class="block mb-1 text-sm font-medium text-gray-900">รหัสลูกค้า (personid)</label>
+            <input type="text" name="personid" id="personid" list="personidList" autocomplete="off"
+              oninput="selectCustomerByPersonid()" placeholder="เช่น PC55901001"
             class="bg-gray-100 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
-
         </div>
 
         <div>
-          <label for="customer_taxid"
-            class="block mb-1 text-sm font-medium text-gray-900">เลขประจำตัวผู้เสียภาษี</label>
-          <input type="text" name="customer_taxid" id="customer_taxid"
-            class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
+          <label for="customer_name" class="block mb-1 text-sm font-medium text-gray-900">ชื่อลูกค้า</label>
+          <input type="text" name="customer_name" id="customer_name" list="customerList" oninput="selectCustomer()"
+            class="bg-gray-100 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
         </div>
 
         <div>
@@ -107,9 +106,8 @@
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label for="personid" class="block mb-1 text-sm font-medium text-gray-900">รหัสลูกค้า (personid)</label>
-            <input type="text" name="personid" id="personid" list="personidList" autocomplete="off"
-              oninput="selectCustomerByPersonid()" placeholder="เช่น PC55901001"
+            <label for="customer_taxid" class="block mb-1 text-sm font-medium text-gray-900">เลขประจำตัวผู้เสียภาษี</label>
+            <input type="text" name="customer_taxid" id="customer_taxid"
               class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
           </div>
           <div>

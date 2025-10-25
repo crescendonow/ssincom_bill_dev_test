@@ -97,7 +97,7 @@ fetch('/api/customers/all')
     const dlName = document.getElementById("customerList");
     if (dlName) dlName.innerHTML = customers.map(c => {
       const name = ((c.customer_name || c.fname || '') || '').trim();
-      return `<option value="${name}${(c.personid || '').trim() ? ' ' + (c.personid || '').trim() : ''}">`;
+      return `<option value="${name}">`;
     }).join('');
   });
 
