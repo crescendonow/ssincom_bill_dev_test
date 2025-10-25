@@ -83,165 +83,130 @@ fetch('/api/customers/all')
   .then(res => res.json())
   .then(data => {
     customers = data || [];
-    const dl = document.getElementById("customerList");
-    if (dl) dl.innerHTML = customers
-      .map(c => `<option value="${(c.customer_name || c.fname || '').trim()}">`)
-      .join('');
+
+    // เติม datalist ของ personid เป็นหลัก
+    const dlPid = document.getElementById("personidList");
+    if (dlPid) dlPid.innerHTML = customers.map(c => {
+      const pid = (c.personid || '').trim();
+      const name = ((c.customer_name || c.fname || '') || '').trim();
+      // แสดง "PERSONID ชื่อ"
+      return `<option value="${pid}${name ? ' ' + name : ''}">`;
+    }).join('');
+
+    // (ตัวเลือก) จะคง customerList ไว้ก็ได้ — แต่ไม่ใช้เป็น key หลักแล้ว
+    const dlName = document.getElementById("customerList");
+    if (dlName) dlName.innerHTML = customers.map(c => {
+      const name = ((c.customer_name || c.fname || '') || '').trim();
+      return `<option value="${name}">`;
+    }).join('');
   });
 
-const _customerCache = new Map(); // label => object จาก /suggest
 
-async function searchCustomers(q) {
+/* ===========================
+   Customer autocomplete by PERSONID (unique)
+   =========================== */
+const _customerCache = new Map(); // key: personid, val: object
+
+async function searchCustomersByPersonid(q) {
+  // backend เดิมคือ /api/customers/suggest?q=... (จะค้นทั้งชื่อ/รหัส)
+  // ยังใช้ endpoint เดิมได้ แต่เราจะ "อ่าน personid" มาเป็น key
   const res = await fetch(`/api/customers/suggest?q=${encodeURIComponent(q)}`);
   if (!res.ok) return [];
   return await res.json();
 }
 
-function bindCustomerAutocomplete() {
-  const input = document.getElementById('customer_name');
-  const list = document.getElementById('customerList');
+function bindPersonidAutocomplete() {
+  const input = document.getElementById('personid');
+  const list = document.getElementById('personidList');
   if (!input || !list) return;
 
-  const deb = (fn, t = 250) => { let h; return (...a) => { clearTimeout(h); h = setTimeout(() => fn(...a), t) } };
+  const deb = (fn, t = 250) => { let h; return (...a) => { clearTimeout(h); h = setTimeout(() => fn(...a), t); } };
 
   async function suggest() {
     const q = (input.value || '').trim();
     list.innerHTML = '';
     _customerCache.clear();
     if (!q) return;
-    const items = await searchCustomers(q);
+
+    const items = await searchCustomersByPersonid(q);
     items.forEach(c => {
-      const label = `${(c.customer_name || '').trim()}${c.personid ? ' (' + c.personid + ')' : ''}`;
+      const pid = (c.personid || '').trim();
+      const name = ((c.customer_name || '') || '').trim();
+      if (!pid) return;
+      const label = `${pid}${name ? ' ' + name : ''}`;  // "PERSONID ชื่อ"
       const opt = document.createElement('option');
       opt.value = label;
       list.appendChild(opt);
-      _customerCache.set(label, c);
+      _customerCache.set(pid, c); // cache by pure personid
     });
   }
 
   input.addEventListener('input', deb(suggest, 250));
-  input.addEventListener('change', () => fillCustomerFromSelected(input.value));
+  input.addEventListener('change', () => selectCustomerByPersonid());
 }
-document.addEventListener('DOMContentLoaded', bindCustomerAutocomplete);
+document.addEventListener('DOMContentLoaded', bindPersonidAutocomplete);
 
-function selectCustomer() {
-  const el = document.getElementById('customer_name');
-  if (el) fillCustomerFromSelected(el.value);
+function selectCustomerByPersonid() {
+  const el = document.getElementById('personid');
+  if (!el) return;
+  const label = (el.value || '').trim();
+  // ดึง token แรกก่อน (คือ personid)
+  const personid = (label.split(/\s+/)[0] || '').trim();
+  fillCustomerFromPersonid(personid);
 }
 
-// ========== [NEW] Central function to fetch details by PID ==========
-/**
- * ดึงข้อมูลลูกค้าแบบเต็มจาก API โดยใช้ personid แล้วเติมลงในฟอร์ม
- * @param {string} pid รหัสลูกค้า (personid)
- */
-async function fetchAndFillCustomerByPersonId(pid) {
-  if (!pid) return; // ไม่ต้องทำอะไรถ้า pid ว่าง
-  try {
-    // ใช้ API /detail ที่มีอยู่ (จาก logic เดิมในการดึง credit day)
-    const res = await fetch(`/api/customers/detail?personid=${encodeURIComponent(pid)}`);
-    if (!res.ok) {
-      console.warn(`Customer ${pid} not found`);
-      // อาจจะเคลียร์ฟอร์มส่วนลูกค้าทิ้งถ้าต้องการ
-      return;
-    }
+async function fillCustomerFromPersonid(personid) {
+  if (!personid) return;
 
-    const c = await res.json(); // 'c' for customer data
-    if (c) {
-      const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
+  // จาก cache ก่อน
+  let c = _customerCache.get(personid);
 
-      // เติมข้อมูลลงฟอร์ม (ใช้ key-mapping แบบเดียวกับในโค้ดเดิม)
-      set('personid', c.personid);
-      set('customer_name', c.customer_name || c.fname || '');
-      set('customer_taxid', c.taxid || c.cf_taxid);
-      set('customer_address', c.address || c.cf_personaddress);
-      set('cf_provincename', c.province || c.cf_provincename);
-      set('cf_personzipcode', c.zipcode || c.cf_personzipcode);
-      set('tel', c.tel);
-      set('mobile', c.mobile);
-      set('cf_branch', c.cf_branch);
-
-      // เติมเครดิตวันถ้ามี และคำนวณ due date
-      if (c.fmlpaymentcreditday != null && c.fmlpaymentcreditday !== '') {
-        set('fmlpaymentcreditday', c.fmlpaymentcreditday);
-        computeAndFillDueDate();
-      }
-    }
-  } catch (e) {
-    console.error("Failed to fetch customer detail:", e);
+  // ถ้ายังไม่มี ลองหาใน customers ที่โหลดมาก่อนหน้า
+  if (!c) {
+    const found = customers.find(x => (x.personid || '').trim() === personid);
+    if (found) c = found;
   }
-}
 
-// ========== [NEW] Add listener to 'personid' input field ==========
-function bindPersonIdListener() {
-  const input = document.getElementById('personid');
-  if (!input) return;
-
-  // ทำงานเมื่อผู้ใช้ออกจากช่อง (blur) หรือกด Enter (change)
-  input.addEventListener('change', () => {
-    fetchAndFillCustomerByPersonId(input.value.trim());
-  });
-}
-// เรียกใช้ binder ใหม่
-document.addEventListener('DOMContentLoaded', bindPersonIdListener);
-
-async function fillCustomerFromSelected(label) {
-  let c = _customerCache.get(label);
-
-  // ========== [NEW] Central function to fetch details by PID ==========
-  /**
-   * ดึงข้อมูลลูกค้าแบบเต็มจาก API โดยใช้ personid แล้วเติมลงในฟอร์ม
-   * @param {string} pid รหัสลูกค้า (personid)
-   */
-  async function fetchAndFillCustomerByPersonId(pid) {
-    if (!pid) return; // ไม่ต้องทำอะไรถ้า pid ว่าง
+  // ถ้ายังไม่มี ลองยิง /api/customers/detail?personid=...
+  if (!c) {
     try {
-      // ใช้ API /detail ที่มีอยู่ (จาก logic เดิมในการดึง credit day)
-      const res = await fetch(`/api/customers/detail?personid=${encodeURIComponent(pid)}`);
-      if (!res.ok) {
-        console.warn(`Customer ${pid} not found`);
-        // อาจจะเคลียร์ฟอร์มส่วนลูกค้าทิ้งถ้าต้องการ
-        return;
-      }
+      const res = await fetch(`/api/customers/detail?personid=${encodeURIComponent(personid)}`);
+      if (res.ok) c = await res.json();
+    } catch (e) { }
+  }
 
-      const c = await res.json(); // 'c' for customer data
-      if (c) {
-        const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
+  if (!c) return;
 
-        // เติมข้อมูลลงฟอร์ม (ใช้ key-mapping แบบเดียวกับในโค้ดเดิม)
-        set('personid', c.personid);
-        set('customer_name', c.customer_name || c.fname || '');
-        set('customer_taxid', c.taxid || c.cf_taxid);
-        set('customer_address', c.address || c.cf_personaddress);
-        set('cf_provincename', c.province || c.cf_provincename);
-        set('cf_personzipcode', c.zipcode || c.cf_personzipcode);
-        set('tel', c.tel);
-        set('mobile', c.mobile);
-        set('cf_branch', c.cf_branch);
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
 
-        // เติมเครดิตวันถ้ามี และคำนวณ due date
-        if (c.fmlpaymentcreditday != null && c.fmlpaymentcreditday !== '') {
-          set('fmlpaymentcreditday', c.fmlpaymentcreditday);
+  set('personid', c.personid);
+  set('customer_name', c.customer_name || c.fname || '');
+  set('customer_taxid', c.taxid || c.cf_taxid || '');
+  set('customer_address', c.address || c.cf_personaddress || '');
+  set('cf_provincename', c.province || c.cf_provincename || '');
+  set('cf_personzipcode', c.zipcode || c.cf_personzipcode || '');
+  set('tel', c.tel || '');
+  set('mobile', c.mobile || '');
+  set('cf_branch', c.cf_branch || '');
+
+  // เครดิตวัน
+  if (c.fmlpaymentcreditday != null && c.fmlpaymentcreditday !== '') {
+    set('fmlpaymentcreditday', c.fmlpaymentcreditday);
+    computeAndFillDueDate();
+  } else if (c.personid) {
+    try {
+      const res = await fetch(`/api/customers/detail?personid=${encodeURIComponent(c.personid)}`);
+      if (res.ok) {
+        const d = await res.json();
+        if (d && d.fmlpaymentcreditday != null) {
+          set('fmlpaymentcreditday', d.fmlpaymentcreditday);
           computeAndFillDueDate();
         }
       }
-    } catch (e) {
-      console.error("Failed to fetch customer detail:", e);
-    }
+    } catch { }
   }
-
-  // ========== [NEW] Add listener to 'personid' input field ==========
-  function bindPersonIdListener() {
-    const input = document.getElementById('personid');
-    if (!input) return;
-
-    // ทำงานเมื่อผู้ใช้ออกจากช่อง (blur) หรือกด Enter (change)
-    input.addEventListener('change', () => {
-      fetchAndFillCustomerByPersonId(input.value.trim());
-    });
-  }
-  // เรียกใช้ binder ใหม่
-  document.addEventListener('DOMContentLoaded', bindPersonIdListener);
 }
+
 
 /* ===========================
    Items / Products (MASTER ONLY)
