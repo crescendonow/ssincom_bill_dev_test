@@ -86,10 +86,9 @@
 
         <!-- ลูกค้า -->
         <div>
-          <label for="customer_name" class="block mb-1 text-sm font-medium text-gray-900">ชื่อลูกค้า</label>
-          <input type="text" name="customer_name" id="customer_name" readonly
-            class="bg-gray-100 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
-
+          <label for="customer_name" ...>ชื่อลูกค้า</label>
+          <input type="text" name="customer_name" id="customer_name" list="customerList" oninput="selectCustomer()"
+            autocomplete="off" class="..." />
         </div>
 
         <div>
