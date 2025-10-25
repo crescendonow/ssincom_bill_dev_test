@@ -180,7 +180,8 @@ async function fillCustomerFromPersonid(personid) {
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
 
   set('personid', c.personid);
-  set('customer_name', c.customer_name || c.fname || '');
+  const displayName = `${(c.customer_name || c.fname || '').trim()}${c.personid ? ' (' + c.personid + ')' : ''}`;
+  set('customer_name', displayName);
   set('customer_taxid', c.taxid || c.cf_taxid || '');
   set('customer_address', c.address || c.cf_personaddress || '');
   set('cf_provincename', c.province || c.cf_provincename || '');
