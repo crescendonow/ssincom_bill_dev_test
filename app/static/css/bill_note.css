@@ -245,7 +245,7 @@ p.mt-8 {
 
 /* สำหรับแสดงผลบนหน้าจอ */
 p.mb-4.text-base {
-    font-size: 14pt;
+    font-size: 12pt;
     line-height: 1.45;
     margin-bottom: 4mm;
     /* ให้ยังมีระยะห่างล่างเหมือนเดิม */
@@ -255,9 +255,42 @@ p.mb-4.text-base {
 /* สำหรับโหมดพิมพ์ (PDF A4) */
 @media print {
     p.mb-4.text-base {
-        font-size: 14pt !important;
+        font-size: 12pt !important;
         line-height: 1.45 !important;
         color: #000 !important;
         page-break-inside: avoid;
     }
+}
+
+/* ------------------/
+/* เส้นขีดเส้นใต้แบบเส้นประ สำหรับแสดงวันที่ */
+/* ------------------------------------------------ */
+.signature-underline {
+  display: inline-block;
+  width: 100%;
+  text-align: center;
+  border-bottom: 1px dotted #000;   
+  line-height: 2.2em;
+  padding-bottom: 2px;
+  margin-top: 8mm;
+  position: relative;
+}
+
+.signature-underline .signature-date {
+  position: relative;
+  z-index: 2;
+  background: #fff;
+  padding: 0 6px;
+  font-size: 13pt;
+  color: #000;
+}
+
+/* สำหรับโหมดพิมพ์ PDF */
+@media print {
+  .signature-underline {
+    border-bottom: 1px dotted #000 !important;
+  }
+  .signature-underline .signature-date {
+    color: #000 !important;
+  }
 }

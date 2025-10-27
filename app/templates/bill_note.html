@@ -74,7 +74,14 @@
                 </table>
             </div>
         </div>
-        <div class="grid md:grid-cols-3 gap-4 items-end">
+        <div class="grid md:grid-cols-4 gap-4 items-end">
+            <div>
+                <label for="billDate" class="block text-sm font-medium text-gray-600">
+                    วันที่ใบวางบิล
+                </label>
+                <input type="date" id="billDate" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+            </div>
+
             <div>
                 <label for="customerSearch" class="block text-sm font-medium text-gray-600">ค้นหาลูกค้า</label>
                 <input type="text" id="customerSearch" list="customerList"
@@ -126,10 +133,11 @@
             <section class="border-t-2 border-b-2 border-black mx-8 p-4 text-sm">
                 <div class="grid grid-cols-2 gap-x-8">
                     <div>
-                        <p><strong>เลขประจำตัวผู้เสียภาษีอากร:</strong> <span class="cust-tax-id"></span> / <span
-                                class="cust-branch"></span></p>
+                        <p><strong>เลขประจำตัวผู้เสียภาษีอากร:</strong> <span class="cust-tax-id"></span> </p>
                         <p><strong>รหัส:</strong> <span class="cust-person-id"></span></p>
-                        <p><strong>ชื่อ / บริษัท:</strong> <span class="cust-name"></span></p>
+                        <p><strong>ชื่อ / บริษัท:</strong> <span class="cust-name"></span> /
+                            <span class="cust-branch"></span>
+                        </p>
                         <p><span class="cust-address"></span></p>
                     </div>
                     <div class="text-right">
@@ -171,23 +179,25 @@
 
             <div class="page-ender">
                 <footer class="w-full grid grid-cols-4 gap-4 text-center text-sm p-8">
-                    <div>
-                        <p class="mt-8">...................................</p>
-                        <p><strong>(ผู้รับวางบิล)</strong></p>
-                    </div>
-                    <div>
-                        <p class="mt-8">...................................</p>
-                        <p><strong>วันที่รับวางบิล</strong></p>
-                    </div>
-                    <div>
-                        <p class="mt-8">...................................</p>
-                        <p><strong>(ผู้วางบิล)</strong></p>
-                    </div>
-                    <div>
-                        <p class="mt-8">...................................</p>
-                        <p><strong>วันที่</strong></p>
-                    </div>
-                </footer>
+                <div>
+                    <p class="mt-8 signature-underline">&nbsp;</p>
+                    <p><strong>(ผู้รับวางบิล)</strong></p>
+                </div>
+                <div>
+                    <p class="mt-8 signature-underline">&nbsp;</p>
+                    <p><strong>วันที่รับวางบิล</strong></p>
+                </div>
+                <div>
+                    <p class="mt-8 signature-underline">&nbsp;</p>
+                    <p><strong>(ผู้วางบิล)</strong></p>
+                </div>
+                <div>
+                    <p class="mt-8 signature-underline">
+                        <span class="signature-date"></span>
+                    </p>
+                    <p><strong>วันที่</strong></p>
+                </div>
+            </footer>
             </div>
         </div>
     </template>

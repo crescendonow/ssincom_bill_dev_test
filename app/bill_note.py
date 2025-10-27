@@ -94,7 +94,7 @@ def get_billing_note_details(bill_note_number: str, db: Session = Depends(get_db
     invoice_numbers_str = [item.invoice_number for item in items]
 
     if not items:
-        # กรณีไม่มีรายการ ให้ trả về ข้อมูลพื้นฐาน
+        # if not data fill base data.
         return {
             "customer": { "name": bill_note.fname, "tax_id": bill_note.cf_taxid, "branch": "สำนักงานใหญ่", "address": bill_note.cf_personaddress, "person_id": bill_note.personid },
             "invoices": [], "summary": { "total_amount": 0 }, "bill_note_number": bill_note.billnote_number, "bill_date": datetime.now().date().isoformat()

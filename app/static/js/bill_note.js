@@ -199,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const template = document.getElementById('bill-note-template');
         container.innerHTML = ''; // ล้างข้อมูลเก่า
 
-        const ITEMS_PER_PAGE = 15;
+        const ITEMS_PER_PAGE = 12;
         const totalPages = Math.ceil(data.invoices.length / ITEMS_PER_PAGE) || 1;
 
         for (let i = 0; i < totalPages; i++) {
@@ -486,10 +486,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- Initial Load ---
-    const today = new Date();
-    endDateInput.value = today.toISOString().split('T')[0];
-    today.setDate(1);
-    startDateInput.value = today.toISOString().split('T')[0];
+    const now = new Date();
+    const todayISO = now.toISOString().split('T')[0];
+
+    billDateInput.value = todayISO;
+    endDateInput.value = todayISO;
+
+    const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    startDateInput.value = firstOfMonth.toISOString().split('T')[0];
+
     loadAllCustomers();
     saveBtn.parentElement.appendChild(updateBtn);
 });
