@@ -222,6 +222,15 @@ document.addEventListener('DOMContentLoaded', () => {
             pageElement.querySelector('.bill-date').textContent = new Date(data.bill_date || Date.now()).toLocaleDateString('th-TH', {
                 year: 'numeric', month: 'long', day: 'numeric'
             });
+            
+            // ใส่วันที่ลงใน <span class="signature-date">
+            const signatureDate = pageElement.querySelector('.signature-date');
+            if (signatureDate) {
+                signatureDate.textContent = new Date(data.bill_date || Date.now()).toLocaleDateString('th-TH', {
+                    year: 'numeric', month: 'long', day: 'numeric'
+                });
+            }
+
             pageElement.querySelector('.page-number').textContent = `${i + 1} / ${totalPages}`;
             pageElement.querySelector('.payment-due-date').textContent = formatLongThaiDate(data.payment_duedate) || '-';
 
