@@ -1,43 +1,61 @@
-/* A4 page styles */
+/* A4 page styles (คงเดิมได้) */
 @page {
     size: A4 portrait;
     margin: 10mm;
-    /* ปรับได้ตามต้องการ */
 }
 
+/* --- สเกลตัวแปรสำหรับการพิมพ์ (ใช้หน่วย pt คงที่) --- */
+:root {
+    /* base สำหรับเนื้อหา */
+    --print-base: 14pt;
+    --print-small: 13pt;
+    --print-xs: 12pt;
+
+    /* หัวข้อ */
+    --print-h1: 20pt;
+    --print-h2: 18pt;
+    --print-h3: 16pt;
+
+    /* ตาราง */
+    --print-table: 14pt;
+    --print-table-small: 13pt;
+
+    /* ระยะห่าง */
+    --print-line-height: 1.45;
+    --print-cell-vpad: 2.2mm;
+    --print-cell-hpad: 2.4mm;
+}
+
+/* โครง A4 เดิม */
 .A4-page {
     width: 190mm;
     min-height: 277mm;
     height: 277mm;
-    /* <-- กำหนดความสูงคงที่ */
     padding: 0;
     margin: 0 auto;
     box-sizing: border-box;
-
     display: grid;
-    /* <--- เปลี่ยนเป็น Grid */
     grid-template-rows: auto auto 1fr auto;
-    /* <--- กำหนดโครงสร้าง 4 แถว */
     position: relative;
     border: none;
     box-shadow: none;
-    background: white;
+    background: #fff;
 }
 
+/* ปรับพื้นที่ส่วนต่าง ๆ ตามมม. เพื่อให้คงที่บน PDF */
 .A4-page header {
     grid-row: 1;
     padding: 8mm;
 }
 
 .A4-page section {
-    /* section ของข้อมูลลูกค้า */
     grid-row: 2;
     padding: 4mm 8mm;
 }
 
 .A4-page main {
     grid-row: 3;
-    padding: 0 8mm 0 8mm;
+    padding: 0 8mm;
     overflow: hidden;
 }
 
@@ -45,29 +63,27 @@
     min-height: 38mm;
 }
 
-.invoice-table-body tr {
-    break-inside: avoid;
-    page-break-inside: avoid;
-}
-
+/* กันตารางแตกหน้า */
+.invoice-table-body tr,
 .summary-footer {
     break-inside: avoid;
     page-break-inside: avoid;
 }
 
-/* Print styles */
+/* ------------------- PRINT MODE ------------------- */
 @media print {
+
+    html,
     body {
-        background: white;
-        /* ตั้งพื้นหลังเป็นสีขาว */
-        margin: 0;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 
     #controls,
-    .page-controls {
-        display: none !important;
-    }
-
+    .page-controls,
     .noprint,
     .btn-remove-item,
     td.action-cell,
@@ -75,24 +91,173 @@
         display: none !important;
     }
 
+    /* ฟอนต์และขนาดพื้นฐานในโหมดพิมพ์ (คงที่ด้วย pt) */
     .A4-page {
-        margin: 0;
-        font-family: "TH Sarabun New", "Tahoma", "sans-serif", "Sukhumvit Set", "Thonburi", "NotoSansThai", "Noto Sans Thai", "Noto Sans", "Arial";
-        font-size: 12pt !important;
-        /* ขนาดตัวอักษรขั้นต่ำ */
-        line-height: 1.5;
+        width: 190mm !important;
+        height: 277mm !important;
+        margin: 0 !important;
+        font-family: "TH Sarabun New", "Tahoma", "Sukhumvit Set", "Thonburi",
+            "Noto Sans Thai", "Noto Sans", Arial, sans-serif;
+        font-size: var(--print-base) !important;
+        line-height: var(--print-line-height);
         color: #000;
-        box-shadow: none;
-        border: none;
-        width: 190mm;
-        height: 277mm;
-    }
-
-    .A4-page {
+        box-shadow: none !important;
+        border: none !important;
         page-break-after: always;
     }
 
     .A4-page:last-of-type {
         page-break-after: auto;
+    }
+
+    /* หัวข้อ */
+    .A4-page h1 {
+        font-size: var(--print-h1);
+        line-height: 1.25;
+    }
+
+    .A4-page h2 {
+        font-size: var(--print-h2);
+        line-height: 1.3;
+    }
+
+    .A4-page h3 {
+        font-size: var(--print-h3);
+        line-height: 1.35;
+    }
+
+    /* ข้อความทั่วไปเล็กลงเล็กน้อยในบางส่วน */
+    .A4-page header .text-xs,
+    .A4-page .text-xs {
+        font-size: var(--print-small);
+    }
+
+    /* ตาราง: ขนาดตัวอักษรและช่องไฟคงที่ */
+    .A4-page table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .A4-page table th,
+    .A4-page table td {
+        font-size: var(--print-table);
+        padding: var(--print-cell-vpad) var(--print-cell-hpad);
+        vertical-align: middle;
+    }
+
+    /* หัวตารางให้หนาขึ้นและคงเส้น 2px */
+    .A4-page thead tr {
+        border-top: 2px solid #000;
+        border-bottom: 2px solid #000;
+    }
+
+    .A4-page tbody tr {
+        border-bottom: 0.3px solid #ccc;
+    }
+
+    .A4-page tfoot .summary-footer tr {
+        border-top: 2px solid #000;
+    }
+
+    /* บริเวณสรุปท้ายหน้า */
+    .summary-footer td {
+        font-size: var(--print-table);
+    }
+
+    .total-in-words {
+        font-size: var(--print-small);
+    }
+
+    /* ย่อตัวหนังสือจุก ๆ บางจุดให้คงที่ (วันที่/เลขหน้า/ฯลฯ) */
+    .cust-tax-id,
+    .cust-branch,
+    .cust-person-id,
+    .bill-number,
+    .bill-date,
+    .payment-due-date,
+    .page-number {
+        font-size: var(--print-small);
+    }
+}
+
+/* ------------------------------------------------ */
+/* Fix: Equalize font size for <p>, <span>, <strong> in print & screen */
+/* ------------------------------------------------ */
+
+section.border-t-2.border-b-2 p,
+section.border-t-2.border-b-2 p span,
+section.border-t-2.border-b-2 p strong {
+    font-size: var(--print-base);
+    line-height: var(--print-line-height);
+    color: #000;
+}
+
+/* สำหรับจอ (screen) ก่อนพิมพ์ ให้ขนาดใกล้เคียงกัน */
+@media screen {
+
+    section.border-t-2.border-b-2 p,
+    section.border-t-2.border-b-2 p span,
+    section.border-t-2.border-b-2 p strong {
+        font-size: 13pt;
+        /* หรือ 1rem ตามความต้องการ */
+        line-height: 1.45;
+    }
+}
+
+/* สำหรับโหมดพิมพ์ A4 */
+@media print {
+
+    section.border-t-2.border-b-2 p,
+    section.border-t-2.border-b-2 p span,
+    section.border-t-2.border-b-2 p strong {
+        font-size: var(--print-base) !important;
+        line-height: var(--print-line-height) !important;
+        color: #000 !important;
+    }
+}
+
+/* ------------------------------------------------ */
+/* Custom font size for <p class="mt-8"> */
+/* ------------------------------------------------ */
+
+/* สำหรับการแสดงผลบนหน้าจอ */
+p.mt-8 {
+    font-size: 16pt;
+    /* ขนาดใหญ่กว่ามาตรฐาน */
+    line-height: 1.5;
+    margin-top: 8mm;
+    /* รักษาระยะห่างที่ตั้งไว้ใน Tailwind */
+}
+
+/* สำหรับโหมดพิมพ์ (PDF A4) */
+@media print {
+    p.mt-8 {
+        font-size: 16pt !important;
+        line-height: 1.5 !important;
+        color: #000 !important;
+        page-break-inside: avoid;
+    }
+}
+
+/* ------------------------------------------------ */
+/* Custom font size for <p class="mb-4 text-base"> */
+/* ------------------------------------------------ */
+
+/* สำหรับแสดงผลบนหน้าจอ */
+p.mb-4.text-base {
+    font-size: 14pt;
+    line-height: 1.45;
+    margin-bottom: 4mm;
+    /* ให้ยังมีระยะห่างล่างเหมือนเดิม */
+    color: #000;
+}
+
+/* สำหรับโหมดพิมพ์ (PDF A4) */
+@media print {
+    p.mb-4.text-base {
+        font-size: 14pt !important;
+        line-height: 1.45 !important;
+        color: #000 !important;
+        page-break-inside: avoid;
     }
 }
