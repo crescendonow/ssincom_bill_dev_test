@@ -49,12 +49,16 @@ document.addEventListener('DOMContentLoaded', () => {
             customersCache = await res.json();
 
             customerList.innerHTML = customersCache
-                .map(c => `<option value="${c.customer_name}" data-id="${c.idx}"></option>`)
+                .map(c => {
+                    const label = `${c.personid || '-'} | ${c.fname || c.customer_name || ''}`;
+                    return `<option value="${label}" data-id="${c.idx}" data-personid="${c.personid}" data-name="${c.fname}"></option>`;
+                })
                 .join('');
         } catch (error) {
             console.error(error);
         }
     }
+
 
     async function suggestBillNotes() {
         const query = searchQueryInput.value.trim();
@@ -87,6 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
             customerIdInput.value = '';
         }
     }
+
 
     // สร้างใบวางบิล
     async function generateBill() {
@@ -222,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
             pageElement.querySelector('.bill-date').textContent = new Date(data.bill_date || Date.now()).toLocaleDateString('th-TH', {
                 year: 'numeric', month: 'long', day: 'numeric'
             });
-            
+
             // ใส่วันที่ลงใน <span class="signature-date">
             const signatureDate = pageElement.querySelector('.signature-date');
             if (signatureDate) {
@@ -458,6 +463,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Event Listeners ---
+    customerSearch.addEventListener('input', () => {
+        const q = customerSearch.value.toLowerCase();
+        const filtered = customersCache.filter(c =>
+            (c.personid && c.personid.toLowerCase().startsWith(q)) ||
+            (c.fname && c.fname.toLowerCase().includes(q))
+        );
+        customerList.innerHTML = filtered
+            .map(c => `<option value="${c.personid} | ${c.fname}" data-id="${c.idx}"></option>`)
+            .join('');
+    });
+
     customerSearch.addEventListener('change', onCustomerSelect);
     generateBtn.addEventListener('click', generateBill);
     printBtn.addEventListener('click', () => window.print());
