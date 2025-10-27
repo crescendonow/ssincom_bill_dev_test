@@ -80,23 +80,23 @@ class BillNotePayload(BaseModel):
 # --- API Endpoint ---
 
 @router.get("/api/customers/all")
-def get_all_customers(q: Optional[str] = Query(None), db: Session = Depends(get_db)):
-    query = db.query(
-        models.CustomerList.idx,
-        models.CustomerList.personid,
-        models.CustomerList.fname,
+def get_all_customers(db: Session = Depends(get_db)):
+    rows = (
+        db.query(models.CustomerList.idx, models.CustomerList.personid, models.CustomerList.fname)
+        .order_by(models.CustomerList.fname.asc())
+        .limit(5000)
+        .all()
     )
-    if q:
-        like = f"%{q.strip()}%"
-        # ค้นหาจากทั้งรหัสและชื่อ
-        query = query.filter(
-            or_(
-                models.CustomerList.personid.ilike(like),
-                models.CustomerList.fname.ilike(like),
-            )
-        )
-    rows = query.order_by(models.CustomerList.fname.asc()).limit(5000).all()
-    return [{"idx": idx, "personid": personid or "", "fname": fname or ""} for (idx, personid, fname) in rows]
+    return [
+        {
+            "idx": idx,
+            "personid": personid or "",
+            "fname": fname or "",
+            "customer_name": (fname or ""),  
+        }
+        for (idx, personid, fname) in rows
+    ]
+
 
 @router.get("/api/billing-notes/{bill_note_number}")
 def get_billing_note_details(bill_note_number: str, db: Session = Depends(get_db)):

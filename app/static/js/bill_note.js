@@ -49,14 +49,56 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!res.ok) throw new Error('Cannot load customers');
             customersCache = await res.json();
 
+            const toLabel = (c) => {
+                const code = (c.personid ?? '').trim();
+                const name = (c.fname ?? c.customer_name ?? '').trim();
+                return `${code}${code && name ? ' | ' : (name ? ' | ' : '')}${name}`;
+            };
+
             customerList.innerHTML = customersCache
                 .map(c => {
-                    const label = `${c.personid || '-'} | ${c.fname || c.customer_name || ''}`;
-                    return `<option value="${label}" data-id="${c.idx}" data-personid="${c.personid}" data-name="${c.fname}"></option>`;
+                    const label = toLabel(c);
+                    const pid = c.personid ?? '';
+                    const name = c.fname ?? c.customer_name ?? '';
+                    return `<option value="${label}" data-id="${c.idx}" data-personid="${pid}" data-name="${name}"></option>`;
                 })
                 .join('');
-        } catch (error) {
-            console.error(error);
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    // ตัวช่วย: หา customer จากค่าที่ผู้ใช้พิมพ์ (รองรับทั้ง “รหัส”, “ชื่อ”, หรือ “รหัส | ชื่อ”)
+    function resolveCustomerSelection() {
+        const val = (customerSearch.value || '').trim();
+        if (!val) { customerIdInput.value = ''; return; }
+
+        // แยก "รหัส | ชื่อ" ถ้ามี
+        let codePart = null, namePart = null;
+        if (val.includes('|')) {
+            const [codeRaw, nameRaw] = val.split('|');
+            codePart = (codeRaw || '').trim();
+            namePart = (nameRaw || '').trim();
+        }
+
+        // หาในแคช
+        const found = customersCache.find(c => {
+            const pid = (c.personid ?? '').trim();
+            const name = (c.fname ?? c.customer_name ?? '').trim();
+            return (
+                (codePart && pid === codePart) ||
+                (namePart && name === namePart) ||
+                pid === val || name === val
+            );
+        });
+
+        if (found) {
+            customerIdInput.value = found.idx;
+            // ฟอร์แมตให้สวยเป็น "รหัส | ชื่อ"
+            const label = `${(found.personid ?? '').trim()} | ${(found.fname ?? found.customer_name ?? '').trim()}`;
+            customerSearch.value = label;
+        } else {
+            customerIdInput.value = '';
         }
     }
 
@@ -464,15 +506,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Event Listeners ---
+    // กรองรายการใน datalist ขณะพิมพ์ ให้เจอทั้ง prefix ของรหัสและบางส่วนของชื่อ
     customerSearch.addEventListener('input', () => {
-        const q = customerSearch.value.toLowerCase();
-        const filtered = customersCache.filter(c =>
-            (c.personid && c.personid.toLowerCase().startsWith(q)) ||
-            (c.fname && c.fname.toLowerCase().includes(q))
-        );
-        customerList.innerHTML = filtered
-            .map(c => `<option value="${c.personid} | ${c.fname}" data-id="${c.idx}"></option>`)
-            .join('');
+        const q = (customerSearch.value || '').toLowerCase().trim();
+        if (!q) { return; }
+        const filtered = customersCache.filter(c => {
+            const pid = (c.personid ?? '').toLowerCase();
+            const name = (c.fname ?? c.customer_name ?? '').toLowerCase();
+            return pid.startsWith(q) || name.includes(q);
+        }).slice(0, 50); // limit
+        customerList.innerHTML = filtered.map(c => {
+            const label = `${(c.personid ?? '').trim()} | ${(c.fname ?? c.customer_name ?? '').trim()}`;
+            return `<option value="${label}" data-id="${c.idx}"></option>`;
+        }).join('');
+    });
+
+    // ให้ทำงานทั้งตอน change/blur/กด Enter
+    customerSearch.addEventListener('change', resolveCustomerSelection);
+    customerSearch.addEventListener('blur', resolveCustomerSelection);
+    customerSearch.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') resolveCustomerSelection();
     });
 
     customerSearch.addEventListener('change', onCustomerSelect);
