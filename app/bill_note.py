@@ -266,7 +266,7 @@ def create_billing_note(payload: BillNotePayload, db: Session = Depends(get_db))
     # 2. สร้างเลขที่ใบวางบิลใหม่
     new_bill_number = generate_next_billnote_number(db)
 
-    bill_date_today = datetime.now().date()
+    bill_date_today = payload.bill_date
     payment_due = None
     if payload.items:
         latest_invoice_date = max(item.invoice_date for item in payload.items if item.invoice_date)
