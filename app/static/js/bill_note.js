@@ -421,7 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // vvvvvv เพิ่มฟังก์ชันอัปเดตใบวางบิล vvvvvv
+    // add function update bill note data 
     async function updateBillNote() {
         if (!currentEditingBillNumber) return;
 
