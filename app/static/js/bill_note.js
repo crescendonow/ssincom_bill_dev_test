@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchResultsBody = document.getElementById('searchResultsBody');
     const searchQueryInput = document.getElementById('searchQuery');
     const billNoteList = document.getElementById('billNoteList');
+    const billDateInput = document.getElementById('billDate');
 
     const debounce = (fn, delay = 300) => {
         let t;
@@ -514,11 +515,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const now = new Date();
     const todayISO = now.toISOString().split('T')[0];
 
-    billDateInput.value = todayISO;
-    endDateInput.value = todayISO;
+    // กัน null
+    if (billDateInput) billDateInput.value = todayISO;
+    if (endDateInput) endDateInput.value = todayISO;
 
     const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    startDateInput.value = firstOfMonth.toISOString().split('T')[0];
+    if (startDateInput) startDateInput.value = firstOfMonth.toISOString().split('T')[0];
 
     loadAllCustomers();
     saveBtn.parentElement.appendChild(updateBtn);

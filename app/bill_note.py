@@ -75,6 +75,7 @@ class BillNotePayload(BaseModel):
     customer_id: int
     items: List[BillNoteItemPayload]
     total_amount: float
+    bill_date: Optional[date] = None
 
 # --- API Endpoint ---
 
