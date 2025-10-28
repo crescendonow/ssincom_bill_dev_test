@@ -155,7 +155,21 @@
           </table>
         </div>
 
-        <!-- new panel: รายงานใบกำกับภาษี -->
+        
+        <!-- แถบเปลี่ยนหน้า -->
+        <div class="flex items-center justify-between mt-3 flex-wrap gap-2">
+          <div id="allResultInfo" class="text-sm text-gray-500">—</div>
+          <div class="flex items-center gap-2">
+            <button id="allPrevPage" class="px-3 py-1 border rounded hover:bg-gray-50">ก่อนหน้า</button>
+            <span id="allPageInfo" class="text-sm text-gray-700">หน้า 1 / 1</span>
+            <button id="allNextPage" class="px-3 py-1 border rounded hover:bg-gray-50">ถัดไป</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- new panel: รายงานใบกำกับภาษี -->
         <div id="panelReport" class="hidden">
           <!-- แถบตัวกรองสไตล์ Purple/Gray -->
           <div class="bg-gradient-to-r from-purple-600 to-gray-700 rounded-xl p-4 shadow mb-6 text-white">
@@ -231,21 +245,7 @@
           </div>
         </div>
 
-        <!-- แถบเปลี่ยนหน้า -->
-        <div class="flex items-center justify-between mt-3 flex-wrap gap-2">
-          <div id="allResultInfo" class="text-sm text-gray-500">—</div>
-          <div class="flex items-center gap-2">
-            <button id="allPrevPage" class="px-3 py-1 border rounded hover:bg-gray-50">ก่อนหน้า</button>
-            <span id="allPageInfo" class="text-sm text-gray-700">หน้า 1 / 1</span>
-            <button id="allNextPage" class="px-3 py-1 border rounded hover:bg-gray-50">ถัดไป</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-
-
+        
   <!-- Modal: สินค้า -->
   <div id="itemsModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
     <div class="bg-white rounded-lg shadow max-w-3xl w-full mx-4">

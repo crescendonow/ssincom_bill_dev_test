@@ -492,7 +492,7 @@ async function saveEdit() {
 }
 
 // ===== add new config Tab 3 =====
-const API_SUMMARY_BY_COMPANY = "/api/invoices/summary/by-company";
+const API_SUMMARY_BY_COMPANY = "/api/invoices/report/periods";
 
 // ===== helper =====
 const groupBy = (arr, keyFn) => arr.reduce((m, x) => {
@@ -616,8 +616,12 @@ async function buildReport() {
             if (g === "day") { if (state.report.dayFrom) params.set("start", state.report.dayFrom); if (state.report.dayTo) params.set("end", state.report.dayTo); }
             if (g === "month") { if (state.report.month) params.set("month", state.report.month); }
             if (g === "year") { if (state.report.year) params.set("year", state.report.year); }
+            if (split) params.set("split_by_company", "true");
 
-            const url = split ? `${API_SUMMARY_BY_COMPANY}?${params}` : `${API_URL}?${params}`;
+            const url = split
+                ? `${API_SUMMARY_BY_COMPANY}?${params}`
+                : `${API_URL}?${params}`;
+                
             const res = await fetch(url, { headers: { "Accept": "application/json" } });
             if (!res.ok) throw new Error(await res.text());
             rows = await res.json();
