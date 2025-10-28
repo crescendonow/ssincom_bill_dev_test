@@ -22,6 +22,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const billNoteList = document.getElementById('billNoteList');
     const billDateInput = document.getElementById('billDate');
 
+    // Mapping ช่วยกันชนกันชื่อซ้ำ 
+    const labelToId = new Map();   // "PC650004 | ชื่อ" -> idx
+    const idToCustomer = new Map(); // idx -> object { idx, personid, fname, ... }
+
+
     const debounce = (fn, delay = 300) => {
         let t;
         return (...a) => {
@@ -42,27 +47,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Functions ---
 
-    // โหลดรายชื่อลูกค้าทั้งหมดสำหรับ Autocomplete
+    // load all customer list Autocomplete
     async function loadAllCustomers() {
         try {
             const res = await fetch('/api/customers/all');
             if (!res.ok) throw new Error('Cannot load customers');
             customersCache = await res.json();
 
+            // clear map every times before loading
+            labelToId.clear();
+            idToCustomer.clear();
+
             const toLabel = (c) => {
                 const code = (c.personid ?? '').trim();
                 const name = (c.fname ?? c.customer_name ?? '').trim();
+                // ใช้รูปแบบเดียวเสมอ เพื่อ match ได้ตรงตัว
                 return `${code}${code && name ? ' | ' : (name ? ' | ' : '')}${name}`;
             };
 
-            customerList.innerHTML = customersCache
-                .map(c => {
-                    const label = toLabel(c);
-                    const pid = c.personid ?? '';
-                    const name = c.fname ?? c.customer_name ?? '';
-                    return `<option value="${label}" data-id="${c.idx}" data-personid="${pid}" data-name="${name}"></option>`;
-                })
-                .join('');
+            // เติม options + Map
+            customerList.innerHTML = customersCache.map(c => {
+                const label = toLabel(c);
+                labelToId.set(label, c.idx);
+                idToCustomer.set(c.idx, c);
+                return `<option value="${label}"></option>`;
+            }).join('');
         } catch (err) {
             console.error(err);
         }
@@ -70,39 +79,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ตัวช่วย: หา customer จากค่าที่ผู้ใช้พิมพ์ (รองรับทั้ง “รหัส”, “ชื่อ”, หรือ “รหัส | ชื่อ”)
     function resolveCustomerSelection() {
-        const val = (customerSearch.value || '').trim();
-        if (!val) { customerIdInput.value = ''; return; }
+        const raw = (customerSearch.value || '').trim();
+        // พยายาม normalize ให้ตรงกับ key ของเรา
+        const val = raw.replace(/\s*\|\s*/g, ' | '); // บังคับช่องว่างรอบท่อให้เหมือนกัน
 
-        // แยก "รหัส | ชื่อ" ถ้ามี
-        let codePart = null, namePart = null;
-        if (val.includes('|')) {
-            const [codeRaw, nameRaw] = val.split('|');
-            codePart = (codeRaw || '').trim();
-            namePart = (nameRaw || '').trim();
-        }
+        if (labelToId.has(val)) {
+            const idx = labelToId.get(val);
+            customerIdInput.value = idx;
 
-        // หาในแคช
-        const found = customersCache.find(c => {
-            const pid = (c.personid ?? '').trim();
-            const name = (c.fname ?? c.customer_name ?? '').trim();
-            return (
-                (codePart && pid === codePart) ||
-                (namePart && name === namePart) ||
-                pid === val || name === val
-            );
-        });
-
-        if (found) {
-            customerIdInput.value = found.idx;
-            // ฟอร์แมตให้สวยเป็น "รหัส | ชื่อ"
-            const label = `${(found.personid ?? '').trim()} | ${(found.fname ?? found.customer_name ?? '').trim()}`;
-            customerSearch.value = label;
+            // ป้องกันกรณีบาง browser ตัดช่องว่าง/รูปแบบไม่ตรง -> เซ็ตกลับเป็น label มาตรฐาน
+            const c = idToCustomer.get(idx);
+            const fixedLabel = `${(c.personid ?? '').trim()} | ${(c.fname ?? c.customer_name ?? '').trim()}`;
+            if (val !== fixedLabel) customerSearch.value = fixedLabel;
         } else {
+            // ไม่เจอ label ตรงตัว => ล้างค่า เพื่อบังคับให้เลือกใหม่กันความผิดพลาด
             customerIdInput.value = '';
         }
     }
 
-
+    // แนะนำข้อความในช่องหมายเหตุใบวางบิล
     async function suggestBillNotes() {
         const query = searchQueryInput.value.trim();
         if (query.length < 2) {
@@ -122,19 +117,6 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Suggestion fetch error:', error);
         }
     }
-
-    // เมื่อเลือกลูกค้าจาก Datalist
-    function onCustomerSelect() {
-        const selectedOption = Array.from(customerList.options).find(
-            option => option.value === customerSearch.value
-        );
-        if (selectedOption) {
-            customerIdInput.value = selectedOption.dataset.id;
-        } else {
-            customerIdInput.value = '';
-        }
-    }
-
 
     // สร้างใบวางบิล
     async function generateBill() {
@@ -509,15 +491,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // กรองรายการใน datalist ขณะพิมพ์ ให้เจอทั้ง prefix ของรหัสและบางส่วนของชื่อ
     customerSearch.addEventListener('input', () => {
         const q = (customerSearch.value || '').toLowerCase().trim();
-        if (!q) { return; }
+        if (!q) {
+            // คืนรายการทั้งหมด (ตามต้องการ) หรือคงเดิม
+            return;
+        }
         const filtered = customersCache.filter(c => {
             const pid = (c.personid ?? '').toLowerCase();
             const name = (c.fname ?? c.customer_name ?? '').toLowerCase();
             return pid.startsWith(q) || name.includes(q);
-        }).slice(0, 50); // limit
+        }).slice(0, 50);
+
         customerList.innerHTML = filtered.map(c => {
             const label = `${(c.personid ?? '').trim()} | ${(c.fname ?? c.customer_name ?? '').trim()}`;
-            return `<option value="${label}" data-id="${c.idx}"></option>`;
+            // update labelToId optional
+            return `<option value="${label}"></option>`;
         }).join('');
     });
 
@@ -527,6 +514,7 @@ document.addEventListener('DOMContentLoaded', () => {
     customerSearch.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') resolveCustomerSelection();
     });
+
 
     customerSearch.addEventListener('change', onCustomerSelect);
     generateBtn.addEventListener('click', generateBill);
