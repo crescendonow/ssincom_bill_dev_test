@@ -490,3 +490,298 @@ async function saveEdit() {
         alert("บันทึกเรียบร้อย");
     } catch (err) { console.error(err); alert("บันทึกไม่สำเร็จ: " + err.message); }
 }
+
+// ===== add new config Tab 3 =====
+const API_SUMMARY_BY_COMPANY = "/api/invoices/summary/by-company";
+
+// ===== helper =====
+const groupBy = (arr, keyFn) => arr.reduce((m, x) => {
+    const k = keyFn(x);
+    (m[k] ||= []).push(x); return m;
+}, {});
+
+// ===== state เสริม =====
+state.report = {
+    granularity: "day",
+    splitCompany: false,
+    mode: "detail", // detail | summary
+    dayFrom: null, dayTo: null, month: null, year: null,
+    rows: []
+};
+
+// ===== init ส่วนแท็บที่ 3 =====
+document.addEventListener("DOMContentLoaded", () => {
+    // ปุ่มแท็บ
+    document.getElementById("tabReport").addEventListener("click", () => switchTab("report"));
+
+    // ปุ่มกรานูลาริตี้
+    document.querySelectorAll(".btn-rgran").forEach(btn => {
+        btn.addEventListener("click", () => {
+            document.querySelectorAll(".btn-rgran").forEach(b => b.classList.remove("bg-white/20"));
+            btn.classList.add("bg-white/20");
+            state.report.granularity = btn.dataset.rgran;
+            toggleReportFilters();
+        });
+    });
+
+    // ค่าเริ่มต้น
+    const today = new Date();
+    document.getElementById("rDayFrom").value = ymd(firstDayOfMonth(today));
+    document.getElementById("rDayTo").value = ymd(lastDayOfMonth(today));
+    document.getElementById("rMonthPick").value = ymd(today).slice(0, 7);
+    document.getElementById("rYearPick").value = String(today.getFullYear());
+    document.querySelector('.btn-rgran[data-rgran="day"]').classList.add("bg-white/20");
+
+    // ปุ่มสร้างรายงาน/พิมพ์
+    document.getElementById("btnReportApply").addEventListener("click", buildReport);
+    document.getElementById("btnReportPrint").addEventListener("click", () => window.print());
+});
+
+function switchTab(which) {
+    const tabSummary = document.getElementById("tabSummary");
+    const tabAll = document.getElementById("tabAll");
+    const tabReport = document.getElementById("tabReport");
+    const panelSummary = document.getElementById("panelSummary");
+    const panelAll = document.getElementById("panelAll");
+    const panelReport = document.getElementById("panelReport");
+
+    if (which === "summary") {
+        tabSummary.classList.add("bg-blue-600", "text-white");
+        tabAll.classList.remove("bg-blue-600", "text-white");
+        tabReport.classList.remove("bg-blue-600", "text-white");
+        panelSummary.classList.remove("hidden");
+        panelAll.classList.add("hidden");
+        panelReport.classList.add("hidden");
+    } else if (which === "all") {
+        tabAll.classList.add("bg-blue-600", "text-white");
+        tabSummary.classList.remove("bg-blue-600", "text-white");
+        tabReport.classList.remove("bg-blue-600", "text-white");
+        panelAll.classList.remove("hidden");
+        panelSummary.classList.add("hidden");
+        panelReport.classList.add("hidden");
+    } else { // report
+        tabReport.classList.add("bg-blue-600", "text-white");
+        tabAll.classList.remove("bg-blue-600", "text-white");
+        tabSummary.classList.remove("bg-blue-600", "text-white");
+        panelReport.classList.remove("hidden");
+        panelAll.classList.add("hidden");
+        panelSummary.classList.add("hidden");
+    }
+}
+
+function toggleReportFilters() {
+    const g = state.report.granularity;
+    document.getElementById("r-filter-day").classList.toggle("hidden", g !== "day");
+    document.getElementById("r-filter-month").classList.toggle("hidden", g !== "month");
+    document.getElementById("r-filter-year").classList.toggle("hidden", g !== "year");
+}
+
+function readReportFilters() {
+    const mode = document.getElementById("rMode").value;
+    const split = document.getElementById("rSplitCompany").checked;
+    const g = state.report.granularity;
+
+    state.report.mode = mode;
+    state.report.splitCompany = split;
+
+    if (g === "day") {
+        state.report.dayFrom = document.getElementById("rDayFrom").value || null;
+        state.report.dayTo = document.getElementById("rDayTo").value || null;
+    } else if (g === "month") {
+        state.report.month = document.getElementById("rMonthPick").value || null;
+    } else {
+        state.report.year = document.getElementById("rYearPick").value || null;
+    }
+}
+
+async function buildReport() {
+    readReportFilters();
+    const g = state.report.granularity;
+    const mode = state.report.mode;
+    const split = state.report.splitCompany;
+
+    // ทำ subtitle
+    let sub = "";
+    if (g === "day") sub = `รายวัน: ${state.report.dayFrom || "-"} ถึง ${state.report.dayTo || "-"}`;
+    else if (g === "month") sub = `รายเดือน: ${state.report.month || "-"}`;
+    else sub = `รายปี: ${state.report.year || "-"}`;
+    if (split) sub += " • แยกรายบริษัท";
+    document.getElementById("reportSubtitle").textContent = sub;
+
+    try {
+        let rows = [];
+        if (mode === "summary") {
+            // summary: ไม่แยก -> /summary, แยก -> /summary/by-company
+            const params = new URLSearchParams({ granularity: g });
+            if (g === "day") { if (state.report.dayFrom) params.set("start", state.report.dayFrom); if (state.report.dayTo) params.set("end", state.report.dayTo); }
+            if (g === "month") { if (state.report.month) params.set("month", state.report.month); }
+            if (g === "year") { if (state.report.year) params.set("year", state.report.year); }
+
+            const url = split ? `${API_SUMMARY_BY_COMPANY}?${params}` : `${API_URL}?${params}`;
+            const res = await fetch(url, { headers: { "Accept": "application/json" } });
+            if (!res.ok) throw new Error(await res.text());
+            rows = await res.json();
+        } else {
+            // detail: ใช้ /api/invoices แล้วกลุ่มตาม period/company ในฝั่ง client
+            const params = new URLSearchParams();
+            if (g === "day") { if (state.report.dayFrom) params.set("start", state.report.dayFrom); if (state.report.dayTo) params.set("end", state.report.dayTo); }
+            if (g === "month") { if (state.report.month) { params.set("start", state.report.month + "-01"); params.set("end", state.report.month + "-31"); } }
+            if (g === "year") { if (state.report.year) { params.set("start", `${state.report.year}-01-01`); params.set("end", `${state.report.year}-12-31`); } }
+            const res = await fetch(`${API_LIST}?${params}`, { headers: { "Accept": "application/json" } });
+            if (!res.ok) throw new Error(await res.text());
+            rows = await res.json();
+            // เพิ่มคีย์ period เพื่อ group ให้หน้าตาเหมือน summary
+            rows.forEach(r => {
+                const d = (r.invoice_date || "").slice(0, 10);
+                if (g === "day") r.period = d;
+                else if (g === "month") r.period = d.slice(0, 7);
+                else r.period = d.slice(0, 4);
+            });
+        }
+
+        state.report.rows = Array.isArray(rows) ? rows : [];
+        renderReport();
+    } catch (err) {
+        console.error(err);
+        state.report.rows = [];
+        renderReport();
+        alert("ดึงข้อมูลรายงานไม่สำเร็จ");
+    }
+}
+
+function renderReport() {
+    const body = document.getElementById("reportBody");
+    body.innerHTML = "";
+    const rows = state.report.rows || [];
+    const mode = state.report.mode;
+    const split = state.report.splitCompany;
+    const g = state.report.granularity;
+
+    // KPI
+    let kCount = 0, kBefore = 0, kGrand = 0;
+
+    if (mode === "summary") {
+        if (!split) {
+            // ตารางรวมต่อช่วง
+            const table = document.createElement("div");
+            table.innerHTML = `
+        <h3 class="text-lg font-bold mb-2">สรุปต่อช่วงเวลา</h3>
+        <div class="overflow-auto">
+          <table class="min-w-full border border-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-3 py-2 text-left border-b">ช่วงเวลา</th>
+                <th class="px-3 py-2 text-right border-b">จำนวนใบกำกับ</th>
+                <th class="px-3 py-2 text-right border-b">ก่อน VAT</th>
+                <th class="px-3 py-2 text-right border-b">VAT</th>
+                <th class="px-3 py-2 text-right border-b">รวมสุทธิ</th>
+              </tr>
+            </thead>
+            <tbody id="rSumBody"></tbody>
+          </table>
+        </div>`;
+            body.appendChild(table);
+            const tb = table.querySelector("#rSumBody");
+            rows.forEach(r => {
+                kCount += Number(r.count) || 0;
+                kBefore += Number(r.before_vat) || 0;
+                kGrand += Number(r.grand) || 0;
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+          <td class="px-3 py-2 border-b">${r.period || "-"}</td>
+          <td class="px-3 py-2 border-b text-right">${fmtInt(r.count)}</td>
+          <td class="px-3 py-2 border-b text-right">${fmtNum(r.before_vat)}</td>
+          <td class="px-3 py-2 border-b text-right">${fmtNum(r.vat)}</td>
+          <td class="px-3 py-2 border-b text-right">${fmtNum(r.grand)}</td>`;
+                tb.appendChild(tr);
+            });
+        } else {
+            // สรุป: แยกบริษัท -> กลุ่มตาม period แล้ววาดตารางย่อย
+            const byPeriod = groupBy(rows, r => r.period || "-");
+            for (const period of Object.keys(byPeriod)) {
+                const block = document.createElement("div");
+                block.innerHTML = `<h3 class="text-lg font-bold mb-2">ช่วง: ${period}</h3>
+        <div class="overflow-auto">
+          <table class="min-w-full border border-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-3 py-2 text-left border-b">บริษัท</th>
+                <th class="px-3 py-2 text-right border-b">จำนวนใบกำกับ</th>
+                <th class="px-3 py-2 text-right border-b">ก่อน VAT</th>
+                <th class="px-3 py-2 text-right border-b">VAT</th>
+                <th class="px-3 py-2 text-right border-b">รวมสุทธิ</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>`;
+                const tb = block.querySelector("tbody");
+                byPeriod[period].forEach(r => {
+                    kCount += Number(r.count) || 0;
+                    kBefore += Number(r.before_vat) || 0;
+                    kGrand += Number(r.grand) || 0;
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+            <td class="px-3 py-2 border-b">${r.company || "-"}</td>
+            <td class="px-3 py-2 border-b text-right">${fmtInt(r.count)}</td>
+            <td class="px-3 py-2 border-b text-right">${fmtNum(r.before_vat)}</td>
+            <td class="px-3 py-2 border-b text-right">${fmtNum(r.vat)}</td>
+            <td class="px-3 py-2 border-b text-right">${fmtNum(r.grand)}</td>`;
+                    tb.appendChild(tr);
+                });
+                body.appendChild(block);
+            }
+        }
+    } else {
+        // รายงานละเอียด: ใช้รายการใบกำกับ แล้ว group เป็น section
+        const keyFn = (r) => split ? `${r.period}||${r.fname || "-"}` : (r.period || "-");
+        const grouped = groupBy(rows, keyFn);
+
+        for (const k of Object.keys(grouped)) {
+            const [period, company] = split ? k.split("||") : [k, null];
+            const sec = document.createElement("div");
+            sec.innerHTML = `
+        <div class="mb-2">
+          <div class="text-sm text-gray-500">${period}</div>
+          ${split ? `<h3 class="text-lg font-bold">${company}</h3>` : `<h3 class="text-lg font-bold">รายละเอียดใบกำกับ</h3>`}
+        </div>
+        <div class="overflow-auto">
+          <table class="min-w-full border border-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-3 py-2 text-left border-b">วันที่</th>
+                <th class="px-3 py-2 text-left border-b">เลขที่</th>
+                <th class="px-3 py-2 text-left border-b ${split ? 'hidden' : ''}">ลูกค้า</th>
+                <th class="px-3 py-2 text-right border-b">ก่อน VAT</th>
+                <th class="px-3 py-2 text-right border-b">VAT</th>
+                <th class="px-3 py-2 text-right border-b">รวมสุทธิ</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>`;
+            const tb = sec.querySelector("tbody");
+            grouped[k].forEach(r => {
+                kCount += 1;
+                kBefore += Number(r.amount) || 0;
+                kGrand += Number(r.grand) || 0;
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+          <td class="px-3 py-2 border-b">${r.invoice_date || "-"}</td>
+          <td class="px-3 py-2 border-b">${r.invoice_number || "-"}</td>
+          <td class="px-3 py-2 border-b ${split ? 'hidden' : ''}">${r.fname || "-"}</td>
+          <td class="px-3 py-2 border-b text-right">${fmtNum(r.amount)}</td>
+          <td class="px-3 py-2 border-b text-right">${fmtNum(r.vat)}</td>
+          <td class="px-3 py-2 border-b text-right">${fmtNum(r.grand)}</td>`;
+                tb.appendChild(tr);
+            });
+            body.appendChild(sec);
+        }
+    }
+
+    // อัปเดต KPI
+    document.getElementById("kpiCount").textContent = fmtInt(kCount);
+    document.getElementById("kpiBeforeVat").textContent = fmtNum(kBefore);
+    document.getElementById("kpiGrand").textContent = fmtNum(kGrand);
+}
+
