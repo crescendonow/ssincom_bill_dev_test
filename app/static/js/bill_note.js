@@ -150,6 +150,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             currentBillData = data;
+            // เซ็ตค่า field วันที่ เพื่อให้ผู้ใช้แก้ไขได้
+            const billDateInput = document.getElementById('billDate');
+            if (billDateInput) {
+                // ถ้า data มี bill_date ใช้ค่านั้น, ไม่งั้น default = วันนี้
+                const iso = (data.bill_date && data.bill_date.slice(0, 10)) || new Date().toISOString().split('T')[0];
+                billDateInput.value = iso;
+            }
+
             await renderBillDocument(data);
 
         } catch (error) {
@@ -455,14 +463,32 @@ document.addEventListener('DOMContentLoaded', () => {
     async function updateBillNote() {
         if (!currentEditingBillNumber) return;
 
-        // รวบรวมข้อมูลรายการที่เหลืออยู่
+        // เก็บรายการที่ยังอยู่ในตาราง
         const items = [];
         document.querySelectorAll('.invoice-table-body tr').forEach(tr => {
             const inv = currentBillData.invoices.find(i => i.invoice_number === tr.dataset.invNumber);
-            if (inv) items.push(inv);
+            if (inv) {
+                items.push({
+                    invoice_number: inv.invoice_number,
+                    invoice_date: inv.invoice_date,
+                    due_date: inv.due_date,
+                    amount: inv.amount
+                });
+            }
         });
 
-        const payload = { ...currentBillData, items };
+        // รวมยอดใหม่ หลังแก้ไข
+        const total_amount = items.reduce((sum, it) => sum + Number(it.amount || 0), 0);
+
+        // อ่านวันจาก input (YYYY-MM-DD)
+        const billDateInput = document.getElementById('billDate');
+        const bill_date = billDateInput && billDateInput.value ? billDateInput.value : new Date().toISOString().split('T')[0];
+
+        // ไม่บังคับ customer_id/total_amount 
+        const cid = parseInt(document.getElementById('customerId')?.value, 10);
+        const customer_id = Number.isFinite(cid) ? cid : undefined;
+
+        const payload = { items, total_amount, bill_date, customer_id };
 
         const res = await fetch(`/api/billing-notes/${currentEditingBillNumber}`, {
             method: 'PUT',
@@ -472,9 +498,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (res.ok) {
             alert('อัปเดตใบวางบิลสำเร็จ!');
-            loadBillForEditing(currentEditingBillNumber); // โหลดซ้ำเพื่อแสดงผลล่าสุด
+            loadBillForEditing(currentEditingBillNumber);
         } else {
-            alert('การอัปเดตล้มเหลว');
+            const err = await res.json().catch(() => ({}));
+            alert('การอัปเดตล้มเหลว: ' + (err.detail || res.statusText));
         }
     }
 

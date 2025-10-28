@@ -77,6 +77,13 @@ class BillNotePayload(BaseModel):
     total_amount: float
     bill_date: Optional[date] = None
 
+#--- For Update Payload (optional fields) ---
+class BillNoteUpdatePayload(BaseModel):
+    items: List[BillNoteItemPayload] = []
+    total_amount: Optional[float] = None
+    bill_date: Optional[date] = None
+    customer_id: Optional[int] = None
+
 # --- API Endpoint ---
 
 @router.get("/api/customers/all")
@@ -370,34 +377,36 @@ def search_billing_notes(
 
 #------------------- API update bill ---------------------#
 @router.put("/api/billing-notes/{bill_note_number}")
-def update_billing_note(bill_note_number: str, payload: BillNotePayload, db: Session = Depends(get_db)):
-    # ตรวจสอบว่ามี Bill Note นี้อยู่จริง
+def update_billing_note(
+    bill_note_number: str,
+    payload: BillNoteUpdatePayload,
+    db: Session = Depends(get_db)
+):
     bill_note = db.query(models.BillNote).filter(models.BillNote.billnote_number == bill_note_number).first()
     if not bill_note:
         raise HTTPException(status_code=404, detail="Bill Note not found")
 
-    bill_note.bill_date = datetime.now().date()
+    # อัปเดตวันที่บิล: ถ้า payload มี bill_date ให้ใช้ค่าที่ส่งมา, ไม่งั้นใช้วันนี้
+    bill_note.bill_date = payload.bill_date or datetime.now().date()
+
+    # คำนวณวันครบกำหนดจากรายการที่เหลือ (ถ้ามี)
     if payload.items:
-        # หา invoice_date ล่าสุดจากรายการ items
         latest_invoice_date = max(item.invoice_date for item in payload.items if item.invoice_date)
         bill_note.payment_duedate = latest_invoice_date
     else:
         bill_note.payment_duedate = None
 
-    # ลบรายการเก่าทั้งหมด
+    # ล้างรายการเก่า แล้วเติมใหม่
     db.query(models.BillNoteItem).filter(models.BillNoteItem.billnote_number == bill_note_number).delete()
-
-    # เพิ่มรายการใหม่เข้าไป
     for item_data in payload.items:
-        bill_item = models.BillNoteItem(
+        db.add(models.BillNoteItem(
             billnote_number=bill_note_number,
             invoice_number=item_data.invoice_number,
             invoice_date=item_data.invoice_date,
             due_date=item_data.due_date,
             amount=item_data.amount
-        )
-        db.add(bill_item)
-    
+        ))
+
     db.commit()
     return {"ok": True, "billnote_number": bill_note_number}
 
