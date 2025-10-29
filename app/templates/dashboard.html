@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
   <meta charset="UTF-8" />
   <title>Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
 </head>
+
 <body class="bg-gradient-to-b from-blue-500 to-blue-200 min-h-screen font-sans text-gray-800">
   <!-- Header -->
   <header class="bg-transparent">
@@ -19,13 +22,17 @@
         <div class="flex items-center gap-2">
           <span class="hidden sm:inline text-white/90">สวัสดี, <b>admin</b></span>
           <a href="/logout"
-             class="inline-flex items-center px-3 py-1.5 rounded-lg bg-white/10 text-white border border-white/20 hover:bg-white/20 transition">
+            class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/10 text-white border border-white/20 hover:bg-white/20 transition">
+            <i class="fa-solid fa-right-from-bracket"></i>
             ออกจากระบบ
           </a>
+
           <a href="/form"
-             class="inline-flex items-center px-3 sm:px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">
+            class="inline-flex items-center gap-1 px-3 sm:px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">
+            <i class="fa-solid fa-plus"></i>
             + สร้างใบกำกับภาษี
           </a>
+
         </div>
       </div>
     </div>
@@ -61,12 +68,10 @@
       <div class="flex items-center justify-between flex-wrap gap-3 mb-3">
         <h2 class="text-lg font-bold">ใบกำกับภาษีล่าสุด (7 วัน)</h2>
         <div class="flex items-center gap-2">
-          <a href="/summary_invoices.html"
-             class="inline-flex items-center px-3 py-1.5 rounded border hover:bg-gray-50">
+          <a href="/summary_invoices.html" class="inline-flex items-center px-3 py-1.5 rounded border hover:bg-gray-50">
             📃 รายการทั้งหมด
           </a>
-          <a href="/form"
-             class="inline-flex items-center px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700">
+          <a href="/form" class="inline-flex items-center px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700">
             + สร้างใบกำกับภาษี
           </a>
         </div>
@@ -103,36 +108,43 @@
     <!-- Quick actions -->
     <section aria-labelledby="quick-actions" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <a href="/summary_invoices.html"
-         class="bg-white text-center p-6 rounded-xl shadow hover:shadow-md transition block">
-        <div class="text-3xl mb-2">📃</div>
+        class="bg-white text-center p-6 rounded-xl shadow hover:shadow-md transition block">
+        <div class="text-3xl mb-2 text-blue-600">
+          <i class="fa-solid fa-file-invoice"></i>
+        </div>
         <div class="font-bold">ดูรายการใบกำกับภาษีที่ออก</div>
         <p class="text-sm text-gray-500">ดูสรุปรายวัน / รายเดือน / รายปี</p>
       </a>
 
-      <a href="/bill_note.html"
-         class="bg-white text-center p-6 rounded-xl shadow hover:shadow-md transition block">
-        <div class="text-3xl mb-2">🧾</div>
+      <a href="/bill_note.html" class="bg-white text-center p-6 rounded-xl shadow hover:shadow-md transition block">
+        <div class="text-3xl mb-2 text-green-600">
+          <i class="fa-solid fa-file-invoice-dollar"></i>
+        </div>
         <div class="font-bold">สร้างใบวางบิล</div>
         <p class="text-sm text-gray-500">รวบรวมใบกำกับเพื่อวางบิลลูกค้า</p>
       </a>
 
       <a href="/car_numberplate.html"
-         class="bg-white text-center p-6 rounded-xl shadow hover:shadow-md transition block">
-        <div class="text-3xl mb-2">🚗</div>
+        class="bg-white text-center p-6 rounded-xl shadow hover:shadow-md transition block">
+        <div class="text-3xl mb-2 text-gray-600">
+          <i class="fa-solid fa-truck"></i>
+        </div>
         <div class="font-bold">ทะเบียนรถ</div>
         <p class="text-sm text-gray-500">บันทึก/ค้นหา ทะเบียนรถ</p>
       </a>
 
-      <a href="/customers"
-         class="bg-white text-center p-6 rounded-xl shadow hover:shadow-md transition block">
-        <div class="text-3xl mb-2">👤</div>
+      <a href="/customers" class="bg-white text-center p-6 rounded-xl shadow hover:shadow-md transition block">
+        <div class="text-3xl mb-2 text-pink-600">
+          <i class="fa-solid fa-user-group"></i>
+        </div>
         <div class="font-bold">จัดการลูกค้า</div>
         <p class="text-sm text-gray-500">เพิ่ม/แก้ไข/ลบ ข้อมูลลูกค้า</p>
       </a>
 
-      <a href="/products"
-         class="bg-white text-center p-6 rounded-xl shadow hover:shadow-md transition block">
-        <div class="text-3xl mb-2">📦</div>
+      <a href="/products" class="bg-white text-center p-6 rounded-xl shadow hover:shadow-md transition block">
+        <div class="text-3xl mb-2 text-indigo-600">
+          <i class="fa-solid fa-box-open"></i>
+        </div>
         <div class="font-bold">จัดการสินค้า</div>
         <p class="text-sm text-gray-500">เพิ่ม/แก้ไข/ลบ สินค้า</p>
       </a>
@@ -146,4 +158,5 @@
   <!-- แยกสคริปต์ออกมา -->
   <script src="/static/js/dashboard.js" defer></script>
 </body>
+
 </html>
