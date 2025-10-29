@@ -1,0 +1,61 @@
+/* กล่อง KPI */
+.kpi { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; text-align: right; }
+.kpi .kpi-title { font-size: 11px; color: #6b7280; }
+.kpi .kpi-value { font-size: 20px; font-weight: 800; color: #111827; }
+.kpi-purple { background: #faf5ff; border-color: #e9d5ff; }
+.kpi-purple .kpi-title { color: #7c3aed; }
+.kpi-purple .kpi-value { color: #6d28d9; }
+
+/* ตาราง */
+.table { width: 100%; border-collapse: collapse; }
+.table th { background: #f9fafb; border-bottom: 1px solid #e5e7eb; text-align: left; font-weight: 600; padding: 8px 10px; }
+.table td { border-bottom: 1px solid #eef2f7; padding: 8px 10px; }
+.text-right { text-align: right; }
+
+/* พิมพ์ */
+@media print {
+  #btnPrint, #btnCSV, #apply { display: none !important; }
+  body { background: #fff; }
+}
+
+/* ---------- ฟอนต์เบสตามสเปก ---------- */
+.report-title-block h1 { font-size: 16px; font-weight: 700; }
+.report-title-block h2 { font-size: 14px; font-weight: 700; }
+.report-title-block p  { font-size: 14px; }
+
+/* ---------- หัวกระดาษพิมพ์ซ้ำทุกหน้า ---------- */
+.print-header {
+  position: fixed;
+  top: 0;
+  left: 0; right: 0;
+  height: 28mm;              /* สูงพอให้หัวกระดาษ +บล็อกหัวรายงาน */
+  z-index: 9999;
+  pointer-events: none;
+}
+.print-header__inner {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6mm 10mm 0 10mm;
+  font-size: 12px; color: #374151;
+}
+.print-header__right .page-number::after {
+  /* Chrome/Edge รองรับ counter(page)/counter(pages) ในโหมด print */
+  content: counter(page) " / " counter(pages);
+}
+
+/* ---------- เว้นพื้นที่เนื้อหาให้ไม่ชนหัว ---------- */
+@media print {
+  @page { margin: 20mm 12mm 15mm 12mm; } /* top/ right/ bottom/ left */
+  body { background: #fff !important; }
+  /* หลบพื้นที่หัวกระดาษ */
+  .report-title-block { margin-top: 28mm; }
+  /* ซ่อนปุ่ม UI เวลา print */
+  #btnPrint, #btnExcel, #apply { display: none !important; }
+}
+
+/* สำหรับจอบนเว็บ ให้หัวเรื่องดูสมส่วน */
+@media screen {
+  .print-header { position: sticky; height: auto; }
+  .report-title-block { margin-top: 16px; }
+}
+
+/* ตาราง & KPI ใช้ของเดิมได้ (ไม่ต้องแก้) */
