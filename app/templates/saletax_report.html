@@ -16,11 +16,10 @@
             <span>←</span> กลับ Dashboard
         </a>
         <div class="flex items-center gap-3">
-            <button id="btnPrint"
-                class="px-4 py-2 rounded-md bg-white text-gray-700 border hover:bg-gray-50">พิมพ์/ส่งออก</button>
-            <button id="btnExcel" class="px-4 py-2 rounded-md bg-white text-gray-700 border hover:bg-gray-50">
-                ส่งออก Excel
-            </button>
+            <button id="btnPrint" class="px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700">🖨️ พิมพ์
+                PDF</button>
+            <button id="btnExcel" class="px-4 py-2 rounded-md bg-white text-gray-700 border hover:bg-gray-50">ส่งออก
+                Excel</button>
         </div>
     </div>
 
@@ -81,7 +80,7 @@
         </header>
 
         <!-- บล็อกหัวรายงาน (ตรงกลาง) -->
-         
+
         <div class="report-title-block text-center">
             <!-- Header รายงาน + KPI -->
             <div class="mt-6 bg-white rounded-2xl shadow p-6">
@@ -116,8 +115,33 @@
             </p>
         </div>
 
-        <!-- เนื้อหารายงาน -->
-        <div id="reportBody" class="space-y-8"></div>
+        <!-- ส่วนตาราง -->
+        <div id="print-area" class="max-w-6xl mx-auto px-4 pt-6 bg-white rounded-lg shadow p-6">
+            <h1 class="text-2xl font-bold text-center mb-4">รายงานภาษีขาย</h1>
+            <p class="text-center text-sm mb-6">เดือน <span class="month-year">—</span></p>
+
+            <!-- ตารางข้อมูล -->
+            <div class="overflow-x-auto">
+                <table id="sale-tax-table" class="w-full text-sm border-collapse border border-gray-300">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="p-2 border text-center">ลำดับ</th>
+                            <th class="p-2 border text-center">วันเดือนปี</th>
+                            <th class="p-2 border text-center">เล่มที่</th>
+                            <th class="p-2 border text-center">เลขที่ใบกำกับ</th>
+                            <th class="p-2 border text-center">รหัสลูกค้า</th>
+                            <th class="p-2 border text-left">ชื่อผู้ขายสินค้า/บริการ</th>
+                            <th class="p-2 border text-center">เลขประจำตัวผู้เสียภาษี</th>
+                            <th class="p-2 border text-center">สถานประกอบการ</th>
+                            <th class="p-2 border text-right">มูลค่าสินค้า/บริการ</th>
+                            <th class="p-2 border text-right">VAT</th>
+                            <th class="p-2 border text-right">รวม</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportBody"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
     </div>
 

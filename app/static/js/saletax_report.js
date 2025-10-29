@@ -137,103 +137,72 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function renderReport() {
-        const body = $$("#reportBody");
+        const body = document.getElementById("reportBody");
         body.innerHTML = "";
-        let count = 0, before = 0, grand = 0;
+        let totalBefore = 0, totalVat = 0, totalGrand = 0;
 
-        // โหมด "รายงาน (ละเอียด)" และ "ไม่แยกบริษัท" -> ใช้รูปแบบฟอร์มภาษีขาย
-        if (state.mode === "detail" && !state.split) {
-            const { table, tbody } = makeSaleTaxTable(); // 👈 สร้างหัวตารางตามแบบ
-            state.rows.forEach((r, idx) => {
-                count += 1;
-                before += Number(r.before_vat) || 0;
-                grand += Number(r.grand) || 0;
+        state.rows.forEach((r, idx) => {
+            const vat = r.vat ?? (r.before_vat * 0.07);
+            const grand = r.grand ?? (r.before_vat + vat);
+            totalBefore += r.before_vat;
+            totalVat += vat;
+            totalGrand += grand;
 
-                const branchText = (r.cf_hq === 1 || r.cf_hq === "1") ? "สำนักงานใหญ่" :
-                    (r.cf_branch ? `สาขาที่ ${r.cf_branch}` : "-");
+            const branchText =
+                r.cf_hq == 1 ? "สำนักงานใหญ่" :
+                    r.cf_branch ? `สาขาที่ ${r.cf_branch}` : "-";
 
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-        <td class="c c-center">${idx + 1}</td>
-        <td class="c">${fmtThaiDate(r.invoice_date)}</td>
-        <td class="c c-center">-</td> <!-- เล่มที่ (ไม่มีข้อมูล -> '-') -->
-        <td class="c">${r.invoice_number || "-"}</td>
-        <td class="c">${r.personid || "-"}</td>
-        <td class="c">${r.company || "-"}</td>
-        <td class="c">${r.cf_taxid || "-"}</td>
-        <td class="c c-center">${branchText}</td>
-        <td class="c c-right">${fmtNum(r.before_vat)}</td>
-        <td class="c c-right">${fmtNum(r.vat)}</td>
-        <td class="c c-right">${fmtNum(r.grand)}</td>
-      `;
-                tbody.appendChild(tr);
-            });
-
-            // summary row (optional)
-            const trSum = document.createElement("tr");
-            trSum.className = "sum-row";
-            trSum.innerHTML = `
-      <td class="c" colspan="8" style="text-align:right;font-weight:700;">รวม</td>
-      <td class="c c-right"><b>${fmtNum(before)}</b></td>
-      <td class="c c-right"><b>${fmtNum(before * 0.07)}</b></td>
-      <td class="c c-right"><b>${fmtNum(grand)}</b></td>
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+      <td class="p-2 border text-center">${idx + 1}</td>
+      <td class="p-2 border text-center">${fmtThaiDate(r.invoice_date)}</td>
+      <td class="p-2 border text-center">-</td>
+      <td class="p-2 border text-center">${r.invoice_number || "-"}</td>
+      <td class="p-2 border text-center">${r.personid || "-"}</td>
+      <td class="p-2 border text-left">${r.company || "-"}</td>
+      <td class="p-2 border text-center">${r.cf_taxid || "-"}</td>
+      <td class="p-2 border text-center">${branchText}</td>
+      <td class="p-2 border text-right">${fmtNum(r.before_vat)}</td>
+      <td class="p-2 border text-right">${fmtNum(vat)}</td>
+      <td class="p-2 border text-right">${fmtNum(grand)}</td>
     `;
-            tbody.appendChild(trSum);
+            body.appendChild(tr);
+        });
 
-            body.appendChild(table);
-
-        } else if (state.mode === "summary" && !state.split) {
-            // ตารางสรุปต่อช่วงเวลา (เหมือนเดิม)
-            const table = makeTable(["ช่วงเวลา", "จำนวนใบกำกับ", "ก่อน VAT", "VAT", "รวมสุทธิ"]);
-            state.rows.forEach(r => {
-                count += +r.count || 0;
-                before += +r.before_vat || 0;
-                grand += +r.grand || 0;
-                addRow(table.tbody, [
-                    r.period || "-",
-                    fmtInt(r.count),
-                    fmtNum(r.before_vat),
-                    fmtNum(r.vat),
-                    fmtNum(r.grand)
-                ]);
-            });
-            body.appendChild(table.wrap);
-
-        } else {
-            // โหมดอื่นคงเดิม (แยกบริษัท หรือ detail แบบกลุ่มย่อย)
-            // ... (โค้ดเดิมของคุณ) ...
-        }
-
-        $$("#kCount").textContent = fmtInt(count);
-        $$("#kBefore").textContent = fmtNum(before);
-        $$("#kGrand").textContent = fmtNum(grand);
-    }
-
-    // ตารางหัวตามแบบ sale_tax_report.jpg
-    function makeSaleTaxTable() {
-        const table = document.createElement("table");
-        table.className = "st-table";
-        const thead = document.createElement("thead");
-        thead.innerHTML = `
-    <tr>
-      <th class="c w-idx">ลำดับที่</th>
-      <th class="c w-date">วันเดือนปี</th>
-      <th class="c w-book">เล่มที่</th>
-      <th class="c w-no">เลขที่/เลขที่</th>
-      <th class="c w-code">รหัสลูกค้า</th>
-      <th class="c">ชื่อผู้ขายสินค้า/ผู้ให้บริการ</th>
-      <th class="c w-taxid">เลขประจำตัวผู้เสียภาษีอากรของผู้ขายสินค้า/บริการ</th>
-      <th class="c w-branch">สถานประกอบการ</th>
-      <th class="c w-amt">มูลค่าสินค้า หรือบริการ</th>
-      <th class="c w-amt">จำนวนเงินภาษีมูลค่าเพิ่ม</th>
-      <th class="c w-amt">รวม</th>
-    </tr>
+        // แถวรวม
+        const trSum = document.createElement("tr");
+        trSum.className = "font-bold bg-gray-50";
+        trSum.innerHTML = `
+    <td colspan="8" class="p-2 border text-right">รวม</td>
+    <td class="p-2 border text-right">${fmtNum(totalBefore)}</td>
+    <td class="p-2 border text-right">${fmtNum(totalVat)}</td>
+    <td class="p-2 border text-right">${fmtNum(totalGrand)}</td>
   `;
-        const tbody = document.createElement("tbody");
-        table.appendChild(thead);
-        table.appendChild(tbody);
-        return { table, tbody };
+        body.appendChild(trSum);
     }
+
+    // === ปุ่มพิมพ์ PDF ===
+    document.getElementById("btnPrint").addEventListener("click", () => {
+        const printContent = document.getElementById("print-area").innerHTML;
+        const win = window.open("", "", "width=1200,height=800");
+        win.document.write(`
+    <html><head>
+      <title>รายงานภาษีขาย</title>
+      <style>
+        @page { size: A4 landscape; margin: 10mm; }
+        body { font-family: sans-serif; font-size: 12px; }
+        table { width:100%; border-collapse:collapse; }
+        th, td { border:1px solid #333; padding:4px 6px; }
+        th { background:#f1f1f1; }
+        td.text-right { text-align:right; }
+        td.text-center { text-align:center; }
+      </style>
+    </head><body>${printContent}</body></html>
+  `);
+        win.document.close();
+        win.print();
+    });
+
 
     // ไทย-เดท dd/mm/พ.ศ.
     function fmtThaiDate(iso) {

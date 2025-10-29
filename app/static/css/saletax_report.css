@@ -254,10 +254,12 @@
 
 /* เว้น margin บนให้เนื้อหาไม่ชนหัว */
 @media print {
-  @page {
-    size: A4 portrait;
-    margin: 20mm 10mm 15mm 10mm;
-  }
+  @page { size: A4 landscape; margin: 10mm; }
+  #btnPrint, #btnExcel, #apply { display: none !important; }
+  body { background: #fff !important; }
+  #print-area { box-shadow: none; }
+}
+
 
   body {
     background: #fff !important;
