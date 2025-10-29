@@ -16,10 +16,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // toggle granularity buttons
     document.querySelectorAll(".rg").forEach(btn => {
         btn.addEventListener("click", () => {
-            document.querySelectorAll(".rg").forEach(b => b.classList.remove("bg-white/20"));
-            btn.classList.add("bg-white/20");
-            state.granularity = btn.dataset.gran;
+            document.querySelector('.rg[data-gran="day"]')?.classList.add("bg-white/20");
+            // ให้แสดงชุดฟิลเตอร์ตรงกับโหมดเริ่มต้น
             toggleFilters();
+            buildReport();
         });
     });
 
@@ -33,7 +33,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // controls
     $$("#apply").addEventListener("click", buildReport);
     $$("#btnPrint").addEventListener("click", () => window.print());
-    $$("#btnCSV").addEventListener("click", exportCSV);
+    const btnExcel = document.getElementById("btnExcel");
+    if (btnExcel) btnExcel.addEventListener("click", exportExcel);
+
 
     // mode/split
     $$("#mode").addEventListener("change", () => state.mode = $$("#mode").value);
