@@ -1,10 +1,10 @@
 /* ===== FONT ไทย ===== */
-/*body, button, input, select, table, th, td, p, h1, h2, h3 {
+body, button, input, select, table, th, td, p, h1, h2, h3 {
   font-family: "TH Sarabun New", "Tahoma", "Sukhumvit Set", "Thonburi",
                "Noto Sans Thai", "Noto Sans", Arial, sans-serif;
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.5;
-}*/ 
+} 
 
 /* KPI */
 .kpi{background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;
@@ -24,8 +24,7 @@
 
 /* Print */
 @media print{
-  @page{size:A4 landscape;margin:10mm;font-family: "TH Sarabun New", "Tahoma", "Sukhumvit Set", "Thonburi",
-            "Noto Sans Thai", "Noto Sans", Arial, sans-serif;}
+  @page{size:A4 landscape;margin:10mm;}
   body *{visibility:hidden;}
   #print-area,#print-area *{visibility:visible;}
   #print-area{position:absolute;left:0;top:0;width:100%;}

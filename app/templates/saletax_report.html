@@ -7,6 +7,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/static/css/saletax_report.css">
+    <!-- flatpickr core + theme -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <!-- monthSelect plugin -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
 </head>
 
 <body class="bg-gray-50 min-h-screen">
@@ -37,17 +41,16 @@
             </div>
 
             <div id="filter-day" class="flex items-center gap-2">
-                <span>จาก</span><input id="dayFrom" type="date" class="border rounded px-2 py-1">
-                <span>ถึง</span><input id="dayTo" type="date" class="border rounded px-2 py-1">
+                <span>จาก</span><input id="dayFrom" type="text" class="border rounded px-2 py-1 w-40">
+                <span>ถึง</span><input id="dayTo" type="text" class="border rounded px-2 py-1 w-40">
             </div>
             <div id="filter-month" class="hidden items-center gap-2">
-                <span>เดือน (ภาษาไทย)</span>
-                <input id="monthPick" type="month" class="border rounded px-2 py-1">
+                <span>เดือน</span><input id="monthPick" type="text" class="border rounded px-2 py-1 w-40"
+                    placeholder="เลือกเดือน">
             </div>
-
             <div id="filter-year" class="hidden items-center gap-2">
-                <span>ปี</span><input id="yearPick" type="number" min="2000" max="2100"
-                    class="border rounded px-2 py-1 w-28">
+                <span>ปี</span><input id="yearPick" type="text" class="border rounded px-2 py-1 w-28"
+                    placeholder="เลือกปี">
             </div>
 
             <button id="btnGenerate" class="ml-auto bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
@@ -110,6 +113,10 @@
         </div>
     </div>
 
+    <!-- flatpickr scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
     <script src="/static/js/saletax_report.js"></script>
 </body>
 
