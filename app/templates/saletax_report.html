@@ -9,116 +9,24 @@
     <link rel="stylesheet" href="/static/css/saletax_report.css">
 </head>
 
-<body class="bg-gradient-to-b from-indigo-50 to-white min-h-screen">
+<body class="bg-gray-50 min-h-screen">
 
+    <!-- ปุ่ม -->
     <div class="max-w-6xl mx-auto px-4 pt-8 flex items-center justify-between">
         <a href="/dashboard" class="inline-flex items-center gap-2 text-blue-700 hover:underline">
-            <span>←</span> กลับ Dashboard
+            ← กลับ Dashboard
         </a>
-        <div class="flex items-center gap-3">
-            <button id="btnPrint" class="px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700">🖨️ พิมพ์
-                PDF</button>
-            <button id="btnExcel" class="px-4 py-2 rounded-md bg-white text-gray-700 border hover:bg-gray-50">ส่งออก
-                Excel</button>
+        <div class="flex gap-3">
+            <button id="btnPrint" class="px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700">
+                🖨️ พิมพ์ PDF
+            </button>
+            <button id="btnExcel" class="px-4 py-2 rounded-md bg-white text-gray-700 border hover:bg-gray-50">
+                ส่งออก Excel
+            </button>
         </div>
     </div>
 
-    <div class="max-w-6xl mx-auto px-4 pt-6">
-        <!-- ฟิลเตอร์ (โทนม่วง/เทา คล้ายภาพตัวอย่าง) -->
-        <div class="rounded-2xl p-4 bg-gradient-to-r from-purple-600 to-slate-700 text-white shadow">
-            <div class="flex flex-wrap items-center gap-3">
-                <div class="inline-flex rounded bg-white/10" role="group">
-                    <button class="rg px-4 py-2 text-sm rounded-l bg-white/20" data-gran="day">รายวัน</button>
-                    <button class="rg px-4 py-2 text-sm" data-gran="month">รายเดือน</button>
-                    <button class="rg px-4 py-2 text-sm rounded-r" data-gran="year">รายปี</button>
-                </div>
-
-                <div id="f-day" class="flex items-center gap-2">
-                    <span class="text-sm">วันที่</span>
-                    <input id="dayFrom" type="date" class="rounded px-2 py-1 text-gray-900">
-                    <span class="text-sm">ถึง</span>
-                    <input id="dayTo" type="date" class="rounded px-2 py-1 text-gray-900">
-                </div>
-
-                <div id="f-month" class="hidden items-center gap-2">
-                    <span class="text-sm">เดือน</span>
-                    <input id="monthPick" type="month" class="rounded px-2 py-1 text-gray-900">
-                </div>
-
-                <div id="f-year" class="hidden items-center gap-2">
-                    <span class="text-sm">ปี</span>
-                    <input id="yearPick" type="number" min="2000" max="2100"
-                        class="rounded px-2 py-1 w-28 text-gray-900">
-                </div>
-
-                <div class="ml-auto flex items-center gap-3">
-                    <label class="inline-flex items-center gap-2 text-sm">
-                        <input id="splitCompany" type="checkbox" class="w-4 h-4"><span>แยกรายบริษัท</span>
-                    </label>
-                    <select id="mode" class="rounded px-2 py-1 text-gray-900">
-                        <option value="detail">รายงาน (ละเอียด)</option>
-                        <option value="summary">รายงานแบบสรุป</option>
-                    </select>
-                    <button id="apply"
-                        class="bg-white text-purple-700 font-semibold px-4 py-2 rounded hover:bg-white/90">สร้างรายงาน</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Header รายงาน -->
-        <!-- หัวกระดาษพิมพ์ซ้ำทุกหน้า -->
-        <header class="print-header">
-            <div class="print-header__inner">
-                <div class="print-header__center">
-                    <!-- ใส่อะไรสั้น ๆ ได้ เช่น โลโก้/ชื่อระบบ -->
-                    รายงานภาษีขาย
-                </div>
-                <div class="print-header__right">
-                    <span class="page-number"></span>
-                </div>
-            </div>
-        </header>
-
-        <!-- บล็อกหัวรายงาน (ตรงกลาง) -->
-
-        <div class="report-title-block text-center">
-            <!-- Header รายงาน + KPI -->
-            <div class="mt-6 bg-white rounded-2xl shadow p-6">
-                <div class="flex items-center justify-between border-b pb-4 mb-4">
-                    <div>
-                        <!-- subtitle ที่ JS จะอัปเดต -->
-                        <div id="subtitle" class="text-gray-500 text-sm">—</div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-3">
-                        <div class="kpi kpi-purple">
-                            <div class="kpi-title">จำนวนใบกำกับ</div>
-                            <div id="kCount" class="kpi-value">0</div>
-                        </div>
-                        <div class="kpi">
-                            <div class="kpi-title">ก่อน VAT</div>
-                            <div id="kBefore" class="kpi-value">0.00</div>
-                        </div>
-                        <div class="kpi">
-                            <div class="kpi-title">รวมสุทธิ</div>
-                            <div id="kGrand" class="kpi-value">0.00</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <h1 class="text-2xl font-bold">รายงานภาษีขาย</h1>
-            <p>เดือน <span class="month-year">—</span></p>
-            <p>ชื่อผู้ประกอบการ&nbsp;&nbsp;&nbsp;&nbsp;บริษัท เอส แอนด์ เอส อินคอม
-                จำกัด&nbsp;&nbsp;&nbsp;&nbsp;เลขที่ประจำตัวผู้เสียภาษี 0715544000020</p>
-            <p>ชื่อสถานประกอบการ&nbsp;&nbsp;&nbsp;&nbsp;บริษัท เอส แอนด์ เอส อินคอม
-                จำกัด&nbsp;&nbsp;&nbsp;&nbsp;สำนักงานใหญ่&nbsp;&nbsp;&nbsp;&nbsp;โทรศัพท์&nbsp;&nbsp;&nbsp;&nbsp;0-3558-9274
-            </p>
-        </div>
-
-
-    </div>
-
-    <!-- KPI + Filter -->
+    <!-- KPI -->
     <div class="max-w-6xl mx-auto px-4 pt-4">
         <div class="bg-white rounded-xl shadow p-4 mb-4">
             <div class="flex justify-between">
@@ -141,10 +49,13 @@
         </div>
     </div>
 
-    <!-- พื้นที่พิมพ์เฉพาะตาราง -->
+    <!-- ส่วนตาราง (เฉพาะส่วนที่จะพิมพ์) -->
     <div id="print-area" class="max-w-6xl mx-auto px-4 bg-white rounded-lg shadow p-6 mt-4">
         <h1 class="text-2xl font-bold text-center mb-4">รายงานภาษีขาย</h1>
-        <p class="text-center text-sm mb-6">เดือน <span class="month-year">—</span></p>
+        <p class="text-center text-sm mb-6">
+            เดือน <span class="month-year">—</span>
+        </p>
+
         <div class="overflow-x-auto">
             <table id="sale-tax-table" class="w-full text-sm border-collapse border border-gray-300">
                 <thead class="bg-gray-50">

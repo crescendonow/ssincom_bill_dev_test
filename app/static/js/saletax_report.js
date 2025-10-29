@@ -1,277 +1,92 @@
-// /static/js/saletax_report.js
 const API_LIST = "/api/saletax/list";
-const API_SUMMARY = "/api/saletax/summary";
 
 document.addEventListener("DOMContentLoaded", () => {
+  const $ = s => document.querySelector(s);
 
-    const $$ = sel => document.querySelector(sel);
+  let rows = [];
 
-    const state = {
-        granularity: "day",
-        mode: "detail",
-        split: false,
-        dayFrom: null, dayTo: null, month: null, year: null,
-        rows: []
-    };
+  // โหลดรายงานทันที
+  buildReport();
 
-    // === ปุ่มเลือกกรานูลาริตี้ ===
-    document.querySelectorAll(".rg").forEach(btn => {
-        btn.addEventListener("click", () => {
-            document.querySelectorAll(".rg").forEach(b => b.classList.remove("bg-white/20"));
-            btn.classList.add("bg-white/20");
-            state.granularity = btn.dataset.gran;
-            toggleFilters();
-            buildReport();
-        });
+  async function buildReport() {
+    try {
+      const res = await fetch(API_LIST + "?month=" + new Date().toISOString().slice(0,7));
+      if (!res.ok) throw new Error(await res.text());
+      rows = await res.json();
+      renderTable(rows);
+    } catch (err) {
+      console.error(err);
+      alert("ไม่สามารถดึงข้อมูลได้");
+    }
+  }
+
+  function renderTable(data) {
+    const tbody = $("#reportBody");
+    tbody.innerHTML = "";
+    let totalBefore = 0, totalVat = 0, totalGrand = 0;
+
+    data.forEach((r, i) => {
+      const vat = r.vat ?? r.before_vat * 0.07;
+      const grand = r.grand ?? r.before_vat + vat;
+      totalBefore += r.before_vat;
+      totalVat += vat;
+      totalGrand += grand;
+      const branchText = r.cf_hq==1?"สำนักงานใหญ่":(r.cf_branch?`สาขาที่ ${r.cf_branch}`:"-");
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="text-center">${i+1}</td>
+        <td class="text-center">${fmtThaiDate(r.invoice_date)}</td>
+        <td class="text-center">-</td>
+        <td class="text-center">${r.invoice_number||"-"}</td>
+        <td class="text-center">${r.personid||"-"}</td>
+        <td>${r.company||"-"}</td>
+        <td class="text-center">${r.cf_taxid||"-"}</td>
+        <td class="text-center">${branchText}</td>
+        <td class="text-right">${fmtNum(r.before_vat)}</td>
+        <td class="text-right">${fmtNum(vat)}</td>
+        <td class="text-right">${fmtNum(grand)}</td>`;
+      tbody.appendChild(tr);
     });
 
-    // === ตั้งค่าเริ่มต้น ===
-    document.querySelector('.rg[data-gran="day"]')?.classList.add("bg-white/20");
-    toggleFilters();
+    // summary
+    const trSum = document.createElement("tr");
+    trSum.className="font-bold bg-gray-50";
+    trSum.innerHTML = `
+      <td colspan="8" class="text-right">รวม</td>
+      <td class="text-right">${fmtNum(totalBefore)}</td>
+      <td class="text-right">${fmtNum(totalVat)}</td>
+      <td class="text-right">${fmtNum(totalGrand)}</td>`;
+    tbody.appendChild(trSum);
 
-    const today = new Date();
-    $$("#dayFrom").value = ymd(firstDayOfMonth(today));
-    $$("#dayTo").value = ymd(lastDayOfMonth(today));
-    $$("#monthPick").value = ymd(today).slice(0, 7);
-    $$("#yearPick").value = String(today.getFullYear());
+    $("#kCount").textContent = data.length;
+    $("#kBefore").textContent = fmtNum(totalBefore);
+    $("#kGrand").textContent = fmtNum(totalGrand);
+  }
 
-    // === ปุ่มควบคุม ===
-    $$("#apply").addEventListener("click", buildReport);
-    $$("#btnPrint").addEventListener("click", () => window.print());
-    document.getElementById("btnExcel")?.addEventListener("click", exportExcel);
+  function fmtNum(n){return Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2});}
+  function fmtThaiDate(iso){
+    if(!iso) return "-";
+    const d=new Date(iso);
+    return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()+543}`;
+  }
 
-    // === โหมด/การแยกบริษัท ===
-    $$("#mode")?.addEventListener("change", () => state.mode = $$("#mode").value);
-    $$("#splitCompany")?.addEventListener("change", () => state.split = $$("#splitCompany").checked);
+  // ปุ่มพิมพ์
+  $("#btnPrint").addEventListener("click",()=>window.print());
 
-    // === โหลดรายงานครั้งแรก ===
-    buildReport();
-
-    function toggleFilters() {
-        const g = state.granularity;
-        $$("#f-day").classList.toggle("hidden", g !== "day");
-        $$("#f-month").classList.toggle("hidden", g !== "month");
-        $$("#f-year").classList.toggle("hidden", g !== "year");
-    }
-
-    function readFilters() {
-        state.mode = $$("#mode").value;
-        state.split = $$("#splitCompany").checked;
-        if (state.granularity === "day") {
-            state.dayFrom = $$("#dayFrom").value || null;
-            state.dayTo = $$("#dayTo").value || null;
-        } else if (state.granularity === "month") {
-            state.month = $$("#monthPick").value || null;
-        } else {
-            state.year = parseInt($$("#yearPick").value || "", 10) || null;
-        }
-    }
-
-    // === util แปลงเดือน-ปีแบบไทย ===
-    function thaiMonthYear({ granularity, dayFrom, month, year }) {
-        const thMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
-            "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
-
-        const toBE = y => (y + 543);
-        if (granularity === "month" && month) {
-            // month รูปแบบ YYYY-MM
-            const [y, m] = month.split("-").map(x => parseInt(x, 10));
-            return `${thMonths[(m || 1) - 1]} ปี ${toBE(y || new Date().getFullYear())}`;
-        }
-        if (granularity === "day" && dayFrom) {
-            const d = new Date(dayFrom);
-            return `${thMonths[d.getMonth()]} ปี ${toBE(d.getFullYear())}`;
-        }
-        // year หรือกรณีไม่ครบข้อมูล
-        const y = year || new Date().getFullYear();
-        return `ปี ${toBE(y)}`;
-    }
-
-
-    async function buildReport() {
-        readFilters();
-        // ตั้งหัวข้อย่อยและ month-year
-        const monthYearText = thaiMonthYear({
-            granularity: state.granularity,
-            dayFrom: state.dayFrom,
-            month: state.month,
-            year: state.year
-        });
-        document.querySelector(".month-year").textContent = monthYearText;
-
-        const g = state.granularity, mode = state.mode, split = state.split;
-
-        // subtitle
-        let sub = g === "day"
-            ? `รายวัน: ${state.dayFrom || "-"} ถึง ${state.dayTo || "-"}`
-            : (g === "month" ? `รายเดือน: ${state.month || "-"}` : `รายปี: ${state.year || "-"}`);
-        if (split) sub += " • แยกรายบริษัท";
-        $$("#subtitle").textContent = sub;
-
-        // fetch
-        try {
-            let url, params = new URLSearchParams();
-            if (g === "day") { if (state.dayFrom) params.set("start", state.dayFrom); if (state.dayTo) params.set("end", state.dayTo); }
-            if (g === "month") { if (state.month) params.set("month", state.month); }
-            if (g === "year") { if (state.year) params.set("year", state.year); }
-
-            if (mode === "summary") {
-                params.set("granularity", g);
-                if (split) params.set("split_by_company", "true");
-                url = `${API_SUMMARY}?${params}`;
-            } else {
-                url = `${API_LIST}?${params}`;
-            }
-
-            const res = await fetch(url, { headers: { "Accept": "application/json" } });
-            if (!res.ok) throw new Error(await res.text());
-            const rows = await res.json();
-            state.rows = Array.isArray(rows) ? rows : [];
-            renderReport();
-        } catch (e) {
-            console.error(e);
-            state.rows = [];
-            renderReport();
-            alert("ดึงข้อมูลรายงานไม่สำเร็จ");
-        }
-    }
-
-    function renderReport() {
-        const body = document.getElementById("reportBody");
-        body.innerHTML = "";
-        let totalBefore = 0, totalVat = 0, totalGrand = 0;
-
-        state.rows.forEach((r, idx) => {
-            const vat = r.vat ?? (r.before_vat * 0.07);
-            const grand = r.grand ?? (r.before_vat + vat);
-            totalBefore += r.before_vat;
-            totalVat += vat;
-            totalGrand += grand;
-
-            const branchText =
-                r.cf_hq == 1 ? "สำนักงานใหญ่" :
-                    r.cf_branch ? `สาขาที่ ${r.cf_branch}` : "-";
-
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-      <td class="p-2 border text-center">${idx + 1}</td>
-      <td class="p-2 border text-center">${fmtThaiDate(r.invoice_date)}</td>
-      <td class="p-2 border text-center">-</td>
-      <td class="p-2 border text-center">${r.invoice_number || "-"}</td>
-      <td class="p-2 border text-center">${r.personid || "-"}</td>
-      <td class="p-2 border text-left">${r.company || "-"}</td>
-      <td class="p-2 border text-center">${r.cf_taxid || "-"}</td>
-      <td class="p-2 border text-center">${branchText}</td>
-      <td class="p-2 border text-right">${fmtNum(r.before_vat)}</td>
-      <td class="p-2 border text-right">${fmtNum(vat)}</td>
-      <td class="p-2 border text-right">${fmtNum(grand)}</td>
-    `;
-            body.appendChild(tr);
-        });
-
-        // แถวรวม
-        const trSum = document.createElement("tr");
-        trSum.className = "font-bold bg-gray-50";
-        trSum.innerHTML = `
-    <td colspan="8" class="p-2 border text-right">รวม</td>
-    <td class="p-2 border text-right">${fmtNum(totalBefore)}</td>
-    <td class="p-2 border text-right">${fmtNum(totalVat)}</td>
-    <td class="p-2 border text-right">${fmtNum(totalGrand)}</td>
-  `;
-        body.appendChild(trSum);
-    }
-
-    // === ปุ่มพิมพ์ PDF ===
-    document.getElementById("btnPrint").addEventListener("click", () => {
-        window.print();
+  // ปุ่มส่งออก Excel
+  $("#btnExcel").addEventListener("click",()=>{
+    if(!rows.length){alert("ไม่มีข้อมูลส่งออก");return;}
+    let csv="ลำดับ,วันเดือนปี,เล่มที่,เลขที่ใบกำกับ,รหัสลูกค้า,ชื่อบริษัท,เลขผู้เสียภาษี,สถานประกอบการ,ก่อนVAT,VAT,รวม\n";
+    rows.forEach((r,i)=>{
+      const vat=r.vat??r.before_vat*0.07;
+      const grand=r.grand??r.before_vat+vat;
+      csv+=`${i+1},${fmtThaiDate(r.invoice_date)},-,"${r.invoice_number||"-"}","${r.personid||"-"}","${r.company||"-"}","${r.cf_taxid||"-"}","${r.cf_branch||"-"}",${r.before_vat},${vat},${grand}\n`;
     });
-
-    // ไทย-เดท dd/mm/พ.ศ.
-    function fmtThaiDate(iso) {
-        if (!iso) return "-";
-        const d = new Date(iso);
-        const dd = String(d.getDate()).padStart(2, "0");
-        const mm = String(d.getMonth() + 1).padStart(2, "0");
-        const yy = d.getFullYear() + 543;
-        return `${dd}/${mm}/${yy}`;
-    }
-
-    /* helpers */
-    function makeTable(headers) {
-        const wrap = document.createElement("div");
-        wrap.className = "overflow-auto";
-        const table = document.createElement("table");
-        table.className = "table";
-        const thead = document.createElement("thead");
-        const trh = document.createElement("tr");
-        headers.forEach(h => {
-            const th = document.createElement("th");
-            th.textContent = h;
-            trh.appendChild(th);
-        });
-        thead.appendChild(trh);
-        const tbody = document.createElement("tbody");
-        table.appendChild(thead); table.appendChild(tbody); wrap.appendChild(table);
-        return { wrap, tbody };
-    }
-    function addRow(tbody, cells) {
-        const tr = document.createElement("tr");
-        cells.forEach((c, i) => {
-            const td = document.createElement("td");
-            td.textContent = c;
-            if (i >= cells.length - 3) td.className = "text-right";
-            tr.appendChild(td);
-        });
-        tbody.appendChild(tr);
-    }
-    function groupBy(arr, keyFn) { return arr.reduce((m, x) => { const k = keyFn(x); (m[k] ||= []).push(x); return m; }, {}); }
-    function ymd(d) { return d.toISOString().slice(0, 10); }
-    function firstDayOfMonth(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
-    function lastDayOfMonth(d) { return new Date(d.getFullYear(), d.getMonth() + 1, 0); }
-    function fmtNum(n) { n = Number(n || 0); return n.toLocaleString('en-US', { minimumFractionDigits: 2 }); }
-    function fmtInt(n) { n = Number(n || 0); return n.toLocaleString('en-US'); }
-
-
-    document.getElementById("btnExcel").addEventListener("click", exportExcel);
-
-    function exportExcel() {
-        // รวมทุกตารางใน #reportBody เข้าเป็นชุดข้อมูลเดียว
-        const tables = Array.from(document.querySelectorAll("#reportBody table"));
-        if (!tables.length) { alert("ไม่มีข้อมูลให้ส่งออก"); return; }
-
-        // ดึง caption หรือตัวหัวแต่ละบล็อกเป็นหัวชีต
-        const sheets = [];
-        tables.forEach((tbl, i) => {
-            const headers = Array.from(tbl.querySelectorAll("thead th")).map(th => th.textContent.trim());
-            const rows = Array.from(tbl.querySelectorAll("tbody tr")).map(tr =>
-                Array.from(tr.children).map(td => td.textContent.trim())
-            );
-            sheets.push({ name: `Sheet${i + 1}`, headers, rows });
-        });
-
-        // สร้าง Excel (XLS) ด้วย HTML-Table (Excel รองรับ)
-        const wb = sheets.map(s => {
-            const head = `<tr>${s.headers.map(h => `<th>${escapeXml(h)}</th>`).join("")}</tr>`;
-            const body = s.rows.map(r => `<tr>${r.map(c => `<td>${escapeXml(c)}</td>`).join("")}</tr>`).join("");
-            return `<table>${head}${body}</table>`;
-        }).join("<br/>");
-
-        const html = `
-    <html xmlns:o="urn:schemas-microsoft-com:office:office"
-          xmlns:x="urn:schemas-microsoft-com:office:excel"
-          xmlns="http://www.w3.org/TR/REC-html40">
-    <head><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets>${sheets.map((s, i) => `<x:ExcelWorksheet><x:Name>${"Sheet" + (i + 1)}</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet>`).join("")
-            }</x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>
-    <body>${wb}</body></html>
-  `.trim();
-
-        const blob = new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8" });
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "saletax_report.xls";
-        a.click();
-    }
-
-    function escapeXml(s) { return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
-
+    const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="saletax_report.csv";
+    a.click();
+  });
 });
