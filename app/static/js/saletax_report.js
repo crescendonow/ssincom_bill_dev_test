@@ -2,48 +2,50 @@
 const API_LIST = "/api/saletax/list";
 const API_SUMMARY = "/api/saletax/summary";
 
-const state = {
+document.addEventListener("DOMContentLoaded", () => {
+
+  const $$ = sel => document.querySelector(sel);
+
+  const state = {
     granularity: "day",
-    mode: "detail",     // detail | summary
+    mode: "detail",
     split: false,
     dayFrom: null, dayTo: null, month: null, year: null,
     rows: []
-};
+  };
 
-const $$ = sel => document.querySelector(sel);
-
-document.querySelectorAll(".rg").forEach(btn => {
+  // === ปุ่มเลือกกรานูลาริตี้ ===
+  document.querySelectorAll(".rg").forEach(btn => {
     btn.addEventListener("click", () => {
-        document.querySelectorAll(".rg").forEach(b => b.classList.remove("bg-white/20"));
-        btn.classList.add("bg-white/20");
-        state.granularity = btn.dataset.gran;
-        toggleFilters();
-        buildReport();
+      document.querySelectorAll(".rg").forEach(b => b.classList.remove("bg-white/20"));
+      btn.classList.add("bg-white/20");
+      state.granularity = btn.dataset.gran;
+      toggleFilters();
+      buildReport();
     });
-});
+  });
 
-document.querySelector('.rg[data-gran="day"]')?.classList.add("bg-white/20");
-toggleFilters();
-buildReport();
+  // === ตั้งค่าเริ่มต้น ===
+  document.querySelector('.rg[data-gran="day"]')?.classList.add("bg-white/20");
+  toggleFilters();
 
-// init default range (this month)
-const today = new Date();
-$$("#dayFrom").value = ymd(firstDayOfMonth(today));
-$$("#dayTo").value = ymd(lastDayOfMonth(today));
-$$("#monthPick").value = ymd(today).slice(0, 7);
-$$("#yearPick").value = String(today.getFullYear());
+  const today = new Date();
+  $$("#dayFrom").value = ymd(firstDayOfMonth(today));
+  $$("#dayTo").value = ymd(lastDayOfMonth(today));
+  $$("#monthPick").value = ymd(today).slice(0,7);
+  $$("#yearPick").value = String(today.getFullYear());
 
-// controls
-$$("#apply").addEventListener("click", buildReport);
-$$("#btnPrint").addEventListener("click", () => window.print());
-const btnExcel = document.getElementById("btnExcel");
-if (btnExcel) btnExcel.addEventListener("click", exportExcel);
+  // === ปุ่มควบคุม ===
+  $$("#apply").addEventListener("click", buildReport);
+  $$("#btnPrint").addEventListener("click", () => window.print());
+  document.getElementById("btnExcel")?.addEventListener("click", exportExcel);
 
+  // === โหมด/การแยกบริษัท ===
+  $$("#mode")?.addEventListener("change", () => state.mode = $$("#mode").value);
+  $$("#splitCompany")?.addEventListener("change", () => state.split = $$("#splitCompany").checked);
 
-// mode/split
-$$("#mode").addEventListener("change", () => state.mode = $$("#mode").value);
-$$("#splitCompany").addEventListener("change", () => state.split = $$("#splitCompany").checked);
-});
+  // === โหลดรายงานครั้งแรก ===
+  buildReport();
 
 function toggleFilters() {
     const g = state.granularity;
@@ -304,3 +306,4 @@ function exportExcel() {
 
 function escapeXml(s) { return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
 
+});
