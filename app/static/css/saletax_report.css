@@ -254,33 +254,71 @@
 
 /* เว้น margin บนให้เนื้อหาไม่ชนหัว */
 @media print {
-  @page { size: A4 landscape; margin: 10mm; }
-  #btnPrint, #btnExcel, #apply { display: none !important; }
-  body { background: #fff !important; }
-  #print-area { box-shadow: none; }
-}
-
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
 
   body {
     background: #fff !important;
   }
 
-  .report-title-block {
-    margin-top: 28mm;
+  /* ซ่อนทุกอย่างยกเว้น print-area */
+  body * {
+    visibility: hidden;
   }
 
-  /* ทำให้ thead แสดงซ้ำ */
-  .st-table thead {
+  #print-area,
+  #print-area * {
+    visibility: visible;
+  }
+
+  #print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  /* หัวตารางซ้ำทุกหน้า */
+  #sale-tax-table thead {
     display: table-header-group;
   }
 
-  .st-table tr {
+  #sale-tax-table tr {
     page-break-inside: avoid;
   }
 
+  /* ซ่อนปุ่มและ KPI ขณะพิมพ์ */
   #btnPrint,
   #btnExcel,
   #apply {
     display: none !important;
   }
+}
+
+
+
+body {
+  background: #fff !important;
+}
+
+.report-title-block {
+  margin-top: 28mm;
+}
+
+/* ทำให้ thead แสดงซ้ำ */
+.st-table thead {
+  display: table-header-group;
+}
+
+.st-table tr {
+  page-break-inside: avoid;
+}
+
+#btnPrint,
+#btnExcel,
+#apply {
+  display: none !important;
+}
 }

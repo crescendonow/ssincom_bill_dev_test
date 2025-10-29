@@ -183,26 +183,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // === ปุ่มพิมพ์ PDF ===
     document.getElementById("btnPrint").addEventListener("click", () => {
-        const printContent = document.getElementById("print-area").innerHTML;
-        const win = window.open("", "", "width=1200,height=800");
-        win.document.write(`
-    <html><head>
-      <title>รายงานภาษีขาย</title>
-      <style>
-        @page { size: A4 landscape; margin: 10mm; }
-        body { font-family: sans-serif; font-size: 12px; }
-        table { width:100%; border-collapse:collapse; }
-        th, td { border:1px solid #333; padding:4px 6px; }
-        th { background:#f1f1f1; }
-        td.text-right { text-align:right; }
-        td.text-center { text-align:center; }
-      </style>
-    </head><body>${printContent}</body></html>
-  `);
-        win.document.close();
-        win.print();
+        window.print();
     });
-
 
     // ไทย-เดท dd/mm/พ.ศ.
     function fmtThaiDate(iso) {

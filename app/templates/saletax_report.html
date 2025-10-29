@@ -115,34 +115,56 @@
             </p>
         </div>
 
-        <!-- ส่วนตาราง -->
-        <div id="print-area" class="max-w-6xl mx-auto px-4 pt-6 bg-white rounded-lg shadow p-6">
-            <h1 class="text-2xl font-bold text-center mb-4">รายงานภาษีขาย</h1>
-            <p class="text-center text-sm mb-6">เดือน <span class="month-year">—</span></p>
 
-            <!-- ตารางข้อมูล -->
-            <div class="overflow-x-auto">
-                <table id="sale-tax-table" class="w-full text-sm border-collapse border border-gray-300">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="p-2 border text-center">ลำดับ</th>
-                            <th class="p-2 border text-center">วันเดือนปี</th>
-                            <th class="p-2 border text-center">เล่มที่</th>
-                            <th class="p-2 border text-center">เลขที่ใบกำกับ</th>
-                            <th class="p-2 border text-center">รหัสลูกค้า</th>
-                            <th class="p-2 border text-left">ชื่อผู้ขายสินค้า/บริการ</th>
-                            <th class="p-2 border text-center">เลขประจำตัวผู้เสียภาษี</th>
-                            <th class="p-2 border text-center">สถานประกอบการ</th>
-                            <th class="p-2 border text-right">มูลค่าสินค้า/บริการ</th>
-                            <th class="p-2 border text-right">VAT</th>
-                            <th class="p-2 border text-right">รวม</th>
-                        </tr>
-                    </thead>
-                    <tbody id="reportBody"></tbody>
-                </table>
+    </div>
+
+    <!-- KPI + Filter -->
+    <div class="max-w-6xl mx-auto px-4 pt-4">
+        <div class="bg-white rounded-xl shadow p-4 mb-4">
+            <div class="flex justify-between">
+                <div id="subtitle" class="text-sm text-gray-500">—</div>
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="kpi kpi-purple">
+                        <div class="kpi-title">จำนวนใบกำกับ</div>
+                        <div id="kCount" class="kpi-value">0</div>
+                    </div>
+                    <div class="kpi">
+                        <div class="kpi-title">ก่อน VAT</div>
+                        <div id="kBefore" class="kpi-value">0.00</div>
+                    </div>
+                    <div class="kpi">
+                        <div class="kpi-title">รวมสุทธิ</div>
+                        <div id="kGrand" class="kpi-value">0.00</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- พื้นที่พิมพ์เฉพาะตาราง -->
+    <div id="print-area" class="max-w-6xl mx-auto px-4 bg-white rounded-lg shadow p-6 mt-4">
+        <h1 class="text-2xl font-bold text-center mb-4">รายงานภาษีขาย</h1>
+        <p class="text-center text-sm mb-6">เดือน <span class="month-year">—</span></p>
+        <div class="overflow-x-auto">
+            <table id="sale-tax-table" class="w-full text-sm border-collapse border border-gray-300">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="p-2 border text-center">ลำดับ</th>
+                        <th class="p-2 border text-center">วันเดือนปี</th>
+                        <th class="p-2 border text-center">เล่มที่</th>
+                        <th class="p-2 border text-center">เลขที่ใบกำกับ</th>
+                        <th class="p-2 border text-center">รหัสลูกค้า</th>
+                        <th class="p-2 border text-left">ชื่อผู้ขายสินค้า/บริการ</th>
+                        <th class="p-2 border text-center">เลขประจำตัวผู้เสียภาษี</th>
+                        <th class="p-2 border text-center">สถานประกอบการ</th>
+                        <th class="p-2 border text-right">มูลค่าสินค้า/บริการ</th>
+                        <th class="p-2 border text-right">VAT</th>
+                        <th class="p-2 border text-right">รวม</th>
+                    </tr>
+                </thead>
+                <tbody id="reportBody"></tbody>
+            </table>
+        </div>
     </div>
 
     <script src="/static/js/saletax_report.js"></script>
