@@ -81,7 +81,32 @@
         </header>
 
         <!-- บล็อกหัวรายงาน (ตรงกลาง) -->
+         
         <div class="report-title-block text-center">
+            <!-- Header รายงาน + KPI -->
+            <div class="mt-6 bg-white rounded-2xl shadow p-6">
+                <div class="flex items-center justify-between border-b pb-4 mb-4">
+                    <div>
+                        <!-- subtitle ที่ JS จะอัปเดต -->
+                        <div id="subtitle" class="text-gray-500 text-sm">—</div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="kpi kpi-purple">
+                            <div class="kpi-title">จำนวนใบกำกับ</div>
+                            <div id="kCount" class="kpi-value">0</div>
+                        </div>
+                        <div class="kpi">
+                            <div class="kpi-title">ก่อน VAT</div>
+                            <div id="kBefore" class="kpi-value">0.00</div>
+                        </div>
+                        <div class="kpi">
+                            <div class="kpi-title">รวมสุทธิ</div>
+                            <div id="kGrand" class="kpi-value">0.00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <h1 class="text-2xl font-bold">รายงานภาษีขาย</h1>
             <p>เดือน <span class="month-year">—</span></p>
             <p>ชื่อผู้ประกอบการ&nbsp;&nbsp;&nbsp;&nbsp;บริษัท เอส แอนด์ เอส อินคอม

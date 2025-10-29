@@ -12,34 +12,37 @@ const state = {
 
 const $$ = sel => document.querySelector(sel);
 
-document.addEventListener("DOMContentLoaded", () => {
-    // toggle granularity buttons
-    document.querySelectorAll(".rg").forEach(btn => {
-        btn.addEventListener("click", () => {
-            document.querySelector('.rg[data-gran="day"]')?.classList.add("bg-white/20");
-            // ให้แสดงชุดฟิลเตอร์ตรงกับโหมดเริ่มต้น
-            toggleFilters();
-            buildReport();
-        });
+document.querySelectorAll(".rg").forEach(btn => {
+    btn.addEventListener("click", () => {
+        document.querySelectorAll(".rg").forEach(b => b.classList.remove("bg-white/20"));
+        btn.classList.add("bg-white/20");
+        state.granularity = btn.dataset.gran;
+        toggleFilters();
+        buildReport();
     });
+});
 
-    // init default range (this month)
-    const today = new Date();
-    $$("#dayFrom").value = ymd(firstDayOfMonth(today));
-    $$("#dayTo").value = ymd(lastDayOfMonth(today));
-    $$("#monthPick").value = ymd(today).slice(0, 7);
-    $$("#yearPick").value = String(today.getFullYear());
+document.querySelector('.rg[data-gran="day"]')?.classList.add("bg-white/20");
+toggleFilters();
+buildReport();
 
-    // controls
-    $$("#apply").addEventListener("click", buildReport);
-    $$("#btnPrint").addEventListener("click", () => window.print());
-    const btnExcel = document.getElementById("btnExcel");
-    if (btnExcel) btnExcel.addEventListener("click", exportExcel);
+// init default range (this month)
+const today = new Date();
+$$("#dayFrom").value = ymd(firstDayOfMonth(today));
+$$("#dayTo").value = ymd(lastDayOfMonth(today));
+$$("#monthPick").value = ymd(today).slice(0, 7);
+$$("#yearPick").value = String(today.getFullYear());
+
+// controls
+$$("#apply").addEventListener("click", buildReport);
+$$("#btnPrint").addEventListener("click", () => window.print());
+const btnExcel = document.getElementById("btnExcel");
+if (btnExcel) btnExcel.addEventListener("click", exportExcel);
 
 
-    // mode/split
-    $$("#mode").addEventListener("change", () => state.mode = $$("#mode").value);
-    $$("#splitCompany").addEventListener("change", () => state.split = $$("#splitCompany").checked);
+// mode/split
+$$("#mode").addEventListener("change", () => state.mode = $$("#mode").value);
+$$("#splitCompany").addEventListener("change", () => state.split = $$("#splitCompany").checked);
 });
 
 function toggleFilters() {
