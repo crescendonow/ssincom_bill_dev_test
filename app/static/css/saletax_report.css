@@ -1,3 +1,11 @@
+/* ===== FONT ไทย ===== */
+body, button, input, select, table, th, td, p, h1, h2, h3 {
+  font-family: "TH Sarabun New", "Tahoma", "Sukhumvit Set", "Thonburi",
+               "Noto Sans Thai", "Noto Sans", Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
 /* KPI */
 .kpi{background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;
      padding:12px;text-align:right;}
