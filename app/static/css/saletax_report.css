@@ -1,42 +1,109 @@
 /* กล่อง KPI */
-.kpi { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; text-align: right; }
-.kpi .kpi-title { font-size: 11px; color: #6b7280; }
-.kpi .kpi-value { font-size: 20px; font-weight: 800; color: #111827; }
-.kpi-purple { background: #faf5ff; border-color: #e9d5ff; }
-.kpi-purple .kpi-title { color: #7c3aed; }
-.kpi-purple .kpi-value { color: #6d28d9; }
+.kpi {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  text-align: right;
+}
+
+.kpi .kpi-title {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.kpi .kpi-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.kpi-purple {
+  background: #faf5ff;
+  border-color: #e9d5ff;
+}
+
+.kpi-purple .kpi-title {
+  color: #7c3aed;
+}
+
+.kpi-purple .kpi-value {
+  color: #6d28d9;
+}
 
 /* ตาราง */
-.table { width: 100%; border-collapse: collapse; }
-.table th { background: #f9fafb; border-bottom: 1px solid #e5e7eb; text-align: left; font-weight: 600; padding: 8px 10px; }
-.table td { border-bottom: 1px solid #eef2f7; padding: 8px 10px; }
-.text-right { text-align: right; }
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+  font-weight: 600;
+  padding: 8px 10px;
+}
+
+.table td {
+  border-bottom: 1px solid #eef2f7;
+  padding: 8px 10px;
+}
+
+.text-right {
+  text-align: right;
+}
 
 /* พิมพ์ */
 @media print {
-  #btnPrint, #btnCSV, #apply { display: none !important; }
-  body { background: #fff; }
+
+  #btnPrint,
+  #btnExcel,
+  #apply {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+  }
 }
 
 /* ---------- ฟอนต์เบสตามสเปก ---------- */
-.report-title-block h1 { font-size: 16px; font-weight: 700; }
-.report-title-block h2 { font-size: 14px; font-weight: 700; }
-.report-title-block p  { font-size: 14px; }
+.report-title-block h1 {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.report-title-block h2 {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.report-title-block p {
+  font-size: 14px;
+}
 
 /* ---------- หัวกระดาษพิมพ์ซ้ำทุกหน้า ---------- */
 .print-header {
   position: fixed;
   top: 0;
-  left: 0; right: 0;
-  height: 28mm;              /* สูงพอให้หัวกระดาษ +บล็อกหัวรายงาน */
+  left: 0;
+  right: 0;
+  height: 28mm;
+  /* สูงพอให้หัวกระดาษ +บล็อกหัวรายงาน */
   z-index: 9999;
   pointer-events: none;
 }
+
 .print-header__inner {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 6mm 10mm 0 10mm;
-  font-size: 12px; color: #374151;
+  font-size: 12px;
+  color: #374151;
 }
+
 .print-header__right .page-number::after {
   /* Chrome/Edge รองรับ counter(page)/counter(pages) ในโหมด print */
   content: counter(page) " / " counter(pages);
@@ -44,18 +111,174 @@
 
 /* ---------- เว้นพื้นที่เนื้อหาให้ไม่ชนหัว ---------- */
 @media print {
-  @page { margin: 20mm 12mm 15mm 12mm; } /* top/ right/ bottom/ left */
-  body { background: #fff !important; }
+  @page {
+    margin: 20mm 12mm 15mm 12mm;
+  }
+
+  /* top/ right/ bottom/ left */
+  body {
+    background: #fff !important;
+  }
+
   /* หลบพื้นที่หัวกระดาษ */
-  .report-title-block { margin-top: 28mm; }
+  .report-title-block {
+    margin-top: 28mm;
+  }
+
   /* ซ่อนปุ่ม UI เวลา print */
-  #btnPrint, #btnExcel, #apply { display: none !important; }
+  #btnPrint,
+  #btnExcel,
+  #apply {
+    display: none !important;
+  }
 }
 
 /* สำหรับจอบนเว็บ ให้หัวเรื่องดูสมส่วน */
 @media screen {
-  .print-header { position: sticky; height: auto; }
-  .report-title-block { margin-top: 16px; }
+  .print-header {
+    position: sticky;
+    height: auto;
+  }
+
+  .report-title-block {
+    margin-top: 16px;
+  }
 }
 
-/* ตาราง & KPI ใช้ของเดิมได้ (ไม่ต้องแก้) */
+/* ขนาดตัวอักษรตามสเปก */
+.report-title-block h1 {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.report-title-block h2 {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.report-title-block p {
+  font-size: 14px;
+}
+
+/* ตารางรายงานภาษีขาย */
+.st-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.st-table .c {
+  border: 1px solid #111;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.st-table th.c {
+  background: #f4f5f7;
+  font-weight: 700;
+  text-align: center;
+}
+
+.st-table td.c-right {
+  text-align: right;
+}
+
+.st-table td.c-center {
+  text-align: center;
+}
+
+.st-table .w-idx {
+  width: 42px;
+}
+
+.st-table .w-date {
+  width: 90px;
+}
+
+.st-table .w-book {
+  width: 70px;
+}
+
+.st-table .w-no {
+  width: 110px;
+}
+
+.st-table .w-code {
+  width: 95px;
+}
+
+.st-table .w-taxid {
+  width: 150px;
+}
+
+.st-table .w-branch {
+  width: 110px;
+}
+
+.st-table .w-amt {
+  width: 110px;
+}
+
+.st-table .sum-row td {
+  background: #fafafa;
+}
+
+/* พิมพ์ A4 + หัวกระดาษซ้ำ + เลขหน้า */
+.print-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 28mm;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.print-header__inner {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 6mm 10mm 0 10mm;
+  font-size: 12px;
+  color: #374151;
+}
+
+.print-header__center {
+  margin: auto;
+  font-weight: 700;
+}
+
+.print-header__right .page-number::after {
+  content: counter(page) " / " counter(pages);
+}
+
+/* เว้น margin บนให้เนื้อหาไม่ชนหัว */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 20mm 10mm 15mm 10mm;
+  }
+
+  body {
+    background: #fff !important;
+  }
+
+  .report-title-block {
+    margin-top: 28mm;
+  }
+
+  /* ทำให้ thead แสดงซ้ำ */
+  .st-table thead {
+    display: table-header-group;
+  }
+
+  .st-table tr {
+    page-break-inside: avoid;
+  }
+
+  #btnPrint,
+  #btnExcel,
+  #apply {
+    display: none !important;
+  }
+}

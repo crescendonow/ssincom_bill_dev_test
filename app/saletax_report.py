@@ -29,9 +29,9 @@ VAT_RATE = 0.07
 # -------- รายการใบกำกับ (ละเอียด) ภายในช่วง --------
 @router.get("/api/saletax/list")
 def saletax_list(
-    start: Optional[str] = Query(None), 
+    start: Optional[str] = Query(None),
     end: Optional[str] = Query(None),
-    month: Optional[str] = Query(None),         # YYYY-MM
+    month: Optional[str] = Query(None),   # YYYY-MM
     year: Optional[int] = Query(None),
     db: Session = Depends(get_db)
 ):
@@ -43,8 +43,12 @@ def saletax_list(
         inv.invoice_number,
         inv.invoice_date,
         inv.fname.label("company"),
+        inv.personid,
+        inv.cf_taxid,
+        inv.cf_hq,
+        inv.cf_branch,
         func.sum(
-            func.coalesce(itm.amount, func.coalesce(itm.quantity,0)*func.coalesce(itm.cf_itempricelevel_price,0))
+            func.coalesce(itm.amount, func.coalesce(itm.quantity, 0) * func.coalesce(itm.cf_itempricelevel_price, 0))
         ).label("before_vat")
     ).join(itm, or_(
         itm.invoice_number == inv.invoice_number,
@@ -60,11 +64,14 @@ def saletax_list(
         if d1: q = q.filter(inv.invoice_date >= d1)
         if d2: q = q.filter(inv.invoice_date <= d2)
 
-    q = q.group_by(inv.idx, inv.invoice_number, inv.invoice_date, inv.fname).order_by(inv.invoice_date.asc(), inv.invoice_number.asc())
+    q = q.group_by(
+        inv.idx, inv.invoice_number, inv.invoice_date, inv.fname,
+        inv.personid, inv.cf_taxid, inv.cf_hq, inv.cf_branch
+    ).order_by(inv.invoice_date.asc(), inv.invoice_number.asc())
 
     rows = []
-    for idx, inv_no, inv_date, company, before in q.all():
-        before = float(before or 0)
+    for idx, inv_no, inv_date, company, personid, taxid, hq, branch, before in q.all():
+        before = float(before or 0.0)
         vat = before * VAT_RATE
         grand = before + vat
         rows.append({
@@ -72,9 +79,13 @@ def saletax_list(
             "invoice_number": inv_no,
             "invoice_date": inv_date.isoformat() if inv_date else None,
             "company": company,
-            "before_vat": round(before,2),
-            "vat": round(vat,2),
-            "grand": round(grand,2),
+            "personid": personid,
+            "cf_taxid": taxid,
+            "cf_hq": hq,
+            "cf_branch": branch,
+            "before_vat": round(before, 2),
+            "vat": round(vat, 2),
+            "grand": round(grand, 2),
         })
     return rows
 
