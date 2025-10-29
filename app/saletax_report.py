@@ -37,57 +37,73 @@ def saletax_list(
 ):
     inv = models.Invoice
     itm = models.InvoiceItem
+    cust = models.CustomerList
 
+    sum_amount = func.sum(
+    func.coalesce(itm.amount, func.coalesce(itm.quantity, 0) * func.coalesce(itm.cf_itempricelevel_price, 0))
+    )
     q = db.query(
-        inv.idx,
-        inv.invoice_number,
-        inv.invoice_date,
-        inv.fname.label("company"),
-        inv.personid,
-        inv.cf_taxid,
-        inv.cf_hq,
-        inv.cf_branch,
-        func.sum(
-            func.coalesce(itm.amount, func.coalesce(itm.quantity, 0) * func.coalesce(itm.cf_itempricelevel_price, 0))
-        ).label("before_vat")
-    ).join(itm, or_(
-        itm.invoice_number == inv.invoice_number,
-        itm.invoice_number == cast(inv.idx, String)
-    ), isouter=True)
+    inv.idx,
+    inv.invoice_number,
+    inv.invoice_date,
+    inv.fname.label("company"),
+    inv.personid,
+    # ใช้ tax id จาก Invoice ถ้าไม่มีให้ fallback เป็นของ Customer
+    func.coalesce(inv.cf_taxid, cust.cf_taxid).label("tax_id"),
+    cust.cf_hq.label("hq"),
+    cust.cf_branch.label("branch"),
+    sum_amount.label("before_vat"),
+).outerjoin(
+    itm,
+    or_(itm.invoice_number == inv.invoice_number,
+        itm.invoice_number == cast(inv.idx, String))
+).outerjoin(
+    cust,
+    cust.personid == inv.personid
+)
 
-    if month and len(month) == 7:
-        q = q.filter(func.to_char(inv.invoice_date, 'YYYY-MM') == month)
-    elif year:
-        q = q.filter(func.extract('year', inv.invoice_date) == year)
+# ---- เงื่อนไขช่วงเวลาเหมือนเดิม ----
+if month and len(month) == 7:
+    q = q.filter(func.to_char(inv.invoice_date, 'YYYY-MM') == month)
+elif year:
+    q = q.filter(func.extract('year', inv.invoice_date) == year)
+else:
+    d1, d2 = _to_date(start), _to_date(end)
+    if d1: q = q.filter(inv.invoice_date >= d1)
+    if d2: q = q.filter(inv.invoice_date <= d2)
+
+# group by ให้ครบทุก non-aggregate
+q = q.group_by(
+    inv.idx, inv.invoice_number, inv.invoice_date, inv.fname, inv.personid,
+    func.coalesce(inv.cf_taxid, cust.cf_taxid), cust.cf_hq, cust.cf_branch
+).order_by(inv.invoice_date.asc(), inv.invoice_number.asc())
+
+rows = []
+for idx, inv_no, inv_date, company, personid, tax_id, hq, branch, before in q.all():
+    before = float(before or 0.0)
+    vat = before * VAT_RATE
+    grand = before + vat
+    # แปลงสถานประกอบการตามรูปแบบรายงาน
+    if hq is None and not branch:
+        branch_text = "-"
     else:
-        d1, d2 = _to_date(start), _to_date(end)
-        if d1: q = q.filter(inv.invoice_date >= d1)
-        if d2: q = q.filter(inv.invoice_date <= d2)
+        branch_text = "สำนักงานใหญ่" if (hq == 1 or hq == "1") else (f"สาขาที่ {branch}" if branch else "-")
 
-    q = q.group_by(
-        inv.idx, inv.invoice_number, inv.invoice_date, inv.fname,
-        inv.personid, inv.cf_taxid, inv.cf_hq, inv.cf_branch
-    ).order_by(inv.invoice_date.asc(), inv.invoice_number.asc())
-
-    rows = []
-    for idx, inv_no, inv_date, company, personid, taxid, hq, branch, before in q.all():
-        before = float(before or 0.0)
-        vat = before * VAT_RATE
-        grand = before + vat
-        rows.append({
-            "idx": idx,
-            "invoice_number": inv_no,
-            "invoice_date": inv_date.isoformat() if inv_date else None,
-            "company": company,
-            "personid": personid,
-            "cf_taxid": taxid,
-            "cf_hq": hq,
-            "cf_branch": branch,
-            "before_vat": round(before, 2),
-            "vat": round(vat, 2),
-            "grand": round(grand, 2),
-        })
-    return rows
+    rows.append({
+        "idx": idx,
+        "invoice_number": inv_no,
+        "invoice_date": inv_date.isoformat() if inv_date else None,
+        "company": company,
+        "personid": personid,
+        "cf_taxid": tax_id,
+        "cf_hq": hq,
+        "cf_branch": branch,
+        "branch_text": branch_text,
+        "before_vat": round(before, 2),
+        "vat": round(vat, 2),
+        "grand": round(grand, 2),
+    })
+return rows
 
 # -------- สรุปยอดต่อช่วง (ไม่แยก/แยกบริษัท) --------
 @router.get("/api/saletax/summary")
