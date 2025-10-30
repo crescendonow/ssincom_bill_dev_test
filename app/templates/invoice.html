@@ -67,7 +67,8 @@
       <div class="col box-light col-left" style="font-size:14pt;">
         <div class="mt6">รหัสลูกค้า: <b>{{ invoice.customer_code or invoice.personid }}</b></div>
         <div class="mt6">ชื่อลูกค้า: <b>บริษัท {{ invoice.customer_name }}</b></div>
-        <div class="mt6">เลขประจำตัวผู้เสียภาษี: <b>{{ invoice.customer_taxid }}</b> / {{ 'สาขาที่ ' + invoice.cf_branch if invoice.cf_branch else 'สำนักงานใหญ่' }}</div>
+        <div class="mt6">เลขประจำตัวผู้เสียภาษี: <b>{{ invoice.customer_taxid }}</b> / {{ 'สาขาที่ ' + invoice.cf_branch
+          if invoice.cf_branch else 'สำนักงานใหญ่' }}</div>
         <div class="mt6">ที่อยู่: <b>{{ invoice.customer_address }} {{ invoice.cf_provincename or '' }} {{
             invoice.cf_personzipcode or '' }}</b></div>
         <div class="mt6">โทรศัพท์: <b>{{ invoice.tel or invoice.mobile or '' }}</b></div>
@@ -154,8 +155,13 @@
         {% set discount = (discount|float) if discount is defined else 0.0 %}
         {% set before_vat = ns.total - discount %}
         {% set vat = (vat_rate|float if vat_rate is defined else 7.0) %}
-        {% set vat_amt = before_vat * (vat/100.0) %}
-        {% set grand = before_vat + vat_amt %}
+        {% set vat_amt = before_vat * (vat / 100.0) %}
+
+        {# ปัดเศษทศนิยม 2 ตำแหน่งก่อนบวกกัน #}
+        {% set before_vat_rounded = (before_vat | round(2, 'common')) %}
+        {% set vat_amt_rounded = (vat_amt | round(2, 'common')) %}
+        {% set grand = before_vat_rounded + vat_amt_rounded %}
+
         <div class="box">
           <table class="sumtable" style="width:100%;">
             <tr>
@@ -168,11 +174,11 @@
             </tr>
             <tr>
               <td>รวมเป็นเงิน / Sub Total</td>
-              <td class="right">{{ '{:,.2f}'.format(before_vat) }}</td>
+              <td class="right">{{ '{:,.2f}'.format(before_vat_rounded) }}</td>
             </tr>
             <tr>
               <td>ภาษีมูลค่าเพิ่ม / Vat {{ '{:.0f}%'.format(vat) }}</td>
-              <td class="right">{{ '{:,.2f}'.format(vat_amt) }}</td>
+              <td class="right">{{ '{:,.2f}'.format(vat_amt_rounded) }}</td>
             </tr>
             <tr>
               <td><b>จำนวนเงินรวมทั้งสิ้น / Net Total</b></td>
