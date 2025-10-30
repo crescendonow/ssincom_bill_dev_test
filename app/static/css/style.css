@@ -1,6 +1,6 @@
 body {
   font-family: "TH Sarabun New", "Tahoma", "Sukhumvit Set", "Thonburi",
-               "Noto Sans Thai", "Noto Sans", Arial, sans-serif !important;
+               'Noto Sans Thai', 'Noto Sans', Arial, sans-serif !important;
   font-size: 16px;
   padding: 20px;
   background: #f9f9f9;
