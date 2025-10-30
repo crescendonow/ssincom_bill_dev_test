@@ -1,0 +1,41 @@
+/* ===== FONT ไทย ===== */
+body {
+  font-family: "Noto Sans Thai", sans-serif !important;
+  font-optical-sizing: auto;
+}
+
+/* KPI */
+.kpi{background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;
+     padding:12px;text-align:right;}
+.kpi .kpi-title{font-size:11px;color:#6b7280;}
+.kpi .kpi-value{font-size:20px;font-weight:800;color:#111827;}
+.kpi-purple{background:#faf5ff;border-color:#e9d5ff;}
+.kpi-purple .kpi-title{color:#7c3aed;}
+.kpi-purple .kpi-value{color:#6d28d9;}
+
+/* ตาราง */
+#sale-tax-table th,#sale-tax-table td{
+  border:1px solid #d1d5db;padding:6px 8px;}
+#sale-tax-table th{background:#f9fafb;font-weight:600;text-align:center;}
+.text-right{text-align:right;}
+.text-center{text-align:center;}
+
+/* Print */
+@media print{
+  @page{size:A4 landscape;margin:10mm;}
+  body *{visibility:hidden;}
+  body, button, input, select, table, th, td, p, h1, h2, h3 {
+    font-family: "TH Sarabun New", "Tahoma", "Sukhumvit Set", "Thonburi",
+                 "Noto Sans Thai", "Noto Sans", Arial, sans-serif !important;
+    line-height: 1.5;
+  }
+  #print-area,#print-area *{visibility:visible;}
+  #print-area{position:absolute;left:0;top:0;width:100%;}
+  #sale-tax-table thead{display:table-header-group;}
+  #sale-tax-table tr{page-break-inside:avoid;}
+  #btnPrint,#btnExcel,#btnGenerate{display:none!important;}
+  .print-only{display:block!important;}
+}
+@media screen{
+  .print-only{display:none;}
+}

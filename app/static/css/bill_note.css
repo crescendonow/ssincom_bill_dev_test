@@ -1,3 +1,8 @@
+body {
+  font-family:"Noto Sans Thai", sans-serif !important;
+  font-optical-sizing: auto;
+}
+
 /* A4 page styles (คงเดิมได้) */
 @page {
     size: A4 portrait;

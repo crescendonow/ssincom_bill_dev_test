@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
   <meta charset="UTF-8" />
   <title>สรุปรายการใบกำกับภาษี</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="/static/css/style.css">
 </head>
+
 <body class="bg-gradient-to-b from-blue-500 to-blue-200 min-h-screen font-sans text-gray-800">
   <div class="max-w-7xl mx-auto px-6 py-8">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
@@ -20,8 +23,10 @@
     <!-- Tabs -->
     <div class="bg-white rounded-lg p-2 shadow mb-4">
       <div class="flex">
-        <button id="tabSummary" class="px-4 py-2 text-sm font-medium rounded bg-blue-600 text-white">สรุปตามช่วงเวลา</button>
-        <button id="tabAll" class="px-4 py-2 text-sm font-medium rounded text-blue-700 hover:bg-gray-100 ml-2">รายการใบกำกับภาษีทั้งหมด</button>
+        <button id="tabSummary"
+          class="px-4 py-2 text-sm font-medium rounded bg-blue-600 text-white">สรุปตามช่วงเวลา</button>
+        <button id="tabAll"
+          class="px-4 py-2 text-sm font-medium rounded text-blue-700 hover:bg-gray-100 ml-2">รายการใบกำกับภาษีทั้งหมด</button>
       </div>
     </div>
 
@@ -31,13 +36,16 @@
       <div class="bg-white rounded-lg p-4 shadow mb-6">
         <div class="flex flex-wrap items-center gap-3">
           <div class="inline-flex rounded-md shadow-sm" role="group" aria-label="Granularity">
-            <button type="button" data-granularity="day" class="btn-gran px-4 py-2 text-sm font-medium border border-gray-300 rounded-l-md bg-blue-600 text-white">
+            <button type="button" data-granularity="day"
+              class="btn-gran px-4 py-2 text-sm font-medium border border-gray-300 rounded-l-md bg-blue-600 text-white">
               รายวัน
             </button>
-            <button type="button" data-granularity="month" class="btn-gran px-4 py-2 text-sm font-medium border border-gray-300 bg-white hover:bg-gray-50">
+            <button type="button" data-granularity="month"
+              class="btn-gran px-4 py-2 text-sm font-medium border border-gray-300 bg-white hover:bg-gray-50">
               รายเดือน
             </button>
-            <button type="button" data-granularity="year" class="btn-gran px-4 py-2 text-sm font-medium border border-gray-300 rounded-r-md bg-white hover:bg-gray-50">
+            <button type="button" data-granularity="year"
+              class="btn-gran px-4 py-2 text-sm font-medium border border-gray-300 rounded-r-md bg-white hover:bg-gray-50">
               รายปี
             </button>
           </div>
@@ -112,7 +120,7 @@
           <input id="allTo" type="date" class="border rounded px-2 py-1">
 
           <input id="allQ" type="text" placeholder="ค้นหา (เลขที่ใบกำกับ / ชื่อลูกค้า / PO)"
-                 class="border rounded px-2 py-1 w-full sm:w-64">
+            class="border rounded px-2 py-1 w-full sm:w-64">
 
           <button id="btnAllApply" class="ml-auto bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
             ค้นหา
@@ -131,9 +139,12 @@
                 <th class="px-3 py-2 text-left text-sm font-semibold text-gray-700 border-b">วันที่</th>
                 <th class="px-3 py-2 text-left text-sm font-semibold text-gray-700 border-b">เลขที่</th>
                 <th class="px-3 py-2 text-left text-sm font-semibold text-gray-700 border-b">ลูกค้า</th>
-                <th class="px-3 py-2 text-left text-sm font-semibold text-gray-700 border-b hidden md:table-cell">PO</th>
-                <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b hidden sm:table-cell">ยอดก่อนส่วนลด</th>
-                <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b hidden lg:table-cell">VAT</th>
+                <th class="px-3 py-2 text-left text-sm font-semibold text-gray-700 border-b hidden md:table-cell">PO
+                </th>
+                <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b hidden sm:table-cell">
+                  ยอดก่อนส่วนลด</th>
+                <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b hidden lg:table-cell">VAT
+                </th>
                 <th class="px-3 py-2 text-right text-sm font-semibold text-gray-700 border-b">สุทธิ</th>
                 <th class="px-3 py-2 text-center text-sm font-semibold text-gray-700 border-b">สินค้า</th>
               </tr>
@@ -281,4 +292,5 @@
 
   <script src="/static/js/summary_invoices.js"></script>
 </body>
+
 </html>
