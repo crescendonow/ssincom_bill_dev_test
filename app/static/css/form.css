@@ -1,5 +1,7 @@
 /* Layout */
 body {
+    font-family: "Noto Sans Thai", sans-serif !important;
+    font-optical-sizing: auto;
     background: #f3f4f6;
 }
 
