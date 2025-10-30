@@ -1,9 +1,8 @@
 /* ===== FONT ไทย ===== */
-body, button, input, select, table, th, td, p, h1, h2, h3 {
-  font-family: "TH Sarabun New", "Tahoma", "Sukhumvit Set", "Thonburi",
-               "Noto Sans Thai", "Noto Sans", Arial, sans-serif!important;
-  line-height: 1.5;
-} 
+body {
+  font-family: "Noto Sans Thai", sans-serif !important;
+  font-optical-sizing: auto;
+}
 
 /* KPI */
 .kpi{background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;
@@ -25,6 +24,11 @@ body, button, input, select, table, th, td, p, h1, h2, h3 {
 @media print{
   @page{size:A4 landscape;margin:10mm;}
   body *{visibility:hidden;}
+  body, button, input, select, table, th, td, p, h1, h2, h3 {
+    font-family: "TH Sarabun New", "Tahoma", "Sukhumvit Set", "Thonburi",
+                 "Noto Sans Thai", "Noto Sans", Arial, sans-serif !important;
+    line-height: 1.5;
+  }
   #print-area,#print-area *{visibility:visible;}
   #print-area{position:absolute;left:0;top:0;width:100%;}
   #sale-tax-table thead{display:table-header-group;}
