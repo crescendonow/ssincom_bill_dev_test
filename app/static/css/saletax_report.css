@@ -1,8 +1,7 @@
 /* ===== FONT ไทย ===== */
 body, button, input, select, table, th, td, p, h1, h2, h3 {
   font-family: "TH Sarabun New", "Tahoma", "Sukhumvit Set", "Thonburi",
-               "Noto Sans Thai", "Noto Sans", Arial, sans-serif;
-  font-size: 16px;
+               "Noto Sans Thai", "Noto Sans", Arial, sans-serif!important;
   line-height: 1.5;
 } 
 
