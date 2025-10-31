@@ -7,6 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
 
   <style>
     /* สไตล์อินพุตพื้นฐานให้ใช้งานง่ายบนมือถือ */
@@ -24,7 +25,8 @@
     }
 
     input[readonly] {
-      background-color: #f3f4f6; /* gray-100 */
+      background-color: #f3f4f6;
+      /* gray-100 */
       cursor: not-allowed;
     }
   </style>
@@ -132,10 +134,12 @@
 
         <!-- ปุ่ม -->
         <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
-          <button type="submit" class="px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">💾 บันทึก</button>
-          <button type="button" id="btnReset" class="px-5 py-2 border rounded hover:bg-gray-50">♻️ รีเซ็ต</button>
-          <button type="button" id="btnDelete"
-            class="px-5 py-2 bg-red-600 text-white rounded hover:bg-red-700 hidden">🗑️ ลบ</button>
+          <button type="submit" class="px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            <i class="fa-solid fa-floppy-disk"></i> บันทึก</button>
+          <button type="button" id="btnReset" class="px-5 py-2 border rounded hover:bg-gray-50">
+            <i class="fa-solid fa-window-restore"></i> รีเซ็ต</button>
+          <button type="button" id="btnDelete" class="px-5 py-2 bg-red-600 text-white rounded hover:bg-red-700 hidden">
+            <i class="fa-solid fa-trash"></i> ลบ</button>
         </div>
       </form>
     </section>

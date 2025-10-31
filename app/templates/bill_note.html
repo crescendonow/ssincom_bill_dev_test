@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/static/css/bill_note.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
 </head>
 
 <body class="bg-gray-100">
@@ -100,11 +101,13 @@
         </div>
         <div class="mt-4 flex gap-4">
             <button id="generateBillBtn"
-                class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">สร้างเอกสาร</button>
-            <button id="saveBillBtn" class="bg-purple-600 text-white px-6 py-2 rounded-md hover:bg-purple-700 hidden">💾
-                บันทึกใบวางบิล</button>
-            <button id="printPdfBtn" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 hidden">🖨️
-                พิมพ์ PDF</button>
+                class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"> 
+                <i class="fa-solid fa-laptop-file"></i>สร้างเอกสาร</button>
+            <button id="saveBillBtn" class="bg-purple-600 text-white px-6 py-2 rounded-md hover:bg-purple-700 hidden">
+                <i class="fa-solid fa-floppy-disk"></i> บันทึกใบวางบิล</button>
+            <button id="printPdfBtn" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 hidden">
+                <i class="fa-solid fa-print"></i> พิมพ์ PDF</button>
+                
         </div>
         <div id="loading" class="mt-2 text-gray-500 hidden">กำลังโหลดข้อมูล...</div>
     </div>

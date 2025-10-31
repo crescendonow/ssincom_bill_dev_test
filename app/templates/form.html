@@ -15,6 +15,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/datepicker.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/locales/th.js"></script>
 
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
+
   <!-- สไตล์ของฟอร์ม (แยกออกมา) -->
   <link rel="stylesheet" href="/static/css/form.css" />
 
@@ -39,7 +41,7 @@
         </a>
         <a href="/summary_invoices.html"
           class="inline-flex items-center px-3 py-1.5 rounded border text-blue-700 hover:bg-blue-50">
-          <span class="mr-2">📃</span> รายการใบกำกับภาษีทั้งหมด
+          <span class="mr-2"> <i class="fa-solid fa-list-check"></i> </span> รายการใบกำกับภาษีทั้งหมด
         </a>
       </nav>
     </div>
@@ -87,8 +89,8 @@
         <!-- ลูกค้า -->
         <div>
           <label for="personid" class="block mb-1 text-sm font-medium text-gray-900">รหัสลูกค้า (personid)</label>
-            <input type="text" name="personid" id="personid" list="personidList" autocomplete="off"
-              oninput="selectCustomerByPersonid()" placeholder="เช่น PC55901001"
+          <input type="text" name="personid" id="personid" list="personidList" autocomplete="off"
+            oninput="selectCustomerByPersonid()" placeholder="เช่น PC55901001"
             class="bg-gray-100 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
         </div>
 
@@ -106,7 +108,8 @@
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label for="customer_taxid" class="block mb-1 text-sm font-medium text-gray-900">เลขประจำตัวผู้เสียภาษี</label>
+            <label for="customer_taxid"
+              class="block mb-1 text-sm font-medium text-gray-900">เลขประจำตัวผู้เสียภาษี</label>
             <input type="text" name="customer_taxid" id="customer_taxid"
               class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
           </div>
@@ -200,31 +203,45 @@
               </select>
             </div>
             <div class="flex gap-2">
-              <button type="button" onclick="previewInvoice(event)" class="px-4 py-2 rounded bg-gray-600 text-white">🔍
-                Preview</button>
-              <button type="button" id="btnSave" onclick="saveInvoice()"
-                class="px-4 py-2 rounded bg-blue-600 text-white">✅ Save</button>
-              <button type="button" id="btnUpdate" onclick="updateInvoice()"
-                class="px-4 py-2 rounded bg-amber-600 text-white hidden">✏️ Update</button>
-              <button type="button" id="btnMergePdf" onclick="downloadMergedPdf()"
-                class="px-4 py-2 rounded bg-green-700 text-white">📄 Merge PDF</button>
-            </div>
-          </div>
-        </div>
+              <button type="button" onclick="previewInvoice(event)"
+                class="px-4 py-2 rounded bg-gray-600 text-white flex items-center gap-2">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                Preview
+              </button>
 
-        <!-- Modal เลือกสินค้า -->
-        <div id="productModal" tabindex="-1" class="hidden fixed inset-0 z-50 bg-black/50 overflow-y-auto">
-          <div class="relative w-full max-w-2xl mx-auto mt-20 bg-white rounded-lg shadow p-6">
-            <h3 class="text-lg md:text-xl font-bold mb-4">เลือกสินค้า</h3>
-            <input type="text" id="productSearch" placeholder="ค้นหาด้วยชื่อหรือรหัส..." oninput="filterProducts()"
-              class="w-full mb-4 p-2 border border-gray-300 rounded" />
-            <div id="productList" class="max-h-72 overflow-y-auto divide-y"></div>
-            <div class="mt-4 text-right">
-              <button type="button" onclick="closeProductModal()"
-                class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">ปิด</button>
+              <button type="button" id="btnSave" onclick="saveInvoice()"
+                class="px-4 py-2 rounded bg-blue-600 text-white flex items-center gap-2">
+                <i class="fa-solid fa-floppy-disk"></i>
+                Save
+              </button>
+
+              <button type="button" id="btnUpdate" onclick="updateInvoice()"
+                class="px-4 py-2 rounded bg-amber-600 text-white flex items-center gap-2 hidden">
+                <i class="fa-solid fa-pen-to-square"></i>
+                Update
+              </button>
+
+              <button type="button" id="btnMergePdf" onclick="downloadMergedPdf()"
+                class="px-4 py-2 rounded bg-green-700 text-white flex items-center gap-2">
+                <i class="fa-solid fa-file-pdf"></i>
+                Merge PDF
+              </button>
             </div>
-          </div>
-        </div>
+
+
+            <!-- Modal เลือกสินค้า -->
+            <div id="productModal" tabindex="-1" class="hidden fixed inset-0 z-50 bg-black/50 overflow-y-auto">
+              <div class="relative w-full max-w-2xl mx-auto mt-20 bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg md:text-xl font-bold mb-4">เลือกสินค้า</h3>
+                <input type="text" id="productSearch" placeholder="ค้นหาด้วยชื่อหรือรหัส..." oninput="filterProducts()"
+                  class="w-full mb-4 p-2 border border-gray-300 rounded" />
+                <div id="productList" class="max-h-72 overflow-y-auto divide-y"></div>
+                <div class="mt-4 text-right">
+                  <button type="button" onclick="closeProductModal()"
+                    class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">ปิด</button>
+                </div>
+              </div>
+            </div>
       </form>
     </div>
   </div>
