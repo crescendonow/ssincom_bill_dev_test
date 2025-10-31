@@ -206,7 +206,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function switchTab(target) { if (target === 'create') { tabCreate.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-blue-500 text-blue-600'; tabSearch.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'; panelCreate.style.display = 'block'; panelSearch.style.display = 'none'; } else { tabSearch.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-blue-500 text-blue-600'; tabCreate.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'; panelSearch.style.display = 'block'; panelCreate.style.display = 'none'; document.getElementById('bill-note-container').innerHTML = ''; } }
 
-    async function searchBillNotes() { const start = document.getElementById('searchStartDate').value; const end = document.getElementById('searchEndDate').value; const q = document.getElementById('searchQuery').value; const params = new URLSearchParams({ start, end, q }); const res = await fetch(`/api/search-billing-notes?${params.toString()}`); const results = await res.json(); searchResultsBody.innerHTML = ''; if (results.length === 0) { searchResultsBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500">ไม่พบข้อมูล</td></tr>'; return; } results.forEach(bill => { const tr = document.createElement('tr'); tr.className = 'border-b'; tr.innerHTML = `<td class="p-2">${formatDate(bill.bill_date)}</td><td class="p-2">${bill.billnote_number}</td><td class="p-2">${bill.fname}</td><td class="p-2 text-center"><button class="btn-view-edit text-blue-600 hover:underline text-sm" data-bill-number="${bill.billnote_number}">ดู/แก้ไข</button><button class="btn-delete text-red-600 hover:underline text-sm ml-2" data-bill-number="${bill.billnote_number}">ลบ</button></td>`; searchResultsBody.appendChild(tr); }); }
+    async function searchBillNotes() { const start = document.getElementById('searchStartDate').value; const end = document.getElementById('searchEndDate').value; const q = document.getElementById('searchQuery').value; const params = new URLSearchParams({ start, end, q }); const res = await fetch(`/api/search-billing-notes?${params.toString()}`); const results = await res.json(); searchResultsBody.innerHTML = ''; if (results.length === 0) { searchResultsBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500">ไม่พบข้อมูล</td></tr>'; return; } results.forEach(bill => { const tr = document.createElement('tr'); tr.className = 'border-b'; 
+        tr.innerHTML = `<td class="p-2">${formatDate(bill.bill_date)}</td><td class="p-2">${bill.billnote_number}</td><td class="p-2">${bill.fname}</td><td class="p-2 text-center"><button class="btn-view-edit text-blue-600 hover:underline text-sm" data-bill-number="${bill.billnote_number}">ดู/แก้ไข</button><button class="btn-delete text-red-600 hover:underline text-sm ml-2" data-bill-number="${bill.billnote_number}">ลบ</button></td>`; searchResultsBody.appendChild(tr); }); }
 
     async function loadBillForEditing(billNumber) { currentEditingBillNumber = billNumber; const res = await fetch(`/api/billing-notes/${billNumber}`); if (!res.ok) { alert('ไม่สามารถโหลดข้อมูลใบวางบิลได้'); return; } const data = await res.json(); currentBillData = data; renderBillDocument(data); saveBtn.classList.add('hidden'); updateBtn.classList.remove('hidden'); printBtn.classList.remove('hidden'); switchTab('create'); document.querySelectorAll('.invoice-table-body tr').forEach(tr => { const td = document.createElement('td'); td.className = 'p-2 text-center noprint'; td.innerHTML = '<button class="btn-remove-item text-red-500"><i class="fa-solid fa-xmark"></i></button>'; tr.appendChild(td); }); }
 
@@ -231,6 +232,41 @@ document.addEventListener('DOMContentLoaded', () => {
     tabCreate.addEventListener('click', () => switchTab('create'));
     tabSearch.addEventListener('click', () => switchTab('search'));
     searchBillBtn.addEventListener('click', searchBillNotes);
+    // รองรับคลิก "ดู/แก้ไข" และ "ลบ" จากผลลัพธ์ค้นหา (event delegation)
+    searchResultsBody.addEventListener('click', async (e) => {
+        const viewBtn = e.target.closest('.btn-view-edit');
+        const delBtn = e.target.closest('.btn-delete');
+
+        // ดู/แก้ไข
+        if (viewBtn) {
+            const billNo = viewBtn.getAttribute('data-bill-number');
+            if (!billNo) return;
+            await loadBillForEditing(billNo);  // <-- ใช้ฟังก์ชันที่มีอยู่แล้ว
+            return;
+        }
+
+        // ลบ
+        if (delBtn) {
+            const billNo = delBtn.getAttribute('data-bill-number');
+            if (!billNo) return;
+            if (!confirm(`ต้องการลบใบวางบิลเลขที่ ${billNo} ใช่หรือไม่?`)) return;
+
+            try {
+                const res = await fetch(`/api/billing-notes/${billNo}`, { method: 'DELETE' });
+                if (!res.ok) {
+                    const j = await res.json().catch(() => ({}));
+                    alert('ลบไม่สำเร็จ: ' + (j.detail || res.statusText));
+                    return;
+                }
+                alert('ลบสำเร็จ');
+                searchBillNotes(); // รีโหลดผลลัพธ์
+            } catch (err) {
+                console.error(err);
+                alert('เกิดข้อผิดพลาดในการลบ: ' + err.message);
+            }
+        }
+    });
+
     updateBtn.addEventListener('click', updateBillNote);
     searchQueryInput.addEventListener('input', (/* debounce if needed */) => { });
     document.getElementById('bill-note-container').addEventListener('click', (e) => { if (e.target.closest('.btn-remove-item')) e.target.closest('tr').remove(); });
