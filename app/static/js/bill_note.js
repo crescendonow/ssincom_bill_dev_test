@@ -35,6 +35,19 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     };
 
+    if (billDateInput) {
+        billDateInput.addEventListener('change', (e) => {
+            const iso = e.target.value; // YYYY-MM-DD
+            if (!currentBillData) currentBillData = {};
+            currentBillData.bill_date = iso;
+            // อัปเดตข้อความที่แสดงในเอกสาร
+            document.querySelectorAll('.bill-date')
+                .forEach(el => el.textContent = formatLongThaiDate(iso) || '-');
+            document.querySelectorAll('.signature-date')
+                .forEach(el => el.textContent = formatLongThaiDate(iso) || '-');
+        });
+    }
+
     const updateBtn = document.createElement('button'); // สร้างปุ่ม Update เตรียมไว้
     updateBtn.id = 'updateBillBtn';
     updateBtn.className = 'bg-amber-600 text-white px-6 py-2 rounded-md hover:bg-amber-700 hidden';
@@ -445,6 +458,12 @@ document.addEventListener('DOMContentLoaded', () => {
         currentBillData = data;
 
         renderBillDocument(data);
+
+        // sync input
+        const billDateInput = document.getElementById('billDate');
+        if (billDateInput && data.bill_date) {
+            billDateInput.value = data.bill_date.slice(0, 10);
+        }
 
         // สลับปุ่มเป็นโหมดแก้ไข
         saveBtn.style.display = 'none';
