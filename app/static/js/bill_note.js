@@ -81,15 +81,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             if (data.error) throw new Error(data.error);
 
-            data.bill_date = new Date().toISOString().split('T')[0];
-            if (data.invoices && data.invoices.length > 0) {
-                const latestInvoiceDate = data.invoices.reduce((max, inv) => inv.due_date > max ? inv.due_date : max, data.invoices[0].due_date);
-                data.payment_duedate = latestInvoiceDate;
-            } else { data.payment_duedate = null; }
+            // 1. อ่านวันที่ที่ผู้ใช้เลือก (จากตัวแปร billDateInput ที่ประกาศไว้บนสุดของไฟล์)
+            const selectedBillDate = (billDateInput && billDateInput.value)
+                ? billDateInput.value
+                : new Date().toISOString().split('T')[0]; 
 
+            // 2. กำหนดวันที่นี้ให้กับ object 'data' ที่จะใช้แสดงผล
+            data.bill_date = selectedBillDate;
+
+            // 3. (โค้ดเดิม) คำนวณ payment_duedate
+            if (data.invoices && data.invoices.length > 0) {
+                const latestInvoiceDate = data.invoices.reduce((max, inv) =>
+                    inv.due_date > max ? inv.due_date : max,
+                    data.invoices[0].due_date
+                );
+                data.payment_duedate = latestInvoiceDate;
+            } else {
+                data.payment_duedate = null;
+            }
+
+            // 4. (โค้ดเดิม) ตั้งค่าข้อมูลปัจจุบัน
             currentBillData = data;
-            const billDateInput = document.getElementById('billDate');
-            if (billDateInput) billDateInput.value = (data.bill_date || '').slice(0, 10) || new Date().toISOString().split('T')[0];
 
             await renderBillDocument(data);
             if (!data.invoices || data.invoices.length === 0) {
@@ -206,8 +218,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function switchTab(target) { if (target === 'create') { tabCreate.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-blue-500 text-blue-600'; tabSearch.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'; panelCreate.style.display = 'block'; panelSearch.style.display = 'none'; } else { tabSearch.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-blue-500 text-blue-600'; tabCreate.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'; panelSearch.style.display = 'block'; panelCreate.style.display = 'none'; document.getElementById('bill-note-container').innerHTML = ''; } }
 
-    async function searchBillNotes() { const start = document.getElementById('searchStartDate').value; const end = document.getElementById('searchEndDate').value; const q = document.getElementById('searchQuery').value; const params = new URLSearchParams({ start, end, q }); const res = await fetch(`/api/search-billing-notes?${params.toString()}`); const results = await res.json(); searchResultsBody.innerHTML = ''; if (results.length === 0) { searchResultsBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500">ไม่พบข้อมูล</td></tr>'; return; } results.forEach(bill => { const tr = document.createElement('tr'); tr.className = 'border-b'; 
-        tr.innerHTML = `<td class="p-2">${formatDate(bill.bill_date)}</td><td class="p-2">${bill.billnote_number}</td><td class="p-2">${bill.fname}</td><td class="p-2 text-center"><button class="btn-view-edit text-blue-600 hover:underline text-sm" data-bill-number="${bill.billnote_number}">ดู/แก้ไข</button><button class="btn-delete text-red-600 hover:underline text-sm ml-2" data-bill-number="${bill.billnote_number}">ลบ</button></td>`; searchResultsBody.appendChild(tr); }); }
+    async function searchBillNotes() {
+        const start = document.getElementById('searchStartDate').value; const end = document.getElementById('searchEndDate').value; const q = document.getElementById('searchQuery').value; const params = new URLSearchParams({ start, end, q }); const res = await fetch(`/api/search-billing-notes?${params.toString()}`); const results = await res.json(); searchResultsBody.innerHTML = ''; if (results.length === 0) { searchResultsBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500">ไม่พบข้อมูล</td></tr>'; return; } results.forEach(bill => {
+            const tr = document.createElement('tr'); tr.className = 'border-b';
+            tr.innerHTML = `<td class="p-2">${formatDate(bill.bill_date)}</td><td class="p-2">${bill.billnote_number}</td><td class="p-2">${bill.fname}</td><td class="p-2 text-center"><button class="btn-view-edit text-blue-600 hover:underline text-sm" data-bill-number="${bill.billnote_number}">ดู/แก้ไข</button><button class="btn-delete text-red-600 hover:underline text-sm ml-2" data-bill-number="${bill.billnote_number}">ลบ</button></td>`; searchResultsBody.appendChild(tr);
+        });
+    }
 
     async function loadBillForEditing(billNumber) { currentEditingBillNumber = billNumber; const res = await fetch(`/api/billing-notes/${billNumber}`); if (!res.ok) { alert('ไม่สามารถโหลดข้อมูลใบวางบิลได้'); return; } const data = await res.json(); currentBillData = data; renderBillDocument(data); saveBtn.classList.add('hidden'); updateBtn.classList.remove('hidden'); printBtn.classList.remove('hidden'); switchTab('create'); document.querySelectorAll('.invoice-table-body tr').forEach(tr => { const td = document.createElement('td'); td.className = 'p-2 text-center noprint'; td.innerHTML = '<button class="btn-remove-item text-red-500"><i class="fa-solid fa-xmark"></i></button>'; tr.appendChild(td); }); }
 
