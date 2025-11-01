@@ -150,27 +150,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (data.error) throw new Error(data.error);
 
-            data.bill_date = new Date().toISOString().split('T')[0]; // ตั้ง bill_date เป็นวันปัจจุบัน
-            if (data.invoices && data.invoices.length > 0) {
-                // หา invoice_date ล่าสุด
-                const latestInvoiceDate = data.invoices.reduce((max, inv) =>
-                    inv.due_date > max ? inv.due_date : max,
-                    data.invoices[0].due_date
-                );
-                data.payment_duedate = latestInvoiceDate;
-            } else {
-                data.payment_duedate = null;
-            }
-
-            currentBillData = data;
-            // เซ็ตค่า field วันที่ เพื่อให้ผู้ใช้แก้ไขได้
-            const billDateInput = document.getElementById('billDate');
-            if (billDateInput) {
-                // ถ้า data มี bill_date ใช้ค่านั้น, ไม่งั้น default = วันนี้
-                const iso = (data.bill_date && data.bill_date.slice(0, 10)) || new Date().toISOString().split('T')[0];
-                billDateInput.value = iso;
-            }
-
             await renderBillDocument(data);
 
             document.querySelectorAll('.bill-date')
@@ -466,7 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedBillDate = (billDateInput && billDateInput.value)
             ? billDateInput.value
             : new Date().toISOString().split('T')[0];
-        data.bill_date = selectedBillDate; 
+        data.bill_date = selectedBillDate;
 
         // สลับปุ่มเป็นโหมดแก้ไข
         saveBtn.style.display = 'none';
