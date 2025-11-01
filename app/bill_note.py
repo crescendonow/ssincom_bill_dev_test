@@ -318,8 +318,8 @@ def create_billing_note(payload: BillNotePayload, db: Session = Depends(get_db))
     bill_date_today = payload.bill_date
     payment_due = None
     if payload.items:
-        latest_invoice_date = max((it.invoice_date for it in payload.items if it.invoice_date), default=None)
-        payment_due = latest_invoice_date
+        latest_due_date = max((it.due_date for it in payload.items if it.due_date), default=None)
+        payment_due = latest_due_date
 
     new_bill = models.BillNote(
         billnote_number=new_bill_number,
@@ -397,8 +397,8 @@ def update_billing_note(bill_note_number: str, payload: BillNoteUpdatePayload, d
 
     bill_note.bill_date = payload.bill_date or datetime.now().date()
     if payload.items:
-        latest_invoice_date = max((it.invoice_date for it in payload.items if it.invoice_date), default=None)
-        bill_note.payment_duedate = latest_invoice_date
+        latest_due_date = max((it.due_date for it in payload.items if it.due_date), default=None)
+        bill_note.payment_duedate = latest_due_date
     else:
         bill_note.payment_duedate = None
 
