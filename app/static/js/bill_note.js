@@ -184,12 +184,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function saveBillNote() {
-        if (!currentBillData) {
-            const billDateInput = document.getElementById('billDate');
-            const billISO = (billDateInput && billDateInput.value) ? billDateInput.value : new Date().toISOString().split('T')[0];
-            alert('ไม่มีข้อมูลใบวางบิลสำหรับบันทึก');
-            return;
-        }
+        const billDateInput = document.getElementById('billDate');
+        const billISO = (billDateInput && billDateInput.value)
+            ? billDateInput.value
+            : new Date().toISOString().split('T')[0];
+        if (!currentBillData) { alert('ไม่มีข้อมูลใบวางบิลสำหรับบันทึก'); return; }
 
         // 1. เตรียมข้อมูลที่จะส่งไป Backend
         const payload = {
