@@ -173,6 +173,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             await renderBillDocument(data);
 
+            document.querySelectorAll('.bill-date')
+                .forEach(el => el.textContent = formatLongThaiDate(billDateInput.value) || '-');
+
+
         } catch (error) {
             console.error(error);
             alert('เกิดข้อผิดพลาดในการสร้างใบวางบิล: ' + error.message);
