@@ -150,6 +150,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (data.error) throw new Error(data.error);
 
+            // 1. อ่านวันที่ที่ผู้ใช้เลือก (จากตัวแปร billDateInput ที่ประกาศไว้บนสุดของไฟล์)
+            const selectedBillDate = (billDateInput && billDateInput.value)
+                ? billDateInput.value
+                : new Date().toISOString().split('T')[0]; // ถ้าไม่มี ให้ใช้วันนี้
+
+            // 2. กำหนดวันที่นี้ให้กับ object 'data' ที่จะใช้แสดงผล
+            data.bill_date = selectedBillDate;
+
+            // 3. (โค้ดเดิม) คำนวณ payment_duedate
+            if (data.invoices && data.invoices.length > 0) {
+                const latestInvoiceDate = data.invoices.reduce((max, inv) =>
+                    inv.due_date > max ? inv.due_date : max,
+                    data.invoices[0].due_date
+                );
+                data.payment_duedate = latestInvoiceDate;
+            } else {
+                data.payment_duedate = null;
+            }
+
+            currentBillData = data;
+
             await renderBillDocument(data);
 
             document.querySelectorAll('.bill-date')
