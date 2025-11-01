@@ -466,6 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedBillDate = (billDateInput && billDateInput.value)
             ? billDateInput.value
             : new Date().toISOString().split('T')[0];
+        data.bill_date = selectedBillDate; 
 
         // สลับปุ่มเป็นโหมดแก้ไข
         saveBtn.style.display = 'none';
