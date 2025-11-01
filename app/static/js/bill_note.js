@@ -287,8 +287,17 @@ document.addEventListener('DOMContentLoaded', () => {
     searchQueryInput.addEventListener('input', (/* debounce if needed */) => { });
     document.getElementById('bill-note-container').addEventListener('click', (e) => { if (e.target.closest('.btn-remove-item')) e.target.closest('tr').remove(); });
 
-    // Init
-    const now = new Date(); const todayISO = now.toISOString().split('T')[0]; if (billDateInput) billDateInput.value = todayISO; if (endDateInput) endDateInput.value = todayISO; const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1); if (startDateInput) startDateInput.value = firstOfMonth.toISOString().split('T')[0];
+    // --- Initial Load ---
+    const now = new Date();
+    const todayISO = now.toISOString().split('T')[0];
+
+    // กัน null
+    if (billDateInput) billDateInput.value = todayISO;
+    if (endDateInput) endDateInput.value = todayISO;
+
+    const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    if (startDateInput) startDateInput.value = firstOfMonth.toISOString().split('T')[0];
+
     loadAllCustomers();
     saveBtn.parentElement.appendChild(updateBtn);
 });
