@@ -150,12 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (data.error) throw new Error(data.error);
 
-            const billDateInput = document.getElementById('billDate');
-            const selectedBillDate = (billDateInput && billDateInput.value)
-                ? billDateInput.value
-                : new Date().toISOString().split('T')[0];
-
-            data.bill_date = selectedBillDate; 
+            data.bill_date = new Date().toISOString().split('T')[0]; // ตั้ง bill_date เป็นวันปัจจุบัน
             if (data.invoices && data.invoices.length > 0) {
                 // หา invoice_date ล่าสุด
                 const latestInvoiceDate = data.invoices.reduce((max, inv) =>
@@ -468,10 +463,9 @@ document.addEventListener('DOMContentLoaded', () => {
         renderBillDocument(data);
 
         // sync input
-        const billDateInput = document.getElementById('billDate');
-        if (billDateInput && data.bill_date) {
-            billDateInput.value = data.bill_date.slice(0, 10);
-        }
+        const selectedBillDate = (billDateInput && billDateInput.value)
+            ? billDateInput.value
+            : new Date().toISOString().split('T')[0];
 
         // สลับปุ่มเป็นโหมดแก้ไข
         saveBtn.style.display = 'none';
