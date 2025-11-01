@@ -172,6 +172,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function saveBillNote() {
         if (!currentBillData) {
+            const billDateInput = document.getElementById('billDate');
+            const billISO = (billDateInput && billDateInput.value) ? billDateInput.value : new Date().toISOString().split('T')[0];
             alert('ไม่มีข้อมูลใบวางบิลสำหรับบันทึก');
             return;
         }
@@ -179,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1. เตรียมข้อมูลที่จะส่งไป Backend
         const payload = {
             customer_id: parseInt(document.getElementById('customerId').value, 10),
-            bill_date: new Date().toISOString().split('T')[0], // ใช้วันที่ปัจจุบัน
+            bill_date: billISO,
             items: currentBillData.invoices.map(inv => ({
                 invoice_number: inv.invoice_number,
                 invoice_date: inv.invoice_date,
@@ -231,6 +233,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const ITEMS_PER_PAGE = 12;
         const totalPages = Math.ceil(data.invoices.length / ITEMS_PER_PAGE) || 1;
 
+        const billDateInputEl = document.getElementById('billDate');
+        const billISO = (billDateInputEl && billDateInputEl.value)
+            ? billDateInputEl.value
+            : (data.bill_date || new Date().toISOString().slice(0, 10));
+
         for (let i = 0; i < totalPages; i++) {
             const pageNode = template.content.cloneNode(true);
             const pageElement = pageNode.querySelector('.A4-page');
@@ -248,16 +255,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // --- เติมข้อมูลเฉพาะของแต่ละหน้า ---
             pageElement.querySelector('.bill-number').textContent = data.bill_note_number || '(ยังไม่ได้บันทึก)';
-            pageElement.querySelector('.bill-date').textContent = new Date(data.bill_date || Date.now()).toLocaleDateString('th-TH', {
-                year: 'numeric', month: 'long', day: 'numeric'
-            });
+            pageElement.querySelector('.bill-date').textContent = formatLongThaiDate(billISO) || '-';
 
             // ใส่วันที่ลงใน <span class="signature-date">
             const signatureDate = pageElement.querySelector('.signature-date');
             if (signatureDate) {
-                signatureDate.textContent = new Date(data.bill_date || Date.now()).toLocaleDateString('th-TH', {
-                    year: 'numeric', month: 'long', day: 'numeric'
-                });
+                signatureDate.textContent = formatLongThaiDate(billISO) || '-';
             }
 
             pageElement.querySelector('.page-number').textContent = `${i + 1} / ${totalPages}`;
@@ -577,4 +580,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadAllCustomers();
     saveBtn.parentElement.appendChild(updateBtn);
+});
+
+document.getElementById('billDate')?.addEventListener('change', (e) => {
+    const iso = e.target.value; // YYYY-MM-DD
+    if (!currentBillData) currentBillData = {};
+    currentBillData.bill_date = iso;
+
+    // อัปเดตตัวหนังสือทุกหน้า (ถ้ามีหลายหน้า)
+    document.querySelectorAll('.bill-date').forEach(el => el.textContent = formatLongThaiDate(iso) || '-');
+    document.querySelectorAll('.signature-date').forEach(el => el.textContent = formatLongThaiDate(iso) || '-');
 });
