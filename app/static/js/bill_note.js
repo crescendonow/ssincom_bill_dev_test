@@ -603,13 +603,3 @@ document.addEventListener('DOMContentLoaded', () => {
     loadAllCustomers();
     saveBtn.parentElement.appendChild(updateBtn);
 });
-
-document.getElementById('billDate')?.addEventListener('change', (e) => {
-    const iso = e.target.value; // YYYY-MM-DD
-    if (!currentBillData) currentBillData = {};
-    currentBillData.bill_date = iso;
-
-    // อัปเดตตัวหนังสือทุกหน้า (ถ้ามีหลายหน้า)
-    document.querySelectorAll('.bill-date').forEach(el => el.textContent = formatLongThaiDate(iso) || '-');
-    document.querySelectorAll('.signature-date').forEach(el => el.textContent = formatLongThaiDate(iso) || '-');
-});
