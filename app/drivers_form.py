@@ -6,6 +6,12 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, Column, String
 from .database import SessionLocal, Base
 
+from datetime import date
+from sqlalchemy import func
+from . import models  # ต้องมี models.Invoice และ models.InvoiceItem อยู่แล้ว
+
+VAT_RATE = 0.07
+
 router = APIRouter()
 
 class Driver(Base):
@@ -147,3 +153,157 @@ def delete_driver(driver_id: str, db: Session = Depends(get_db)):
     db.delete(driver)
     db.commit()
     return
+
+@router.get("/api/driver-summary")
+def driver_summary(
+    driver_id: str = Query(..., min_length=2),
+    granularity: str = Query("day", pattern="^(day|month|year)$"),
+    start: Optional[str] = Query(None, description="YYYY-MM-DD"),
+    end: Optional[str] = Query(None, description="YYYY-MM-DD"),
+    month: Optional[str] = Query(None, description="YYYY-MM"),
+    year: Optional[int] = Query(None, ge=2000, le=2100),
+    db: Session = Depends(get_db),
+):
+    inv = models.Invoice
+    itm = models.InvoiceItem
+
+    if granularity == "day":
+        label_expr = func.to_char(inv.invoice_date, 'YYYY-MM-DD')
+    elif granularity == "month":
+        label_expr = func.to_char(inv.invoice_date, 'YYYY-MM')
+    else:
+        label_expr = func.to_char(inv.invoice_date, 'YYYY')
+
+    # คำนวณยอดรวมของรายการต่อบิล
+    sum_amount = func.sum(
+        func.coalesce(
+            itm.amount,
+            func.coalesce(itm.quantity, 0) * func.coalesce(itm.cf_itempricelevel_price, 0)
+        )
+    )
+
+    q = (
+        db.query(
+            label_expr.label("period"),
+            func.count(func.distinct(inv.idx)).label("count"),
+            func.coalesce(sum_amount, 0).label("amount"),
+        )
+        .outerjoin(itm, itm.invoice_number == inv.invoice_number)
+        .filter(inv.driver_id == driver_id)
+    )
+
+    def _to_date(s):
+        if not s:
+            return None
+        try:
+            return date.fromisoformat(s)
+        except Exception:
+            return None
+
+    if granularity == "day":
+        d1 = _to_date(start); d2 = _to_date(end)
+        if d1: q = q.filter(inv.invoice_date >= d1)
+        if d2: q = q.filter(inv.invoice_date <= d2)
+    elif granularity == "month":
+        if month and len(month) == 7:
+            q = q.filter(func.to_char(inv.invoice_date, 'YYYY-MM') == month)
+    else:
+        if year:
+            q = q.filter(func.extract("year", inv.invoice_date) == year)
+
+    q = q.group_by("period").order_by("period")
+
+    out = []
+    for period, count, amount in q.all():
+        amount = float(amount or 0.0)
+        before_vat = amount
+        vat = before_vat * VAT_RATE
+        grand = before_vat + vat
+        out.append({
+            "period": period,
+            "count": int(count or 0),
+            "amount": round(amount, 2),
+            "before_vat": round(before_vat, 2),
+            "vat": round(vat, 2),
+            "grand": round(grand, 2),
+        })
+    return out
+
+
+@router.get("/api/driver-invoices")
+def driver_invoices(
+    driver_id: str = Query(..., min_length=2),
+    start: Optional[str] = Query(None),
+    end: Optional[str] = Query(None),
+    qtext: Optional[str] = Query(None, alias="q"),
+    db: Session = Depends(get_db),
+):
+    inv = models.Invoice
+    itm = models.InvoiceItem
+
+    sub_amount = func.sum(
+        func.coalesce(
+            itm.amount,
+            func.coalesce(itm.quantity, 0) * func.coalesce(itm.cf_itempricelevel_price, 0)
+        )
+    )
+    sub = (
+        db.query(
+            itm.invoice_number.label("inv_no"),
+            func.coalesce(sub_amount, 0).label("amount"),
+        )
+        .group_by(itm.invoice_number)
+        .subquery()
+    )
+
+    q = (
+        db.query(
+            inv.idx,
+            inv.invoice_date,
+            inv.invoice_number,
+            inv.fname,
+            inv.po_number,
+            func.coalesce(sub.c.amount, 0).label("amount"),
+        )
+        .outerjoin(sub, sub.c.inv_no == inv.invoice_number)
+        .filter(inv.driver_id == driver_id)
+    )
+
+    def _to_date(s):
+        if not s:
+            return None
+        try:
+            return date.fromisoformat(s)
+        except Exception:
+            return None
+
+    d1 = _to_date(start); d2 = _to_date(end)
+    if d1: q = q.filter(inv.invoice_date >= d1)
+    if d2: q = q.filter(inv.invoice_date <= d2)
+
+    if qtext and qtext.strip():
+        pat = f"%{qtext.strip()}%"
+        q = q.filter(
+            (inv.invoice_number.ilike(pat)) |
+            (inv.fname.ilike(pat)) |
+            (inv.po_number.ilike(pat))
+        )
+
+    q = q.order_by(inv.invoice_date.desc(), inv.idx.desc())
+
+    out = []
+    for idx, invoice_date, invoice_number, fname, po_number, amount in q.all():
+        amount = float(amount or 0.0)
+        vat = amount * VAT_RATE
+        grand = amount + vat
+        out.append({
+            "idx": idx,
+            "invoice_date": invoice_date.isoformat() if invoice_date else None,
+            "invoice_number": invoice_number,
+            "fname": fname,
+            "po_number": po_number,
+            "amount": round(amount, 2),
+            "vat": round(vat, 2),
+            "grand": round(grand, 2),
+        })
+    return out
