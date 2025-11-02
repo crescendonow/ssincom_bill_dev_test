@@ -1,4 +1,4 @@
-// /static/js/drivers_form.js
+// /static/js/drivers_form.js (CLEAN)
 const ENDPOINT_DRIVERS = '/api/drivers';
 
 let currentPage = 1;
@@ -6,13 +6,16 @@ const PAGE_SIZE = 10;
 let editingId = null;
 
 function $(id) { return document.getElementById(id); }
-function escapeHtml(s = '') { return s.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m])); }
+function escapeHtml(s = '') {
+  return s.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
+}
 function setFormMsg(msg, isError = false) {
   const el = $('formMsg'); if (!el) return;
   el.textContent = msg || '';
   el.className = 'text-sm ml-2 ' + (isError ? 'text-red-600' : 'text-green-600');
 }
 
+/* ========== Drivers table CRUD ========== */
 async function loadDrivers(isNextAttempt = false) {
   try {
     const q = ($('searchText')?.value || '').trim();
@@ -31,7 +34,6 @@ async function loadDrivers(isNextAttempt = false) {
     renderTable([], 1, PAGE_SIZE, 0);
   }
 }
-
 function renderTable(rows, page, page_size, total) {
   const tbody = $('driversTableBody'); if (!tbody) return;
   tbody.innerHTML = '';
@@ -68,7 +70,6 @@ function renderTable(rows, page, page_size, total) {
   const end = Math.min(total, page * page_size);
   if ($('resultInfo')) $('resultInfo').textContent = `แสดง ${start}-${end} จากทั้งหมด ${total} รายการ`;
 }
-
 async function onCreateSubmit(e) {
   e.preventDefault(); setFormMsg('');
   const prefix = ($('prefix')?.value || '').trim();
@@ -92,11 +93,9 @@ async function onCreateSubmit(e) {
     console.error(err); setFormMsg(`ผิดพลาด: ${err.message}`, true);
   }
 }
-
 function resetForm() {
   ['prefix', 'first_name', 'last_name', 'citizen_id'].forEach(id => { const el = $(id); if (el) el.value = ''; });
 }
-
 function beginEditRow(tr) {
   if (!tr) return;
   editingId = tr.dataset.id;
@@ -109,7 +108,6 @@ function beginEditRow(tr) {
     <button class="btn-cancel bg-gray-100 border px-3 py-1 rounded hover:bg-gray-200">ยกเลิก</button>
   `;
 }
-
 function cancelEditRow(tr) {
   if (!tr) return;
   editingId = null;
@@ -122,7 +120,6 @@ function cancelEditRow(tr) {
     <button class="btn-delete bg-white border px-2 py-1 rounded hover:bg-gray-50 ml-2 text-red-700">ลบ</button>
   `;
 }
-
 async function onSaveRow(tr) {
   const data = {
     prefix: tr.querySelector('input[data-field="prefix"]')?.value.trim() || '',
@@ -150,7 +147,6 @@ async function onSaveRow(tr) {
     console.error(err); alert('เกิดข้อผิดพลาดระหว่างบันทึก');
   }
 }
-
 async function onDeleteRow(tr) {
   if (!confirm('ยืนยันการลบรายการนี้?')) return;
   try {
@@ -160,7 +156,6 @@ async function onDeleteRow(tr) {
     loadDrivers();
   } catch (err) { console.error(err); alert('เกิดข้อผิดพลาดระหว่างลบ'); }
 }
-
 function onTableClick(e) {
   const btn = e.target.closest('button'); if (!btn) return;
   const tr = e.target.closest('tr'); if (!tr) return;
@@ -180,7 +175,6 @@ function onTableClick(e) {
     onDeleteRow(tr);
   }
 }
-
 function bindEvents() {
   const form = $('driverForm');
   const btnReset = $('btnReset');
@@ -193,22 +187,17 @@ function bindEvents() {
 
   if (form) form.addEventListener('submit', onCreateSubmit);
   if (btnReset) btnReset.addEventListener('click', resetForm);
-
   if (btnSearch) btnSearch.addEventListener('click', () => { currentPage = 1; loadDrivers(); });
   if (btnReload) btnReload.addEventListener('click', () => { if (searchInp) searchInp.value = ''; currentPage = 1; loadDrivers(); });
   if (prevPage) prevPage.addEventListener('click', () => { if (currentPage > 1) { currentPage--; loadDrivers(); } });
   if (nextPage) nextPage.addEventListener('click', () => { currentPage++; loadDrivers(true); });
-
   if (tbody) tbody.addEventListener('click', onTableClick);
 }
 
-document.addEventListener('DOMContentLoaded', () => { bindEvents(); loadDrivers(); });
-
-/* ====== Tabs handler (t1/t2/t3) ====== */
-(function initTabs() {
+/* ========== Tabs ========== */
+function initTabs() {
   const btns = Array.from(document.querySelectorAll('.tab-btn'));
   if (!btns.length) return;
-
   function showTab(id) {
     ['t1', 't2', 't3'].forEach(k => {
       const el = document.getElementById('tab-' + k);
@@ -225,42 +214,11 @@ document.addEventListener('DOMContentLoaded', () => { bindEvents(); loadDrivers(
       b.classList.toggle('hover:bg-gray-100', !on);
     });
   }
-
   btns.forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
-  showTab('t1'); // default tab
-})();
-
-
-/* ===========================
-   TABS (t1/t2/t3)
-   =========================== */
-document.addEventListener('DOMContentLoaded', () => {
-  bindEvents(); loadDrivers();
-
-  // ผูก autocomplete คนขับสำหรับ Tab2/Tab3
-  bindDriverAutocomplete('sum_driver', 'sum_driver_id', 'driversSuggest2');
-  bindDriverAutocomplete('all_driver', 'all_driver_id', 'driversSuggest3');
-});
-
-const btns = Array.from(document.querySelectorAll('.tab-btn'));
-function showTab(id) {
-  ['t1', 't2', 't3'].forEach(k => {
-    document.getElementById('tab-' + k)?.classList.add('hidden');
-  });
-  document.getElementById('tab-' + id)?.classList.remove('hidden');
-  btns.forEach(b => {
-    const on = b.dataset.tab === id;
-    b.classList.toggle('bg-blue-600', on);
-    b.classList.toggle('text-white', on);
-    b.classList.toggle('text-blue-700', !on);
-    b.classList.toggle('hover:bg-gray-100', !on);
-  });
+  showTab('t1'); // default
 }
-btns.forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
-showTab('t1'); // default
-});
 
-// suggest driver function
+/* ========== Driver autocomplete (Tab2/Tab3) ========== */
 async function fetchDriverSuggest(q) {
   const url = new URL('/api/drivers', location.origin);
   url.searchParams.set('search', q || '');
@@ -270,14 +228,13 @@ async function fetchDriverSuggest(q) {
   if (!res.ok) return { items: [] };
   return res.json();
 }
-
 function bindDriverAutocomplete(textInputId, hiddenId, datalistId) {
   const input = document.getElementById(textInputId);
   const hidden = document.getElementById(hiddenId);
   const list = document.getElementById(datalistId);
   if (!input || !hidden || !list) return;
 
-  const deb = (fn, t = 200) => { let h; return (...a) => { clearTimeout(h); h = setTimeout(() => fn(...a), t); } };
+  const deb = (fn, t = 250) => { let h; return (...a) => { clearTimeout(h); h = setTimeout(() => fn(...a), t); } };
 
   async function suggest() {
     const q = (input.value || '').trim();
@@ -286,111 +243,111 @@ function bindDriverAutocomplete(textInputId, hiddenId, datalistId) {
     (items || []).forEach(d => {
       const label = `${d.driver_id} | ${d.citizen_id} | ${(d.prefix || '').trim()}${d.prefix ? ' ' : ''}${(d.first_name || '').trim()} ${(d.last_name || '').trim()}`;
       const opt = document.createElement('option');
-      opt.value = label;                 // แสดง label
+      opt.value = label;
       opt.dataset.driverId = d.driver_id; // เก็บ driver_id
       list.appendChild(opt);
     });
   }
-
   input.addEventListener('input', deb(suggest, 250));
   input.addEventListener('change', () => {
     const label = (input.value || '').trim();
-    // token แรกก่อน " | " = driver_id
-    const m = label.match(/^([^|]+)/);
+    const m = label.match(/^([^|]+)/); // token แรก = driver_id
     hidden.value = m ? m[1].trim() : '';
   });
 }
 
-
-/* ===========================
-   Tab 2: /api/driver-summary
-   =========================== */
-(function () {
+/* ========== Tab2: /api/driver-summary ========== */
+function initTab2() {
   const granBtns = document.querySelectorAll('#tab-t2 .btn-gran');
   let gran = 'day';
   granBtns.forEach(b => b.addEventListener('click', () => {
     granBtns.forEach(x => x.classList.toggle('bg-blue-600', x === b));
     gran = b.dataset.gran;
-    document.getElementById('filter-day')?.classList.toggle('hidden', gran !== 'day');
-    document.getElementById('filter-month')?.classList.toggle('hidden', gran !== 'month');
-    document.getElementById('filter-year')?.classList.toggle('hidden', gran !== 'year');
+    $('filter-day')?.classList.toggle('hidden', gran !== 'day');
+    $('filter-month')?.classList.toggle('hidden', gran !== 'month');
+    $('filter-year')?.classList.toggle('hidden', gran !== 'year');
   }));
 
   async function loadSummary() {
-    const driverId = (document.getElementById('sum_driver_id')?.value || '').trim()
-      || (document.getElementById('sum_driver')?.value || '').trim();
+    const driverId = ($('sum_driver_id')?.value || '').trim() || ($('sum_driver')?.value || '').trim();
     if (!driverId) { alert('กรุณาเลือกคนขับจากรายการ'); return; }
 
     const url = new URL('/api/driver-summary', location.origin);
     url.searchParams.set('driver_id', driverId);
     url.searchParams.set('granularity', gran);
     if (gran === 'day') {
-      const d1 = document.getElementById('dayFrom_dv')?.value;
-      const d2 = document.getElementById('dayTo_dv')?.value;
+      const d1 = $('dayFrom_dv')?.value; const d2 = $('dayTo_dv')?.value;
       if (d1) url.searchParams.set('start', d1);
       if (d2) url.searchParams.set('end', d2);
     } else if (gran === 'month') {
-      const m = document.getElementById('monthPick_dv')?.value;
-      if (m) url.searchParams.set('month', m);
+      const m = $('monthPick_dv')?.value; if (m) url.searchParams.set('month', m);
     } else {
-      const y = document.getElementById('yearPick_dv')?.value;
-      if (y) url.searchParams.set('year', y);
+      const y = $('yearPick_dv')?.value; if (y) url.searchParams.set('year', y);
     }
 
     const res = await fetch(url);
     const data = await res.json();
-    const tbody = document.getElementById('summaryBody_dv');
+    const tbody = $('summaryBody_dv');
     tbody.innerHTML = '';
-
     (data || []).forEach(r => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-      <td class="px-3 py-2 border">${r.period || ''}</td>
-      <td class="px-3 py-2 border text-right">${r.count || 0}</td>
-      <td class="px-3 py-2 border text-right">${(r.car_plates || '').toString()}</td>
-    `;
+        <td class="px-3 py-2 border">${r.period || ''}</td>
+        <td class="px-3 py-2 border text-right">${r.count || 0}</td>
+        <td class="px-3 py-2 border text-right">${(r.car_plates || '').toString()}</td>
+      `;
       tbody.appendChild(tr);
     });
   }
-  document.getElementById('btnApply_dv')?.addEventListener('click', loadSummary);
-})();
+  $('btnApply_dv')?.addEventListener('click', loadSummary);
+}
 
-/* ===========================
-   Tab 3: /api/driver-invoices
-   =========================== */
-(function () {
+/* ========== Tab3: /api/driver-invoices ========== */
+function initTab3() {
   async function loadAll() {
-    const driverId = (document.getElementById('all_driver_id')?.value || '').trim()
-      || (document.getElementById('all_driver')?.value || '').trim();
+    const driverId = ($('all_driver_id')?.value || '').trim() || ($('all_driver')?.value || '').trim();
     if (!driverId) { alert('กรุณาเลือกคนขับจากรายการ'); return; }
 
     const url = new URL('/api/driver-invoices', location.origin);
     url.searchParams.set('driver_id', driverId);
-    const d1 = document.getElementById('allFrom_dv')?.value;
-    const d2 = document.getElementById('allTo_dv')?.value;
-    const q = document.getElementById('allQ_dv')?.value;
+    const d1 = $('allFrom_dv')?.value; const d2 = $('allTo_dv')?.value;
+    const q = $('allQ_dv')?.value;
     if (d1) url.searchParams.set('start', d1);
     if (d2) url.searchParams.set('end', d2);
     if (q) url.searchParams.set('q', q);
 
     const res = await fetch(url);
     const data = await res.json();
-    const tbody = document.getElementById('allBody_dv');
+    const tbody = $('allBody_dv');
     tbody.innerHTML = '';
-
     (data || []).forEach(r => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-      <td class="px-3 py-2 border">${r.invoice_date || ''}</td>
-      <td class="px-3 py-2 border">${r.invoice_number || ''}</td>
-      <td class="px-3 py-2 border">${r.fname || ''}</td>
-      <td class="px-3 py-2 border hidden md:table-cell">${r.po_number || ''}</td>
-      <td class="px-3 py-2 border text-right hidden sm:table-cell">${r.grn_number || ''}</td>
-      <td class="px-3 py-2 border text-right hidden lg:table-cell">${r.dn_number || ''}</td>
-      <td class="px-3 py-2 border text-right">${r.car_numberplate || ''}</td>
-    `;
+        <td class="px-3 py-2 border">${r.invoice_date || ''}</td>
+        <td class="px-3 py-2 border">${r.invoice_number || ''}</td>
+        <td class="px-3 py-2 border">${r.fname || ''}</td>
+        <td class="px-3 py-2 border hidden md:table-cell">${r.po_number || ''}</td>
+        <td class="px-3 py-2 border text-right hidden sm:table-cell">${r.grn_number || ''}</td>
+        <td class="px-3 py-2 border text-right hidden lg:table-cell">${r.dn_number || ''}</td>
+        <td class="px-3 py-2 border text-right">${r.car_numberplate || ''}</td>
+      `;
       tbody.appendChild(tr);
     });
   }
-  document.getElementById('btnAllApply_dv')?.addEventListener('click', loadAll);
-})();
+  $('btnAllApply_dv')?.addEventListener('click', loadAll);
+}
+
+/* ========== Boot ========== */
+document.addEventListener('DOMContentLoaded', () => {
+  bindEvents();
+  loadDrivers();
+
+  initTabs();
+
+  // autocomplete คนขับ (Tab2/Tab3)
+  bindDriverAutocomplete('sum_driver', 'sum_driver_id', 'driversSuggest2');
+  bindDriverAutocomplete('all_driver', 'all_driver_id', 'driversSuggest3');
+
+  initTab2();
+  initTab3();
+});

@@ -271,9 +271,9 @@ def driver_invoices(
             inv.invoice_number,
             inv.fname,
             inv.po_number,
-            inv.grn_number,              
-            inv.dn_number,                
-            inv.car_numberplate,          
+            inv.grn_number,
+            inv.dn_number,
+            inv.car_numberplate,
             func.coalesce(sub.c.amount, 0).label("amount"),
         )
         .outerjoin(sub, sub.c.inv_no == inv.invoice_number)
@@ -303,18 +303,16 @@ def driver_invoices(
     q = q.order_by(inv.invoice_date.desc(), inv.idx.desc())
 
     out = []
-    for idx, invoice_date, invoice_number, fname, po_number, amount in q.all():
-        amount = float(amount or 0.0)
-        vat = amount * VAT_RATE
-        grand = amount + vat
+    for idx, invoice_date, invoice_number, fname, po_number, grn_number, dn_number, car_numberplate, amount in q.all():
         out.append({
             "idx": idx,
             "invoice_date": invoice_date.isoformat() if invoice_date else None,
             "invoice_number": invoice_number,
             "fname": fname,
             "po_number": po_number,
-            "grn_number": grn_number or "",          
-            "dn_number": dn_number or "",            
+            "grn_number": grn_number or "",
+            "dn_number": dn_number or "",
             "car_numberplate": car_numberplate or "",
         })
     return out
+
