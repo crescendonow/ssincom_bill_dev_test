@@ -78,7 +78,7 @@ def list_drivers(
             Driver.prefix.ilike(pat),
         ))
     total = q.count()
-    rows = q.order_by(Driver.first_name.asc(), Driver.last_name.asc()).offset((page-1)*page_size).limit(page_size).all()
+    rows = q.order_by(Driver.driver_id.asc(), Driver.first_name.asc()).offset((page-1)*page_size).limit(page_size).all()
     return {
         "total": total,
         "page": page,
