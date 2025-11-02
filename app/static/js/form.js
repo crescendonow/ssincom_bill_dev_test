@@ -76,6 +76,51 @@ function fillInvoiceItems(items) {
 }
 
 /* ===========================
+   Driver autocomplete (by driver_id / citizen_id / name)
+   =========================== */
+async function searchDrivers(q, page = 1, pageSize = 20) {
+  const url = new URL('/api/drivers', location.origin);
+  url.searchParams.set('search', q || '');
+  url.searchParams.set('page', page);
+  url.searchParams.set('page_size', pageSize);
+  const res = await fetch(url);
+  if (!res.ok) return { items: [], total: 0 };
+  return await res.json(); // {items:[{driver_id, citizen_id, prefix, first_name, last_name}], ...}
+}
+
+(function bindDriverAutocomplete() {
+  const input = document.getElementById('driver_search');
+  const list = document.getElementById('driversList');
+  const hid = document.getElementById('driver_id');
+  const msg = document.getElementById('driver_msg');
+  if (!input || !list || !hid) return;
+
+  const deb = (fn, t = 250) => { let h; return (...a) => { clearTimeout(h); h = setTimeout(() => fn(...a), t) } };
+
+  async function suggest() {
+    const q = (input.value || '').trim();
+    list.innerHTML = ''; hid.value = ''; if (msg) msg.textContent = '';
+    const { items, total } = await searchDrivers(q);
+    (items || []).forEach(d => {
+      const label = `${d.driver_id} | ${d.citizen_id} | ${(d.prefix || '').trim()}${d.prefix ? ' ' : ''}${(d.first_name || '').trim()} ${(d.last_name || '').trim()}`;
+      const opt = document.createElement('option');
+      opt.value = label;
+      opt.dataset.driverId = d.driver_id;
+      list.appendChild(opt);
+    });
+    if (msg) msg.textContent = total ? `พบ ${total} รายการ` : 'ไม่พบข้อมูล';
+  }
+
+  input.addEventListener('input', deb(suggest, 250));
+  input.addEventListener('change', () => {
+    const label = (input.value || '').trim();
+    // driver_id จะเป็น token แรกก่อน " | "
+    const m = label.match(/^([^|]+)/);
+    hid.value = m ? m[1].trim() : '';
+  });
+})();
+
+/* ===========================
    Customer autocomplete
    =========================== */
 let customers = [];
@@ -496,6 +541,7 @@ function buildUpdatePayload() {
     fmlpaymentcreditday: (v('fmlpaymentcreditday') ? parseInt(v('fmlpaymentcreditday'), 10) : null),
     car_numberplate: v('car_numberplate'),
     cf_branch: v('cf_branch'),
+    driver_id: v('driver_id'),
     items: []
   };
   const idISO = normalizeDateInputValue('invoice_date');
