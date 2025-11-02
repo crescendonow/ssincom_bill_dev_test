@@ -235,23 +235,72 @@ document.addEventListener('DOMContentLoaded', () => { bindEvents(); loadDrivers(
    TABS (t1/t2/t3)
    =========================== */
 document.addEventListener('DOMContentLoaded', () => {
-  const btns = Array.from(document.querySelectorAll('.tab-btn'));
-  function showTab(id) {
-    ['t1', 't2', 't3'].forEach(k => {
-      document.getElementById('tab-' + k)?.classList.add('hidden');
-    });
-    document.getElementById('tab-' + id)?.classList.remove('hidden');
-    btns.forEach(b => {
-      const on = b.dataset.tab === id;
-      b.classList.toggle('bg-blue-600', on);
-      b.classList.toggle('text-white', on);
-      b.classList.toggle('text-blue-700', !on);
-      b.classList.toggle('hover:bg-gray-100', !on);
+  bindEvents(); loadDrivers();
+
+  // ผูก autocomplete คนขับสำหรับ Tab2/Tab3
+  bindDriverAutocomplete('sum_driver', 'sum_driver_id', 'driversSuggest2');
+  bindDriverAutocomplete('all_driver', 'all_driver_id', 'driversSuggest3');
+});
+
+const btns = Array.from(document.querySelectorAll('.tab-btn'));
+function showTab(id) {
+  ['t1', 't2', 't3'].forEach(k => {
+    document.getElementById('tab-' + k)?.classList.add('hidden');
+  });
+  document.getElementById('tab-' + id)?.classList.remove('hidden');
+  btns.forEach(b => {
+    const on = b.dataset.tab === id;
+    b.classList.toggle('bg-blue-600', on);
+    b.classList.toggle('text-white', on);
+    b.classList.toggle('text-blue-700', !on);
+    b.classList.toggle('hover:bg-gray-100', !on);
+  });
+}
+btns.forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+showTab('t1'); // default
+});
+
+// suggest driver function
+async function fetchDriverSuggest(q) {
+  const url = new URL('/api/drivers', location.origin);
+  url.searchParams.set('search', q || '');
+  url.searchParams.set('page', 1);
+  url.searchParams.set('page_size', 20);
+  const res = await fetch(url);
+  if (!res.ok) return { items: [] };
+  return res.json();
+}
+
+function bindDriverAutocomplete(textInputId, hiddenId, datalistId) {
+  const input = document.getElementById(textInputId);
+  const hidden = document.getElementById(hiddenId);
+  const list = document.getElementById(datalistId);
+  if (!input || !hidden || !list) return;
+
+  const deb = (fn, t = 200) => { let h; return (...a) => { clearTimeout(h); h = setTimeout(() => fn(...a), t); } };
+
+  async function suggest() {
+    const q = (input.value || '').trim();
+    const { items } = await fetchDriverSuggest(q);
+    list.innerHTML = '';
+    (items || []).forEach(d => {
+      const label = `${d.driver_id} | ${d.citizen_id} | ${(d.prefix || '').trim()}${d.prefix ? ' ' : ''}${(d.first_name || '').trim()} ${(d.last_name || '').trim()}`;
+      const opt = document.createElement('option');
+      opt.value = label;                 // แสดง label
+      opt.dataset.driverId = d.driver_id; // เก็บ driver_id
+      list.appendChild(opt);
     });
   }
-  btns.forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
-  showTab('t1'); // default
-});
+
+  input.addEventListener('input', deb(suggest, 250));
+  input.addEventListener('change', () => {
+    const label = (input.value || '').trim();
+    // token แรกก่อน " | " = driver_id
+    const m = label.match(/^([^|]+)/);
+    hidden.value = m ? m[1].trim() : '';
+  });
+}
+
 
 /* ===========================
    Tab 2: /api/driver-summary
@@ -268,8 +317,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }));
 
   async function loadSummary() {
-    const driverId = document.getElementById('sum_driver')?.value.trim();
-    if (!driverId) { alert('กรุณากรอก Driver ID'); return; }
+    const driverId = (document.getElementById('sum_driver_id')?.value || '').trim()
+      || (document.getElementById('sum_driver')?.value || '').trim();
+    if (!driverId) { alert('กรุณาเลือกคนขับจากรายการ'); return; }
+
     const url = new URL('/api/driver-summary', location.origin);
     url.searchParams.set('driver_id', driverId);
     url.searchParams.set('granularity', gran);
@@ -285,30 +336,21 @@ document.addEventListener('DOMContentLoaded', () => {
       const y = document.getElementById('yearPick_dv')?.value;
       if (y) url.searchParams.set('year', y);
     }
+
     const res = await fetch(url);
     const data = await res.json();
     const tbody = document.getElementById('summaryBody_dv');
     tbody.innerHTML = '';
-    let c = 0, before = 0, vat = 0, grand = 0;
+
     (data || []).forEach(r => {
-      c += (r.count || 0);
-      before += (r.before_vat || 0);
-      vat += (r.vat || 0);
-      grand += (r.grand || 0);
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td class="px-3 py-2 border">${r.period || ''}</td>
-        <td class="px-3 py-2 border text-right">${r.count || 0}</td>
-        <td class="px-3 py-2 border text-right">${(r.before_vat || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-        <td class="px-3 py-2 border text-right">${(r.vat || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-        <td class="px-3 py-2 border text-right">${(r.grand || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-      `;
+      <td class="px-3 py-2 border">${r.period || ''}</td>
+      <td class="px-3 py-2 border text-right">${r.count || 0}</td>
+      <td class="px-3 py-2 border text-right">${(r.car_plates || '').toString()}</td>
+    `;
       tbody.appendChild(tr);
     });
-    document.getElementById('sum_count_dv').textContent = c;
-    document.getElementById('sum_before_vat_dv').textContent = before.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    document.getElementById('sum_vat_dv').textContent = vat.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    document.getElementById('sum_grand_dv').textContent = grand.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
   document.getElementById('btnApply_dv')?.addEventListener('click', loadSummary);
 })();
@@ -318,8 +360,10 @@ document.addEventListener('DOMContentLoaded', () => {
    =========================== */
 (function () {
   async function loadAll() {
-    const driverId = document.getElementById('all_driver')?.value.trim();
-    if (!driverId) { alert('กรุณากรอก Driver ID'); return; }
+    const driverId = (document.getElementById('all_driver_id')?.value || '').trim()
+      || (document.getElementById('all_driver')?.value || '').trim();
+    if (!driverId) { alert('กรุณาเลือกคนขับจากรายการ'); return; }
+
     const url = new URL('/api/driver-invoices', location.origin);
     url.searchParams.set('driver_id', driverId);
     const d1 = document.getElementById('allFrom_dv')?.value;
@@ -328,21 +372,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (d1) url.searchParams.set('start', d1);
     if (d2) url.searchParams.set('end', d2);
     if (q) url.searchParams.set('q', q);
+
     const res = await fetch(url);
     const data = await res.json();
     const tbody = document.getElementById('allBody_dv');
     tbody.innerHTML = '';
+
     (data || []).forEach(r => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td class="px-3 py-2 border">${r.invoice_date || ''}</td>
-        <td class="px-3 py-2 border">${r.invoice_number || ''}</td>
-        <td class="px-3 py-2 border">${r.fname || ''}</td>
-        <td class="px-3 py-2 border hidden md:table-cell">${r.po_number || ''}</td>
-        <td class="px-3 py-2 border text-right hidden sm:table-cell">${(r.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-        <td class="px-3 py-2 border text-right hidden lg:table-cell">${(r.vat || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-        <td class="px-3 py-2 border text-right">${(r.grand || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-      `;
+      <td class="px-3 py-2 border">${r.invoice_date || ''}</td>
+      <td class="px-3 py-2 border">${r.invoice_number || ''}</td>
+      <td class="px-3 py-2 border">${r.fname || ''}</td>
+      <td class="px-3 py-2 border hidden md:table-cell">${r.po_number || ''}</td>
+      <td class="px-3 py-2 border text-right hidden sm:table-cell">${r.grn_number || ''}</td>
+      <td class="px-3 py-2 border text-right hidden lg:table-cell">${r.dn_number || ''}</td>
+      <td class="px-3 py-2 border text-right">${r.car_numberplate || ''}</td>
+    `;
       tbody.appendChild(tr);
     });
   }

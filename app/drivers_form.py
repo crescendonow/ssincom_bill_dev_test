@@ -78,6 +78,7 @@ def list_drivers(
     if search.strip():
         pat = f"%{search.strip()}%"
         q = q.filter(or_(
+            Driver.driver_id.ilike(pat), 
             Driver.first_name.ilike(pat),
             Driver.last_name.ilike(pat),
             Driver.citizen_id.ilike(pat),
@@ -182,11 +183,17 @@ def driver_summary(
         )
     )
 
+    car_list = func.array_to_string(
+            func.array_agg(func.distinct(inv.car_numberplate)),
+            ', '
+        )
+
     q = (
         db.query(
             label_expr.label("period"),
             func.count(func.distinct(inv.idx)).label("count"),
             func.coalesce(sum_amount, 0).label("amount"),
+            car_list.label("car_plates"), 
         )
         .outerjoin(itm, itm.invoice_number == inv.invoice_number)
         .filter(inv.driver_id == driver_id)
@@ -214,7 +221,7 @@ def driver_summary(
     q = q.group_by("period").order_by("period")
 
     out = []
-    for period, count, amount in q.all():
+    for period, count, amount, car_plates in q.all():
         amount = float(amount or 0.0)
         before_vat = amount
         vat = before_vat * VAT_RATE
@@ -222,6 +229,7 @@ def driver_summary(
         out.append({
             "period": period,
             "count": int(count or 0),
+            "car_plates": car_plates or "",
             "amount": round(amount, 2),
             "before_vat": round(before_vat, 2),
             "vat": round(vat, 2),
@@ -263,6 +271,9 @@ def driver_invoices(
             inv.invoice_number,
             inv.fname,
             inv.po_number,
+            inv.grn_number,              
+            inv.dn_number,                
+            inv.car_numberplate,          
             func.coalesce(sub.c.amount, 0).label("amount"),
         )
         .outerjoin(sub, sub.c.inv_no == inv.invoice_number)
@@ -302,8 +313,8 @@ def driver_invoices(
             "invoice_number": invoice_number,
             "fname": fname,
             "po_number": po_number,
-            "amount": round(amount, 2),
-            "vat": round(vat, 2),
-            "grand": round(grand, 2),
+            "grn_number": grn_number or "",          
+            "dn_number": dn_number or "",            
+            "car_numberplate": car_numberplate or "",
         })
     return out
