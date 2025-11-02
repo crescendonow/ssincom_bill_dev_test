@@ -12,6 +12,7 @@ from .products import router as products_router
 from .cars import router as cars_router
 from .bill_note import router as bill_note_router
 from .saletax_report import router as saletax_router
+from .drivers_form import router as drivers_router
 from sqlalchemy.orm import joinedload
 
 from pathlib import Path
@@ -68,6 +69,7 @@ app.include_router(products_router)
 app.include_router(cars_router)
 app.include_router(bill_note_router)
 app.include_router(saletax_router)
+app.include_router(drivers_router)
 
 # หน้า: รายการใบกำกับภาษี
 @app.get("/summary_invoices.html", response_class=HTMLResponse)
@@ -92,6 +94,11 @@ def customers_page(request: Request):
         return templates.TemplateResponse("customer_form.html", {"request": request})
     except TemplateNotFound:
         return HTMLResponse("<h3>templates/customer_form.html not found</h3>", status_code=200)
+
+# จัดการพนักงานขับรถ
+@app.get("/drivers.html", response_class=HTMLResponse)
+def drivers_page(request: Request):
+    return templates.TemplateResponse("drivers_form.html", {"request": request})
 
 # หน้า: จัดการสินค้า (ถ้ามี products.html)
 @app.get("/products", response_class=HTMLResponse)
