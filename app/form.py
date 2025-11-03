@@ -185,6 +185,7 @@ def submit(
     due_date: str = Form(None),
     car_numberplate: str = Form(None),
     cf_branch: str = Form(None),
+    driver_id: str = Form(None),
 
     product_code: List[str] = Form(...),
     description: List[str] = Form(...),
@@ -215,6 +216,7 @@ def submit(
         fmlpaymentcreditday=fmlpaymentcreditday,
         due_date=due,
         car_numberplate=car_numberplate,
+        driver_id=(driver_id or None), 
     )
     db.add(inv)
     db.flush()

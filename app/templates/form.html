@@ -85,6 +85,19 @@
               class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
           </div>
         </div>
+        <!-- ค้นหาพนักงานขับรถ -->
+        <div>
+          <label for="driver_search" class="block mb-1 text-sm font-medium text-gray-900">
+            พนักงานขับรถ (พิมพ์ชื่อ/สกุล/เลขบัตร/Driver ID)
+          </label>
+          <input type="text" id="driver_search" list="driversList" autocomplete="off"
+            placeholder="เช่น D0007 หรือ 1103700xxxxx หรือ ชื่อ-นามสกุล"
+            class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
+          <datalist id="driversList"></datalist>
+          <!-- ช่องเก็บ driver_id ที่จะส่งเข้า DB -->
+          <input type="hidden" name="driver_id" id="driver_id" />
+          <p id="driver_msg" class="text-xs text-gray-400 mt-1"></p>
+        </div>
 
         <!-- ลูกค้า -->
         <div>

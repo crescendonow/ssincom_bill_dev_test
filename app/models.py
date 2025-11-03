@@ -31,6 +31,7 @@ class Invoice(Base):
     due_date = Column(Date)
 
     car_numberplate = Column(String)
+    driver_id = Column(String(10), ForeignKey("products.drivers.driver_id"), index=True)
 
     # ความสัมพันธ์กับ items โดย match ที่ "เลขที่บิล (varchar)" ไม่ใช่ idx
     items = relationship(

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>จัดการพนักงานขับรถ</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body class="bg-gradient-to-b from-blue-500 to-blue-200 min-h-screen font-sans text-gray-800">
+    <div class="max-w-5xl mx-auto px-6 py-8">
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-3xl font-bold text-white">พนักงานขับรถ</h1>
+            <a href="/dashboard.html" class="bg-white text-blue-700 px-4 py-2 rounded hover:bg-gray-100">← กลับ
+                Dashboard</a>
+        </div>
+
+        <!-- Tabs header -->
+        <div class="bg-white rounded-lg p-2 shadow mb-4">
+            <div class="flex flex-wrap">
+                <button data-tab="t1" class="tab-btn px-4 py-2 text-sm font-medium rounded bg-blue-600 text-white">
+                    เพิ่มพนักงานขับรถ
+                </button>
+                <button data-tab="t2"
+                    class="tab-btn px-4 py-2 text-sm font-medium rounded text-blue-700 hover:bg-gray-100 ml-2">
+                    สรุปข้อมูลตามช่วงเวลา
+                </button>
+                <button data-tab="t3"
+                    class="tab-btn px-4 py-2 text-sm font-medium rounded text-blue-700 hover:bg-gray-100 ml-2">
+                    สรุปข้อมูลการจัดส่งสินค้าทั้งหมด
+                </button>
+            </div>
+        </div>
+
+        <!-- Panel: Tab 1 (ย้ายของเดิมมาไว้ที่นี่ทั้งหมด) -->
+        <div id="tab-t1">
+            <!-- ===== ของเดิม: กล่องฟอร์มเพิ่มพนักงาน ===== -->
+            <div class="bg-white rounded-lg p-6 shadow mb-8">
+                <h2 class="text-lg font-bold mb-4">เพิ่มพนักงานขับรถ</h2>
+                <form id="driverForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="md:col-span-1">
+                        <label for="prefix" class="block text-sm text-gray-600 mb-1">คำนำหน้า</label>
+                        <input id="prefix" type="text" placeholder="นาย / นาง / น.ส."
+                            class="w-full border rounded px-3 py-2 focus:outline-none focus:ring" />
+                    </div>
+                    <div class="md:col-span-1">
+                        <label for="first_name" class="block text-sm text-gray-600 mb-1">ชื่อ <span
+                                class="text-red-500">*</span></label>
+                        <input id="first_name" type="text" placeholder="ชื่อ"
+                            class="w-full border rounded px-3 py-2 focus:outline-none focus:ring" required />
+                    </div>
+                    <div class="md:col-span-1">
+                        <label for="last_name" class="block text-sm text-gray-600 mb-1">นามสกุล <span
+                                class="text-red-500">*</span></label>
+                        <input id="last_name" type="text" placeholder="นามสกุล"
+                            class="w-full border rounded px-3 py-2 focus:outline-none focus:ring" required />
+                    </div>
+                    <div class="md:col-span-1">
+                        <label for="citizen_id" class="block text-sm text-gray-600 mb-1">เลขบัตรประชาชน <span
+                                class="text-red-500">*</span></label>
+                        <input id="citizen_id" type="text" placeholder="เลข 13 หลัก"
+                            class="w-full border rounded px-3 py-2 focus:outline-none focus:ring" required />
+                        <p id="cidMsg" class="text-xs text-gray-400 mt-1"></p>
+                    </div>
+                    <div class="md:col-span-4 flex items-center gap-2">
+                        <button id="btnSave" type="submit"
+                            class="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700">บันทึก</button>
+                        <button id="btnReset" type="button"
+                            class="bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200">ล้างค่า</button>
+                        <span id="formMsg" class="text-sm ml-2"></span>
+                    </div>
+                </form>
+            </div>
+
+            <!-- ===== ของเดิม: กล่องตารางรายการ ===== -->
+            <div class="bg-white rounded-lg p-6 shadow">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-bold">รายการพนักงานขับรถ</h2>
+                    <div class="flex items-center gap-2">
+                        <input id="searchText" type="text" placeholder="ค้นหา (ชื่อ/สกุล/เลขบัตร)"
+                            class="border rounded px-3 py-2 focus:outline-none focus:ring w-64" />
+                        <button id="btnSearch" class="bg-white border px-4 py-2 rounded hover:bg-gray-50">ค้นหา</button>
+                        <button id="btnReload"
+                            class="bg-white border px-4 py-2 rounded hover:bg-gray-50">รีเฟรช</button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full border">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-3 py-2 border text-left w-48">Driver ID</th>
+                                <th class="px-3 py-2 border text-left">คำนำหน้า</th>
+                                <th class="px-3 py-2 border text-left">ชื่อ</th>
+                                <th class="px-3 py-2 border text-left">นามสกุล</th>
+                                <th class="px-3 py-2 border text-left">เลขบัตรประชาชน</th>
+                                <th class="px-3 py-2 border text-left w-40">การทำงาน</th>
+                            </tr>
+                        </thead>
+                        <tbody id="driversTableBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="flex items-center justify-between mt-4">
+                    <div id="resultInfo" class="text-sm text-gray-500">—</div>
+                    <div class="flex items-center gap-2">
+                        <button id="prevPage"
+                            class="bg-white border px-3 py-1 rounded hover:bg-gray-50">ก่อนหน้า</button>
+                        <span id="pageInfo" class="text-sm">หน้า 1</span>
+                        <button id="nextPage" class="bg-white border px-3 py-1 rounded hover:bg-gray-50">ถัดไป</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel: Tab 2 -->
+        <div id="tab-t2" class="hidden">
+            <div class="bg-white rounded-lg p-4 shadow mb-6">
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- เลือกคนขับ -->
+                    <label class="text-sm text-gray-600">พนักงานขับรถ</label>
+                    <input id="sum_driver" type="text" list="driversSuggest2"
+                        placeholder="พิมพ์รหัส/บัตร/ชื่อ/สกุล แล้วเลือก" class="border rounded px-2 py-1 w-72" />
+                    <datalist id="driversSuggest2"></datalist>
+                    <input type="hidden" id="sum_driver_id" />
+
+                    <!-- ปุ่มเลือกระดับสรุป -->
+                    <div class="inline-flex rounded-md shadow-sm" role="group">
+                        <button type="button" data-gran="day"
+                            class="btn-gran px-4 py-2 text-sm font-medium border rounded-l-md bg-blue-600 text-white">รายวัน</button>
+                        <button type="button" data-gran="month"
+                            class="btn-gran px-4 py-2 text-sm font-medium border bg-white hover:bg-gray-50">รายเดือน</button>
+                        <button type="button" data-gran="year"
+                            class="btn-gran px-4 py-2 text-sm font-medium border rounded-r-md bg-white hover:bg-gray-50">รายปี</button>
+                    </div>
+
+                    <!-- ฟิลเตอร์รายวัน -->
+                    <div id="filter-day" class="flex items-center gap-2">
+                        <label class="text-sm text-gray-600">วันที่</label>
+                        <input id="dayFrom_dv" type="date" class="border rounded px-2 py-1">
+                        <span class="text-sm text-gray-400">ถึง</span>
+                        <input id="dayTo_dv" type="date" class="border rounded px-2 py-1">
+                    </div>
+
+                    <!-- ฟิลเตอร์รายเดือน -->
+                    <div id="filter-month" class="hidden items-center gap-2">
+                        <label class="text-sm text-gray-600">เดือน</label>
+                        <input id="monthPick_dv" type="month" class="border rounded px-2 py-1">
+                    </div>
+
+                    <!-- ฟิลเตอร์รายปี -->
+                    <div id="filter-year" class="hidden items-center gap-2">
+                        <label class="text-sm text-gray-600">ปี</label>
+                        <input id="yearPick_dv" type="number" class="border rounded px-2 py-1 w-28" step="1" min="2000"
+                            max="2100">
+                    </div>
+
+                    <button id="btnApply_dv"
+                        class="ml-auto bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">ใช้ตัวกรอง</button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg p-6 shadow">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-lg font-bold">สรุปรายการ (ตามคนขับ)</h2>
+                    <div id="currentFilter_dv" class="text-sm text-gray-500">—</div>
+                </div>
+                <div class="overflow-auto">
+                    <table class="min-w-full border border-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-3 py-2 text-left text-sm font-semibold border-b">ช่วงเวลา</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold border-b">จำนวนใบกำกับ</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold border-b">ทะเบียนรถ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="summaryBody_dv"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Panel: Tab 3 -->
+        <div id="tab-t3" class="hidden">
+            <div class="bg-white rounded-lg p-4 shadow mb-4">
+                <div class="flex flex-wrap items-center gap-2">
+                    <label class="text-sm text-gray-600">พนักงานขับรถ</label>
+                    <input id="all_driver" type="text" list="driversSuggest3"
+                        placeholder="พิมพ์รหัส/บัตร/ชื่อ/สกุล แล้วเลือก" class="border rounded px-2 py-1 w-72">
+                    <datalist id="driversSuggest3"></datalist>
+                    <input type="hidden" id="all_driver_id" />
+
+                    <label class="text-sm text-gray-600 ml-2">วันที่</label>
+                    <input id="allFrom_dv" type="date" class="border rounded px-2 py-1">
+                    <span class="text-sm text-gray-400">ถึง</span>
+                    <input id="allTo_dv" type="date" class="border rounded px-2 py-1">
+                    <input id="allQ_dv" type="text" placeholder="ค้นหา (เลขที่/ลูกค้า/PO)"
+                        class="border rounded px-2 py-1 w-full sm:w-64">
+                    <button id="btnAllApply_dv"
+                        class="ml-auto bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                        ค้นหา
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg p-6 shadow">
+                <div class="overflow-auto">
+                    <table class="min-w-full border border-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-3 py-2 text-left text-sm font-semibold border-b">วันที่</th>
+                                <th class="px-3 py-2 text-left text-sm font-semibold border-b">เลขที่</th>
+                                <th class="px-3 py-2 text-left text-sm font-semibold border-b">ลูกค้า</th>
+                                <th class="px-3 py-2 text-left text-sm font-semibold border-b hidden md:table-cell">
+                                    เลขที่ใบสั่งซื้อ (PO)</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold border-b hidden sm:table-cell">
+                                    เลขที่ใบรับสินค้า (GRN)</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold border-b hidden lg:table-cell">
+                                    เลขที่ใบส่งสินค้า (DN)</th>
+                                <th class="px-3 py-2 text-right text-sm font-semibold border-b">ทะเบียนรถจัดส่ง</th>
+                            </tr>
+                        </thead>
+                        <tbody id="allBody_dv"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+
+        <script src="/static/js/drivers_form.js" defer></script>
+</body>
+
+</html>
