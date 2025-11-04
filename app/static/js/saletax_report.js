@@ -138,8 +138,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function exportExcel() {
         if (!rows || !rows.length) { alert("ไม่มีข้อมูลส่งออก"); return; }
-        if (typeof XLSX === "undefined") {
-            alert("ไม่พบไลบรารี XLSX — กรุณาโหลดสคริปต์ xlsx.full.min.js ใน HTML");
+        // ตรวจสอบว่า XLSX พร้อมใช้งาน และมี .utils.aoa_to_sheet จริงๆ
+        if (typeof XLSX === "undefined" || !XLSX || !XLSX.utils || !XLSX.utils.aoa_to_sheet) {
+            alert("ไม่พบไลบรารี XLSX (aoa_to_sheet) — กรุณาตรวจสอบว่าสคริปต์ xlsx.full.min.js โหลดสำเร็จ และไม่ได้ถูกบล็อค");
             return;
         }
 
