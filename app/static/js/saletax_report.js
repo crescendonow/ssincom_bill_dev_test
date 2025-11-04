@@ -137,63 +137,53 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function exportExcel() {
-        if (!rows.length) { alert("ไม่มีข้อมูลส่งออก"); return; }
+        if (!rows || !rows.length) { alert("ไม่มีข้อมูลส่งออก"); return; }
+        if (typeof XLSX === "undefined") {
+            alert("ไม่พบไลบรารี XLSX — กรุณาโหลดสคริปต์ xlsx.full.min.js ใน HTML");
+            return;
+        }
 
-        // เตรียมข้อมูลหัวตาราง
         const header = [
             "ลำดับ", "วันเดือนปี", "เล่มที่", "เลขที่ใบกำกับ", "รหัสลูกค้า",
             "ชื่อผู้ขายสินค้า/บริการ", "เลขประจำตัวผู้เสียภาษี", "สถานประกอบการ",
             "มูลค่าสินค้า/บริการ", "VAT", "รวม"
         ];
 
-        // แปลงข้อมูลเป็นแถว ๆ สำหรับ Excel (เก็บตัวเลขเป็น number จริง)
         const data = [header];
         rows.forEach((r, i) => {
             const before = Number(r.before_vat || 0);
-            const vat = Number((r.vat ?? (before * 0.07)).toFixed(2));
-            const grand = Number((r.grand ?? (before + vat)).toFixed(2));
-            const branch = (r.cf_hq == 1) ? "สำนักงานใหญ่" : (r.cf_branch ? `สาขาที่ ${r.cf_branch}` : "-");
+            const vat = Number((r.vat ?? before * 0.07).toFixed(2));
+            const grand = Number((r.grand ?? before + vat).toFixed(2));
+            const branch = (r.cf_hq == 1) ? "สำนักงานใหญ่"
+                : (r.cf_branch ? `สาขาที่ ${r.cf_branch}` : "-");
 
             data.push([
                 i + 1,
-                fmtThaiDate(r.invoice_date), // เก็บเป็นสตริงไทยอ่านง่าย
+                fmtThaiDate(r.invoice_date), // เป็น string ไทยอ่านง่าย
                 "-",
                 r.invoice_number || "-",
                 r.personid || "-",
                 r.company || "-",
                 r.cf_taxid || "-",
                 branch,
-                before,
-                vat,
-                grand
+                before, vat, grand
             ]);
         });
 
-        // สร้าง Worksheet & Workbook
         const ws = XLSX.utils.aoa_to_sheet(data);
 
-        // จัดความกว้างคอลัมน์พอประมาณ
+        // ความกว้างคอลัมน์
         ws['!cols'] = [
-            { wch: 8 },   // ลำดับ
-            { wch: 14 },  // วันเดือนปี
-            { wch: 10 },  // เล่มที่
-            { wch: 16 },  // เลขที่ใบกำกับ
-            { wch: 14 },  // รหัสลูกค้า
-            { wch: 36 },  // ชื่อผู้ขาย/บริษัท
-            { wch: 20 },  // เลขผู้เสียภาษี
-            { wch: 14 },  // สถานประกอบการ
-            { wch: 16 },  // ก่อน VAT
-            { wch: 12 },  // VAT
-            { wch: 16 }   // รวม
+            { wch: 8 }, { wch: 14 }, { wch: 10 }, { wch: 16 }, { wch: 14 },
+            { wch: 36 }, { wch: 20 }, { wch: 14 }, { wch: 16 }, { wch: 12 }, { wch: 16 }
         ];
 
-        // ใส่รูปแบบตัวเลขให้คอลัมน์เงิน (เริ่มที่แถวหัวตาราง index 0)
+        // จัดรูปแบบตัวเลขให้คอลัมน์เงิน
         const range = XLSX.utils.decode_range(ws['!ref']);
         for (let R = 1; R <= range.e.r; R++) {
-            // คอลัมน์: ก่อน VAT (index 8), VAT (9), รวม (10)
             [8, 9, 10].forEach(C => {
-                const cellAddr = XLSX.utils.encode_cell({ r: R, c: C });
-                const cell = ws[cellAddr];
+                const addr = XLSX.utils.encode_cell({ r: R, c: C });
+                const cell = ws[addr];
                 if (cell && typeof cell.v === 'number') {
                     cell.t = 'n';
                     cell.z = '#,##0.00';
@@ -204,10 +194,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "SaleTax");
 
-        // ตั้งชื่อไฟล์
-        const filename = "saletax_report.xlsx";
-        XLSX.writeFile(wb, filename);
+        // ตั้งชื่อไฟล์ .xlsx จริง
+        XLSX.writeFile(wb, "saletax_report.xlsx");
     }
+
 
     // ===== Utilities =====
     function fmtNum(n) { return Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2 }); }
