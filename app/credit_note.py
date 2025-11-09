@@ -104,43 +104,73 @@ def preview_credit_note(request: Request, payload: dict = Body(...)):
     items = d.get("items") or []
     total = sum((float(i.get("quantity") or 0) * float(i.get("unit_price") or 0) for i in items), 0.0)
     html = f"""
-    <div class="p-6">
-      <div class="flex justify-between items-start">
-        <div>
-          <h2 class="text-2xl font-bold">ใบลดหนี้ (Credit Note)</h2>
-          <p class="text-sm text-gray-600">บริษัท เอส แอนด์ เอส อินคอม จำกัด</p>
+    <div class="A4-page">
+  <div class="credit-note">
+    <div class="cn-title-row">
+      <div></div><div class="cn-title">ใบลดหนี้</div>
+    </div>
+    <div class="cn-header" style="border-top: var(--border);">
+      <div class="cell">
+        <div class="cn-store-title">สถานที่ออกเอกสาร</div>
+        <div class="cn-kv" style="margin-bottom:6px;">
+          <div>ผู้ขาย/ผู้ประกอบการ</div><div id="seller_name">บริษัท เอส แอนด์ เอส อินคอม จำกัด</div>
+          <div>ที่อยู่</div><div id="seller_address">69 หมู่ 10 ตำบลพังตรุ อำเภอพนมทวน จังหวัดกาญจนบุรี 71140</div>
+          <div>โทร.</div><div id="seller_phone">0888088840</div>
+          <div>สถานประกอบการ</div><div id="seller_branch">สำนักงานใหญ่</div>
+          <div>เลขประจำตัวผู้เสียภาษี</div><div id="seller_tax">0715544000020</div>
         </div>
-        <div class="text-right">
-          <p><b>เลขที่:</b> {d.get('creditnote_number','')}</p>
-          <p><b>วันที่:</b> {d.get('creditnote_date','')}</p>
+        <div class="cn-kv">
+          <div>ผู้ซื้อ</div><div id="buyer_name">บริษัท แพนีน่า เพาเวอร์ แอนด์ แก๊ส จำกัด</div>
+          <div>ที่อยู่</div><div id="buyer_address">94/1 หมู่ 3 ต.ควนลัง อ.หาดใหญ่ จ.สงขลา 90110</div>
+          <div>สถานประกอบการ</div><div id="buyer_branch">สำนักงานใหญ่</div>
+          <div>เลขประจำตัวผู้เสียภาษี</div><div id="buyer_tax">0245554000137</div>
         </div>
       </div>
-      <table class="w-full text-sm border-collapse mt-4">
-        <thead>
-          <tr class="border-y-2 border-black">
-            <th class="p-2 text-left">GRN</th>
-            <th class="p-2 text-left">Invoice</th>
-            <th class="p-2 text-left">รหัส</th>
-            <th class="p-2 text-left">รายละเอียด</th>
-            <th class="p-2 text-right">จำนวน</th>
-            <th class="p-2 text-right">ราคา/หน่วย</th>
-            <th class="p-2 text-right">จำนวนเงิน</th>
-          </tr>
-        </thead>
-        <tbody>
-          {''.join([
-            f"<tr class='border-b'><td class='p-2'>{i.get('grn_number','')}</td><td class='p-2'>{i.get('invoice_number','')}</td><td class='p-2'>{i.get('cf_itemid','')}</td><td class='p-2'>{i.get('cf_itemname','')}</td><td class='p-2 text-right'>{float(i.get('quantity') or 0):,.2f}</td><td class='p-2 text-right'>{float(i.get('unit_price') or 0):,.2f}</td><td class='p-2 text-right'>{(float(i.get('quantity') or 0)*float(i.get('unit_price') or 0)):,.2f}</td></tr>"
-            for i in items
-          ])}
-        </tbody>
-        <tfoot>
-          <tr class="border-t-2 border-black font-bold">
-            <td colspan="6" class="p-2 text-right">รวมเป็นเงิน</td>
-            <td class="p-2 text-right">{total:,.2f}</td>
-          </tr>
-        </tfoot>
-      </table>
+      <div class="cell">
+        <div class="cn-kv"><div>วันที่ออกเอกสาร</div><div id="doc_date">30/08/2568</div></div>
+      </div>
+      <div class="cell">
+        <div class="cn-kv"><div>เลขที่</div><div id="doc_no">SSCR1-30082568</div></div>
+      </div>
     </div>
+
+    <table class="cn-table">
+      <thead>
+        <tr>
+          <th style="width:17%;">วันที่</th>
+          <th style="width:20%;">ใบกำกับภาษีเดิม เลขที่</th>
+          <th>รายละเอียด</th>
+          <th class="num" style="width:16%;">มูลค่าสินค้า/บริการ (เดิม)</th>
+          <th class="num" style="width:16%;">มูลค่าสินค้า/บริการ (ใหม่)</th>
+        </tr>
+      </thead>
+      <tbody id="cn_rows">
+        <tr>
+          <td>28/08/2568</td>
+          <td>68800085</td>
+          <td>ทรายคัดขนาดพิเศษขนาด 0.5 - 1.4 มิลลิเมตร</td>
+          <td class="num">28,256.80</td>
+          <td class="num">27,360.19</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table class="cn-summary">
+      <tr><td class="label">มูลค่าที่ปรับปรุงลดลง (บาท)</td><td class="num" id="sum_reduce_value">3,042.08</td></tr>
+      <tr><td class="label">ภาษีมูลค่าเพิ่มที่ลดลง (บาท)</td><td class="num" id="sum_reduce_vat">212.95</td></tr>
+      <tr><td class="label">รวมเป็นเงินจำนวนที่ปรับปรุง</td><td class="num" id="sum_total">3,255.03</td></tr>
+    </table>
+
+    <div class="cn-reason">มีการลดหนี้เนื่องจาก : <span id="reason">คัดราคาสินค้าไม่ถูกต้อง</span></div>
+
+    <div class="cn-signatures">
+      <div class="sig-col"><div class="sig-line"></div><div class="sig-label">ผู้ออกเอกสาร</div></div>
+      <div class="sig-col"><div class="sig-line"></div><div class="sig-label">ผู้มีอำนาจลงนาม</div></div>
+    </div>
+
+    <div class="cn-footnote">ต้นฉบับ - ให้ลูกค้าใช้เป็นใบกำกับภาษี</div>
+  </div>
+</div>
     """
     return HTMLResponse(content=html)
 
