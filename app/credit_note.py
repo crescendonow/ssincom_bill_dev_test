@@ -164,7 +164,7 @@ def export_creditnote_pdf(payload: dict = Body(...)):
 def suggest_grn(q: str = Query(""), limit: int = Query(10, ge=1, le=50), db: Session = Depends(get_db)):
     sql = text("""
         SELECT DISTINCT grn_number
-        FROM ss_invoices.invoice_items
+        FROM ss_invoices.invoices
         WHERE grn_number ILIKE :pat
         ORDER BY grn_number
         LIMIT :lim
