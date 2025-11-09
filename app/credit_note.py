@@ -67,9 +67,116 @@ def generate_creditnote_number(db: Session, doc_date: date) -> str:
     next_run = max_run + 1
     return f"SSCR{next_run}{suffix}"
 
+# --- PAGES ---
+@router.get("/credit_note_form.html", response_class=HTMLResponse)
+def credit_note_form_page(request: Request):
+    return templates.TemplateResponse("credit_note_form.html", {"request": request})
+
 @router.get("/credit_note.html", response_class=HTMLResponse)
-def credit_note_page(request: Request):
-    return templates.TemplateResponse("credit_note.html", {"request": request})
+def credit_note_preview_page(request: Request, no: str = Query(...), db: Session = Depends(get_db)):
+    # ดึงหัวเอกสาร + รายการ
+    head = db.query(CreditNote).filter(CreditNote.creditnote_number == no).first()
+    if not head:
+        return HTMLResponse("<div style='padding:20px'>ไม่พบเลขที่เอกสาร</div>", status_code=404)
+
+    items = db.query(CreditNoteItem).filter(CreditNoteItem.creditnote_number == no).all()
+
+    # สร้างข้อมูลสำหรับรายงาน
+    rows = []
+    sum_reduce_value = 0.0
+
+    # เดิม = base_price = price_after_fine + fine
+    for it in items:
+        qty   = float(it.quantity or 0)
+        fine  = float(it.fine or 0)
+        newp  = float(it.price_after_fine or 0)              # ราคาใหม่ (หลังบทปรับ)
+        basep = newp + fine                                  # ราคาเดิม (ก่อนหักบทปรับ)
+        amt_old = basep * qty
+        amt_new = newp  * qty
+        rows.append({
+            "grn": it.grn_number or "",
+            "inv": it.invoice_number or "",
+            "desc": it.cf_itemname or "",
+            "qty": qty,
+            "amt_old": amt_old,
+            "amt_new": amt_new
+        })
+        sum_reduce_value += max(0.0, (amt_old - amt_new))    # ยอดที่ลดลงจริง
+
+    vat = round(sum_reduce_value * 0.07, 2)
+    grand = round(sum_reduce_value + vat, 2)
+
+    # วันที่ (พ.ศ.)
+    d = head.created_at or datetime.now().date()
+    be_date = f"{d.day:02d}/{d.month:02d}/{d.year + 543}"
+
+    # ส่งให้ template credit_note.html (หน้ารายงาน)
+    ctx = {
+        "request": request,
+        "doc_no": head.creditnote_number,
+        "doc_date_be": be_date,
+        "rows": rows,
+        "sum_reduce_value": sum_reduce_value,
+        "sum_reduce_vat": vat,
+        "sum_total": grand,
+        # mock ข้อมูลผู้ขาย/ผู้ซื้อ (แก้เป็นของจริงได้)
+        "seller": {
+            "name": "บริษัท เอส แอนด์ เอส อินคอม จำกัด",
+            "addr": "69 หมู่ 10 ต.พังตรุ อ.พนมทวน จ.กาญจนบุรี 71140",
+            "phone": "0888088840",
+            "branch": "สำนักงานใหญ่",
+            "tax": "0715544000020",
+        },
+        "buyer": {
+            "name": "บริษัท แพนเทอรา เพาเวอร์ แอนด์ แก๊ส จำกัด",
+            "addr": "94/1 หมู่ 3 ต.เขาหินซ้อน อ.พนมสารคาม จ.ฉะเชิงเทรา 24120",
+            "branch": "สำนักงานใหญ่",
+            "tax": "0245554001317",
+        },
+        "reason": "ราคาสินค้าไม่ถูกต้อง",
+    }
+    return templates.TemplateResponse("credit_note.html", ctx)
+
+# --- API JSON สำหรับ read / export ---
+@router.get("/api/credit-notes/{no}")
+def get_credit_note(no: str, db: Session = Depends(get_db)):
+    head = db.query(CreditNote).filter(CreditNote.creditnote_number == no).first()
+    if not head:
+        raise HTTPException(404, "not found")
+    items = db.query(CreditNoteItem).filter(CreditNoteItem.creditnote_number == no).all()
+    return {
+        "head": {
+            "creditnote_number": head.creditnote_number,
+            "created_at": str(head.created_at or ""),
+        },
+        "items": [
+            {
+                "grn_number": it.grn_number,
+                "invoice_number": it.invoice_number,
+                "cf_itemid": it.cf_itemid,
+                "cf_itemname": it.cf_itemname,
+                "quantity": it.quantity,
+                "fine": it.fine,
+                "price_after_fine": it.price_after_fine,
+            } for it in items
+        ]
+    }
+
+@router.get("/export-creditnote-pdf")
+def export_creditnote_pdf(no: str = Query(...), db: Session = Depends(get_db)):
+    # reuse หน้า credit_note.html เป็น HTML รายงาน
+    # เรนเดอร์ Template แล้วค่อยแปลง PDF
+    # (โหลด css เดิม /static/css/credit_note.css)
+    from fastapi import Request
+    req = Request(scope={"type": "http"})
+    html = credit_note_preview_page(req, no, db)  # TemplateResponse
+    html_str = html.body.decode("utf-8")
+
+    css_path = (BASE_DIR / "static" / "css" / "credit_note.css")
+    tmp_pdf = Path(tempfile.gettempdir()) / f"credit_note_{no}.pdf"
+    HTML(string=html_str, base_url=str(BASE_DIR)).write_pdf(str(tmp_pdf), stylesheets=[CSS(filename=str(css_path))])
+    return FileResponse(path=tmp_pdf, media_type="application/pdf", filename=tmp_pdf.name)
+
 
 @router.get("/api/credit-notes/generate-number")
 def api_generate_number(date: str, db: Session = Depends(get_db)):
