@@ -1,5 +1,5 @@
 # app/credit_note.py
-from fastapi import APIRouter, Request, Depends, Body, HTTPException
+from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, func
