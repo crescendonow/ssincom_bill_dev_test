@@ -98,11 +98,54 @@ def create_credit_note(payload: dict = Body(...), db: Session = Depends(get_db))
     db.commit()
     return {"ok": True, "creditnote_number": cn_number}
 
+# ==============================================================================
+# START: โค้ดที่แก้ไข
+# ==============================================================================
 @router.post("/api/credit-notes/preview", response_class=HTMLResponse)
 def preview_credit_note(request: Request, payload: dict = Body(...)):
     d = payload or {}
     items = d.get("items") or []
-    total = sum((float(i.get("quantity") or 0) * float(i.get("unit_price") or 0) for i in items), 0.0)
+    
+    # --- 1. สร้างแถวในตารางแบบไดนามิก ---
+    table_rows_html = ""
+    sum_reduce_value = 0.0
+    
+    for item in items:
+        grn = item.get("grn_number", "")
+        inv = item.get("invoice_number", "")
+        desc = item.get("cf_itemname", "")
+        qty = float(item.get("quantity") or 0)
+        price = float(item.get("unit_price") or 0)
+        line_total = qty * price
+        sum_reduce_value += line_total
+        
+        table_rows_html += f"""
+        <tr>
+          <td>{grn}</td>
+          <td>{inv}</td>
+          <td>{desc}</td>
+          <td class="num">{qty:,.2f}</td>
+          <td class="num">{price:,.2f}</td>
+          <td class="num">{line_total:,.2f}</td>
+        </tr>
+        """
+
+    if not items: # แสดงข้อความถ้าไม่มีรายการ
+        table_rows_html = '<tr><td colspan="6" style="text-align:center; padding: 20px;">- ไม่มีรายการ -</td></tr>'
+
+    # --- 2. คำนวณสรุปยอด ---
+    sum_reduce_vat = sum_reduce_value * 0.07
+    sum_total = sum_reduce_value + sum_reduce_vat
+
+    # --- 3. จัดรูปแบบวันที่และเลขที่เอกสาร ---
+    cn_date_str = d.get("creditnote_date", "")
+    doc_date_obj = _to_date(cn_date_str) # ใช้ฟังก์ชันที่มีอยู่
+    doc_date_be = f"{doc_date_obj.day:02d}/{doc_date_obj.month:02d}/{_be_year(doc_date_obj.year)}" # ใช้ฟังก์ชันที่มีอยู่
+    doc_no = d.get("creditnote_number", "SSCRX-XXXX")
+    
+    # --- 4. สร้าง HTML ที่สมบูรณ์ ---
+    # อัปเดตข้อมูลผู้ซื้อและเหตุผลตาม Screenshot
+    # ใส่ตัวแปรที่คำนวณไว้ใน HTML
     html = f"""
     <div class="A4-page">
   <div class="credit-note">
@@ -120,48 +163,43 @@ def preview_credit_note(request: Request, payload: dict = Body(...)):
           <div>เลขประจำตัวผู้เสียภาษี</div><div id="seller_tax">0715544000020</div>
         </div>
         <div class="cn-kv">
-          <div>ผู้ซื้อ</div><div id="buyer_name">บริษัท แพนีน่า เพาเวอร์ แอนด์ แก๊ส จำกัด</div>
-          <div>ที่อยู่</div><div id="buyer_address">94/1 หมู่ 3 ต.ควนลัง อ.หาดใหญ่ จ.สงขลา 90110</div>
+          <div>ผู้ซื้อ</div><div id="buyer_name">บริษัท แพนเทอรา เพาเวอร์ แอนด์ แก๊ส จำกัด</div>
+          <div>ที่อยู่</div><div id="buyer_address">94/1 หมู่ 3 ต.เขาหินซ้อน อ.พนมสารคาม จ.ฉะเชิงเทรา 24120</div>
           <div>สถานประกอบการ</div><div id="buyer_branch">สำนักงานใหญ่</div>
-          <div>เลขประจำตัวผู้เสียภาษี</div><div id="buyer_tax">0245554000137</div>
+          <div>เลขประจำตัวผู้เสียภาษี</div><div id="buyer_tax">0245554001317</div>
         </div>
       </div>
       <div class="cell">
-        <div class="cn-kv"><div>วันที่ออกเอกสาร</div><div id="doc_date">30/08/2568</div></div>
+        <div class="cn-kv"><div>วันที่ออกเอกสาร</div><div id="doc_date">{doc_date_be}</div></div>
       </div>
       <div class="cell">
-        <div class="cn-kv"><div>เลขที่</div><div id="doc_no">SSCR1-30082568</div></div>
+        <div class="cn-kv"><div>เลขที่</div><div id="doc_no">{doc_no}</div></div>
       </div>
     </div>
 
     <table class="cn-table">
       <thead>
         <tr>
-          <th style="width:17%;">วันที่</th>
-          <th style="width:20%;">ใบกำกับภาษีเดิม เลขที่</th>
+          <th style="width:15%;">เลขที่ใบรับสินค้า</th>
+          <th style="width:15%;">เลขที่ใบกำกับ</th>
           <th>รายละเอียด</th>
-          <th class="num" style="width:16%;">มูลค่าสินค้า/บริการ (เดิม)</th>
-          <th class="num" style="width:16%;">มูลค่าสินค้า/บริการ (ใหม่)</th>
+          <th class="num" style="width:12%;">จำนวน</th>
+          <th class="num" style="width:15%;">มูลค่าสินค้า/บริการ (เดิม)</th>
+          <th class="num" style="width:15%;">มูลค่าสินค้า/บริการ (ใหม่)</th>
         </tr>
       </thead>
       <tbody id="cn_rows">
-        <tr>
-          <td>28/08/2568</td>
-          <td>68800085</td>
-          <td>ทรายคัดขนาดพิเศษขนาด 0.5 - 1.4 มิลลิเมตร</td>
-          <td class="num">28,256.80</td>
-          <td class="num">27,360.19</td>
-        </tr>
+        {table_rows_html}
       </tbody>
     </table>
 
     <table class="cn-summary">
-      <tr><td class="label">มูลค่าที่ปรับปรุงลดลง (บาท)</td><td class="num" id="sum_reduce_value">3,042.08</td></tr>
-      <tr><td class="label">ภาษีมูลค่าเพิ่มที่ลดลง (บาท)</td><td class="num" id="sum_reduce_vat">212.95</td></tr>
-      <tr><td class="label">รวมเป็นเงินจำนวนที่ปรับปรุง</td><td class="num" id="sum_total">3,255.03</td></tr>
+      <tr><td class="label">มูลค่าที่ปรับปรุงลดลง (บาท)</td><td class="num" id="sum_reduce_value">{sum_reduce_value:,.2f}</td></tr>
+      <tr><td class="label">ภาษีมูลค่าเพิ่มที่ลดลง (บาท)</td><td class="num" id="sum_reduce_vat">{sum_reduce_vat:,.2f}</td></tr>
+      <tr><td class="label">รวมเป็นเงินปรับปรุงทั้งสิ้น</td><td class="num" id="sum_total">{sum_total:,.2f}</td></tr>
     </table>
 
-    <div class="cn-reason">มีการลดหนี้เนื่องจาก : <span id="reason">คัดราคาสินค้าไม่ถูกต้อง</span></div>
+    <div class="cn-reason">มีการลดหนี้เนื่องจาก : <span id="reason">ราคาสินค้าไม่ถูกต้อง</span></div>
 
     <div class="cn-signatures">
       <div class="sig-col"><div class="sig-line"></div><div class="sig-label">ผู้ออกเอกสาร</div></div>
@@ -173,6 +211,9 @@ def preview_credit_note(request: Request, payload: dict = Body(...)):
 </div>
     """
     return HTMLResponse(content=html)
+# ==============================================================================
+# END: โค้ดที่แก้ไข
+# ==============================================================================
 
 @router.post("/export-creditnote-pdf")
 def export_creditnote_pdf(payload: dict = Body(...)):
