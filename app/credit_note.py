@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, func
+from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, func, text
 from datetime import datetime, date
 from pathlib import Path
 import tempfile, uuid
