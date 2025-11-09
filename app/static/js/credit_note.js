@@ -129,14 +129,16 @@ function addItem() {
       class="description flex-1 min-w-[140px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
     <input name="quantity" type="number" step="0.01" placeholder="จำนวน" oninput="updateTotal()"
       class="quantity w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
-    <input name="unit_price" type="number" step="0.01" placeholder="ราคาต่อหน่วย (บทปรับ)" oninput="updateTotal()"
-      class="unit_price w-28 md:w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
+    <input name="fine" type="number" step="0.01" placeholder="ราคาบทปรับ(บาท)" oninput="updateTotal()"
+      class="fine w-28 md:w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
+    <input type="hidden" class="base_price" value="0" />
     <button type="button" onclick="removeItem(this)" class="text-red-600 hover:text-red-800 font-semibold px-2">🗑️</button>
   `;
     wrap.appendChild(div);
     wireRow(div);
 }
 window.addItem = addItem;
+
 
 function removeItem(btn) { btn.closest('.item-row')?.remove(); updateTotal(); }
 window.removeItem = removeItem;
@@ -145,30 +147,53 @@ function updateTotal() {
     let sum = 0;
     document.querySelectorAll('#items .item-row').forEach(row => {
         const fine = parseFloat(row.querySelector('.fine')?.value || 0);
-        const basePrice = parseFloat(row.querySelector('.product_code')?.dataset.price || 0);
-        const priceAfterFine = basePrice - fine;
+        const base = parseFloat(
+            row.querySelector('.base_price')?.value ||
+            row.querySelector('.product_code')?.dataset.price || 0
+        );
+        let priceAfterFine = base - fine;
         if (priceAfterFine < 0) priceAfterFine = 0;
-        sum += priceAfterFine;
+        // ถ้ามีจำนวน คูณจำนวน
+        const qty = parseFloat(row.querySelector('.quantity')?.value || 0);
+        sum += priceAfterFine * (isNaN(qty) ? 1 : qty);
     });
     const el = document.getElementById('total_amount');
     if (el) el.textContent = '฿ ' + sum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
-
 window.updateTotal = updateTotal;
 
+
 function buildPayload() {
-    const fine = parseFloat(row.querySelector('.fine')?.value || 0);
-    const base = parseFloat(row.querySelector('.product_code')?.dataset.price || 0);
-    const price_after_fine = base - fine;
-    items.push({
-        grn_number: grn,
-        invoice_number: inv,
-        cf_itemid: code,
-        cf_itemname: name,
-        quantity: q,
-        fine: fine,
-        price_after_fine: price_after_fine
+    const d = document.getElementById('cn_date')?.value || new Date().toISOString().slice(0, 10);
+    const cn = document.getElementById('creditnote_number')?.value || '';
+    const items = [];
+
+    document.querySelectorAll('#items .item-row').forEach(row => {
+        const grn = row.querySelector('.grn_number')?.value || '';
+        const inv = row.querySelector('.invoice_number')?.value || '';
+        const code = row.querySelector('.product_code')?.value || '';
+        const name = row.querySelector('.description')?.value || '';
+        const q = parseFloat(row.querySelector('.quantity')?.value || 0);
+        const fine = parseFloat(row.querySelector('.fine')?.value || 0);
+        const base = parseFloat(
+            row.querySelector('.base_price')?.value ||
+            row.querySelector('.product_code')?.dataset.price || 0
+        );
+        const price_after_fine = (base - fine);
+
+        if (grn || inv || code || name) {
+            items.push({
+                grn_number: grn,
+                invoice_number: inv,
+                cf_itemid: code,
+                cf_itemname: name,
+                quantity: q,
+                fine: fine,
+                price_after_fine: price_after_fine
+            });
+        }
     });
 
     return { creditnote_date: d, creditnote_number: cn, items };
 }
+
