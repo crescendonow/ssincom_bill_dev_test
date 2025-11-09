@@ -144,27 +144,31 @@ window.removeItem = removeItem;
 function updateTotal() {
     let sum = 0;
     document.querySelectorAll('#items .item-row').forEach(row => {
-        const q = parseFloat(row.querySelector('.quantity')?.value || 0);
-        const p = parseFloat(row.querySelector('.unit_price')?.value || 0);
-        sum += q * p;
+        const fine = parseFloat(row.querySelector('.fine')?.value || 0);
+        const basePrice = parseFloat(row.querySelector('.product_code')?.dataset.price || 0);
+        const priceAfterFine = basePrice - fine;
+        if (priceAfterFine < 0) priceAfterFine = 0;
+        sum += priceAfterFine;
     });
     const el = document.getElementById('total_amount');
     if (el) el.textContent = '฿ ' + sum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+
 window.updateTotal = updateTotal;
 
 function buildPayload() {
-    const d = document.getElementById('cn_date')?.value || new Date().toISOString().slice(0, 10);
-    const cn = document.getElementById('creditnote_number')?.value || '';
-    const items = [];
-    document.querySelectorAll('#items .item-row').forEach(row => {
-        const grn = row.querySelector('.grn_number')?.value || '';
-        const inv = row.querySelector('.invoice_number')?.value || '';
-        const code = row.querySelector('.product_code')?.value || '';
-        const name = row.querySelector('.description')?.value || '';
-        const q = parseFloat(row.querySelector('.quantity')?.value || 0);
-        const price = parseFloat(row.querySelector('.unit_price')?.value || 0);
-        if (grn || inv || code || name) items.push({ grn_number: grn, invoice_number: inv, cf_itemid: code, cf_itemname: name, quantity: q, unit_price: price });
+    const fine = parseFloat(row.querySelector('.fine')?.value || 0);
+    const base = parseFloat(row.querySelector('.product_code')?.dataset.price || 0);
+    const price_after_fine = base - fine;
+    items.push({
+        grn_number: grn,
+        invoice_number: inv,
+        cf_itemid: code,
+        cf_itemname: name,
+        quantity: q,
+        fine: fine,
+        price_after_fine: price_after_fine
     });
+
     return { creditnote_date: d, creditnote_number: cn, items };
 }

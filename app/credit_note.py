@@ -33,7 +33,9 @@ class CreditNoteItem(Base):
     cf_itemid = Column(String(50))
     cf_itemname = Column(String(1000))
     quantity = Column(Float)
-    unit_price = Column(Float)
+    fine = Column(Float)
+    price_after_fine = Column(Float)
+
 
 def get_db():
     db = SessionLocal()
@@ -93,8 +95,10 @@ def create_credit_note(payload: dict = Body(...), db: Session = Depends(get_db))
             cf_itemid=(it.get("cf_itemid") or "").strip(),
             cf_itemname=(it.get("cf_itemname") or "").strip(),
             quantity=float(it.get("quantity") or 0),
-            unit_price=float(it.get("unit_price") or 0),
-        ))
+            fine=float(it.get("fine") or 0),
+            price_after_fine=float(it.get("price_after_fine") or 0),
+))
+
     db.commit()
     return {"ok": True, "creditnote_number": cn_number}
 
