@@ -48,7 +48,71 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.appendChild(a); a.click(); a.remove();
         URL.revokeObjectURL(url);
     });
+
+    // Autocomplete & autofill for all rows
+    wireAutocompleteForAllRows();
 });
+
+function wireAutocompleteForAllRows() {
+    document.querySelectorAll('#items .item-row').forEach(row => wireRow(row));
+}
+
+function wireRow(row) {
+    const grnInput = row.querySelector('.grn_number');
+    const invoiceInput = row.querySelector('.invoice_number');
+    const codeInput = row.querySelector('.product_code');
+    const descInput = row.querySelector('.description');
+    const qtyInput = row.querySelector('.quantity');
+
+    const dlIdGRN = `dl-grn-${crypto.randomUUID()}`;
+    const dlIdCode = `dl-code-${crypto.randomUUID()}`;
+    const dlIdDesc = `dl-desc-${crypto.randomUUID()}`;
+
+    const dlGRN = document.createElement('datalist'); dlGRN.id = dlIdGRN;
+    const dlCode = document.createElement('datalist'); dlCode.id = dlIdCode;
+    const dlDesc = document.createElement('datalist'); dlDesc.id = dlIdDesc;
+
+    document.body.appendChild(dlGRN);
+    document.body.appendChild(dlCode);
+    document.body.appendChild(dlDesc);
+
+    grnInput.setAttribute('list', dlIdGRN);
+    codeInput.setAttribute('list', dlIdCode);
+    descInput.setAttribute('list', dlIdDesc);
+
+    let grnTimer = null;
+    grnInput.addEventListener('input', () => {
+        clearTimeout(grnTimer);
+        const q = grnInput.value.trim();
+        grnTimer = setTimeout(async () => {
+            const res = await fetch(`/api/grn/suggest?q=${encodeURIComponent(q)}`);
+            const data = await res.json().catch(() => ({ items: [] }));
+            dlGRN.innerHTML = (data.items || []).map(v => `<option value="${v}">`).join('');
+        }, 200);
+    });
+
+    grnInput.addEventListener('change', () => fetchAndFillGRNSummary(grnInput.value, { invoiceInput, codeInput, descInput, qtyInput, dlCode, dlDesc }));
+    grnInput.addEventListener('blur', () => fetchAndFillGRNSummary(grnInput.value, { invoiceInput, codeInput, descInput, qtyInput, dlCode, dlDesc }));
+}
+
+async function fetchAndFillGRNSummary(grn, ctx) {
+    const { invoiceInput, codeInput, descInput, qtyInput, dlCode, dlDesc } = ctx;
+    if (!grn) return;
+    const res = await fetch(`/api/grn/summary?grn=${encodeURIComponent(grn)}`);
+    const data = await res.json().catch(() => null);
+    if (!data) return;
+    if (invoiceInput && data.invoice_number) invoiceInput.value = data.invoice_number;
+    if (Array.isArray(data.product_codes)) {
+        dlCode.innerHTML = data.product_codes.map(v => `<option value="${v}">`).join('');
+        if (codeInput && !codeInput.value && data.product_codes.length) codeInput.value = data.product_codes[0];
+    }
+    if (Array.isArray(data.descriptions)) {
+        dlDesc.innerHTML = data.descriptions.map(v => `<option value="${v}">`).join('');
+        if (descInput && !descInput.value && data.descriptions.length) descInput.value = data.descriptions[0];
+    }
+    if (qtyInput) qtyInput.value = (data.quantity_sum ?? 0).toFixed(2);
+    updateTotal();
+}
 
 function addItem() {
     const wrap = document.getElementById('items');
@@ -65,11 +129,12 @@ function addItem() {
       class="description flex-1 min-w-[140px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
     <input name="quantity" type="number" step="0.01" placeholder="จำนวน" oninput="updateTotal()"
       class="quantity w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
-    <input name="unit_price" type="number" step="0.01" placeholder="ราคาต่อหน่วย" oninput="updateTotal()"
+    <input name="unit_price" type="number" step="0.01" placeholder="ราคาต่อหน่วย (บทปรับ)" oninput="updateTotal()"
       class="unit_price w-28 md:w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
     <button type="button" onclick="removeItem(this)" class="text-red-600 hover:text-red-800 font-semibold px-2">🗑️</button>
   `;
     wrap.appendChild(div);
+    wireRow(div);
 }
 window.addItem = addItem;
 

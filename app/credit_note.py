@@ -158,3 +158,41 @@ def export_creditnote_pdf(payload: dict = Body(...)):
     tmp_pdf = Path(tempfile.gettempdir()) / f"credit_note_{payload.get('creditnote_number','document')}.pdf"
     HTML(string=html_str, base_url=str(base_dir)).write_pdf(str(tmp_pdf), stylesheets=[CSS(filename=str(css_path))])
     return FileResponse(path=tmp_pdf, media_type="application/pdf", filename=tmp_pdf.name)
+
+# -------- GRN APIs --------
+@router.get("/api/grn/suggest")
+def suggest_grn(q: str = Query(""), limit: int = Query(10, ge=1, le=50), db: Session = Depends(get_db)):
+    sql = text("""
+        SELECT DISTINCT grn_number
+        FROM ss_invoices.invoice_items
+        WHERE grn_number ILIKE :pat
+        ORDER BY grn_number
+        LIMIT :lim
+    """)
+    pat = f"%{q.strip()}%" if q else "%"
+    rows = db.execute(sql, {"pat": pat, "lim": limit}).fetchall()
+    return {"items": [r[0] for r in rows if r[0]]}
+
+@router.get("/api/grn/summary")
+def grn_summary(grn: str = Query(..., min_length=1), db: Session = Depends(get_db)):
+    sql = text("""
+        WITH src AS (
+            SELECT invoice_number, cf_itemid, cf_itemname, quantity
+            FROM ss_invoices.invoice_items
+            WHERE grn_number = :grn
+        )
+        SELECT
+            (SELECT MIN(invoice_number) FROM src) AS invoice_number,
+            (SELECT ARRAY_AGG(DISTINCT cf_itemid) FROM src) AS product_codes,
+            (SELECT ARRAY_AGG(DISTINCT cf_itemname) FROM src) AS descriptions,
+            (SELECT COALESCE(SUM(quantity),0) FROM src) AS quantity_sum
+    """)
+    row = db.execute(sql, {"grn": grn}).first()
+    if not row or row[0] is None:
+        return {"invoice_number": None, "product_codes": [], "descriptions": [], "quantity_sum": 0}
+    return {
+        "invoice_number": row[0],
+        "product_codes": row[1] or [],
+        "descriptions": row[2] or [],
+        "quantity_sum": float(row[3] or 0)
+    }
