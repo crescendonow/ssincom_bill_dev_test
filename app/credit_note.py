@@ -175,11 +175,15 @@ def suggest_grn(q: str = Query(""), limit: int = Query(10, ge=1, le=50), db: Ses
 
 @router.get("/api/grn/summary")
 def grn_summary(grn: str = Query(..., min_length=1), db: Session = Depends(get_db)):
+    # Join condition per requirement:
+    # ss_invoices.invoices.idx = ss_invoices.invoice_items.invoice_number
     sql = text("""
         WITH src AS (
-            SELECT invoice_number, cf_itemid, cf_itemname, quantity
-            FROM ss_invoices.invoice_items
-            WHERE grn_number = :grn
+            SELECT inv.invoice_number, it.cf_itemid, it.cf_itemname, it.quantity
+            FROM ss_invoices.invoices AS inv
+            JOIN ss_invoices.invoice_items AS it
+              ON inv.idx = it.invoice_number
+            WHERE inv.grn_number = :grn
         )
         SELECT
             (SELECT MIN(invoice_number) FROM src) AS invoice_number,
@@ -196,3 +200,4 @@ def grn_summary(grn: str = Query(..., min_length=1), db: Session = Depends(get_d
         "descriptions": row[2] or [],
         "quantity_sum": float(row[3] or 0)
     }
+
