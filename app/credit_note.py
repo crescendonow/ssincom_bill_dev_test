@@ -216,75 +216,79 @@ def create_credit_note(payload: dict = Body(...), db: Session = Depends(get_db))
 def preview_credit_note(request: Request, payload: dict = Body(...)):
     d = payload or {}
     items = d.get("items") or []
-    
-    # --- 1. สร้างแถวในตารางแบบไดนามิก ---
+
+    # Build table rows from fine + price_after_fine
     table_rows_html = ""
     sum_reduce_value = 0.0
-    
+
     for item in items:
-        grn = item.get("grn_number", "")
-        inv = item.get("invoice_number", "")
+        grn  = item.get("grn_number", "")
+        inv  = item.get("invoice_number", "")
         desc = item.get("cf_itemname", "")
-        qty = float(item.get("quantity") or 0)
-        price = float(item.get("unit_price") or 0)
-        line_total = qty * price
-        sum_reduce_value += line_total
-        
+        qty  = float(item.get("quantity") or 0)
+        fine = float(item.get("fine") or 0)
+        newp = float(item.get("price_after_fine") or 0)
+
+        basep   = newp + fine                   # ราคาเดิมก่อนบทปรับ
+        amt_old = basep * qty                   # มูลค่าเดิม
+        amt_new = newp  * qty                   # มูลค่าใหม่
+
+        sum_reduce_value += max(0.0, amt_old - amt_new)
+
         table_rows_html += f"""
         <tr>
           <td>{grn}</td>
           <td>{inv}</td>
           <td>{desc}</td>
           <td class="num">{qty:,.2f}</td>
-          <td class="num">{price:,.2f}</td>
-          <td class="num">{line_total:,.2f}</td>
+          <td class="num">{amt_old:,.2f}</td>
+          <td class="num">{amt_new:,.2f}</td>
         </tr>
         """
 
-    if not items: # แสดงข้อความถ้าไม่มีรายการ
+    if not items:
         table_rows_html = '<tr><td colspan="6" style="text-align:center; padding: 20px;">- ไม่มีรายการ -</td></tr>'
 
-    # --- 2. คำนวณสรุปยอด ---
-    sum_reduce_vat = sum_reduce_value * 0.07
-    sum_total = sum_reduce_value + sum_reduce_vat
+    sum_reduce_vat = round(sum_reduce_value * 0.07, 2)
+    sum_total = round(sum_reduce_value + sum_reduce_vat, 2)
 
-    # --- 3. จัดรูปแบบวันที่และเลขที่เอกสาร ---
+    # วันที่เอกสาร (พ.ศ.)
     cn_date_str = d.get("creditnote_date", "")
-    doc_date_obj = _to_date(cn_date_str) # ใช้ฟังก์ชันที่มีอยู่
-    doc_date_be = f"{doc_date_obj.day:02d}/{doc_date_obj.month:02d}/{_be_year(doc_date_obj.year)}" # ใช้ฟังก์ชันที่มีอยู่
+    doc_date_obj = _to_date(cn_date_str)
+    doc_date_be = f"{doc_date_obj.day:02d}/{doc_date_obj.month:02d}/{_be_year(doc_date_obj.year)}"
     doc_no = d.get("creditnote_number", "SSCRX-XXXX")
-    
-    # --- 4. สร้าง HTML ที่สมบูรณ์ ---
-    # อัปเดตข้อมูลผู้ซื้อและเหตุผลตาม Screenshot
-    # ใส่ตัวแปรที่คำนวณไว้ใน HTML
+
+    # HTML (โครงหน้า A4)
     html = f"""
-    <div class="A4-page">
+<div class="A4-page">
   <div class="credit-note">
+
     <div class="cn-title-row">
       <div></div><div class="cn-title">ใบลดหนี้</div>
     </div>
+
     <div class="cn-header" style="border-top: var(--border);">
       <div class="cell">
         <div class="cn-store-title">สถานที่ออกเอกสาร</div>
         <div class="cn-kv" style="margin-bottom:6px;">
-          <div>ผู้ขาย/ผู้ประกอบการ</div><div id="seller_name">บริษัท เอส แอนด์ เอส อินคอม จำกัด</div>
-          <div>ที่อยู่</div><div id="seller_address">69 หมู่ 10 ตำบลพังตรุ อำเภอพนมทวน จังหวัดกาญจนบุรี 71140</div>
-          <div>โทร.</div><div id="seller_phone">0888088840</div>
-          <div>สถานประกอบการ</div><div id="seller_branch">สำนักงานใหญ่</div>
-          <div>เลขประจำตัวผู้เสียภาษี</div><div id="seller_tax">0715544000020</div>
+          <div>ผู้ขาย/ผู้ประกอบการ</div><div>บริษัท เอส แอนด์ เอส อินคอม จำกัด</div>
+          <div>ที่อยู่</div><div>69 หมู่ 10 ต.พังตรุ อ.พนมทวน จ.กาญจนบุรี 71140</div>
+          <div>โทร.</div><div>0888088840</div>
+          <div>สถานประกอบการ</div><div>สำนักงานใหญ่</div>
+          <div>เลขประจำตัวผู้เสียภาษี</div><div>0715544000020</div>
         </div>
         <div class="cn-kv">
-          <div>ผู้ซื้อ</div><div id="buyer_name">บริษัท แพนเทอรา เพาเวอร์ แอนด์ แก๊ส จำกัด</div>
-          <div>ที่อยู่</div><div id="buyer_address">94/1 หมู่ 3 ต.เขาหินซ้อน อ.พนมสารคาม จ.ฉะเชิงเทรา 24120</div>
-          <div>สถานประกอบการ</div><div id="buyer_branch">สำนักงานใหญ่</div>
-          <div>เลขประจำตัวผู้เสียภาษี</div><div id="buyer_tax">0245554001317</div>
+          <div>ผู้ซื้อ</div><div>บริษัท แพนเทอรา เพาเวอร์ แอนด์ แก๊ส จำกัด</div>
+          <div>ที่อยู่</div><div>94/1 หมู่ 3 ต.เขาหินซ้อน อ.พนมสารคาม จ.ฉะเชิงเทรา 24120</div>
+          <div>สถานประกอบการ</div><div>สำนักงานใหญ่</div>
+          <div>เลขประจำตัวผู้เสียภาษี</div><div>0245554001317</div>
         </div>
       </div>
       <div class="cell">
-        <div class="cn-kv"><div>วันที่ออกเอกสาร</div><div id="doc_date">{doc_date_be}</div></div>
+        <div class="cn-kv"><div>วันที่ออกเอกสาร</div><div>{doc_date_be}</div></div>
       </div>
       <div class="cell">
-        <div class="cn-kv"><div>เลขที่</div><div id="doc_no">{doc_no}</div></div>
+        <div class="cn-kv"><div>เลขที่</div><div>{doc_no}</div></div>
       </div>
     </div>
 
@@ -299,18 +303,18 @@ def preview_credit_note(request: Request, payload: dict = Body(...)):
           <th class="num" style="width:15%;">มูลค่าสินค้า/บริการ (ใหม่)</th>
         </tr>
       </thead>
-      <tbody id="cn_rows">
+      <tbody>
         {table_rows_html}
       </tbody>
     </table>
 
     <table class="cn-summary">
-      <tr><td class="label">มูลค่าที่ปรับปรุงลดลง (บาท)</td><td class="num" id="sum_reduce_value">{sum_reduce_value:,.2f}</td></tr>
-      <tr><td class="label">ภาษีมูลค่าเพิ่มที่ลดลง (บาท)</td><td class="num" id="sum_reduce_vat">{sum_reduce_vat:,.2f}</td></tr>
-      <tr><td class="label">รวมเป็นเงินปรับปรุงทั้งสิ้น</td><td class="num" id="sum_total">{sum_total:,.2f}</td></tr>
+      <tr><td class="label">มูลค่าที่ปรับปรุงลดลง (บาท)</td><td class="num">{sum_reduce_value:,.2f}</td></tr>
+      <tr><td class="label">ภาษีมูลค่าเพิ่มที่ลดลง (บาท)</td><td class="num">{sum_reduce_vat:,.2f}</td></tr>
+      <tr><td class="label">รวมเป็นเงินปรับปรุงทั้งสิ้น</td><td class="num">{sum_total:,.2f}</td></tr>
     </table>
 
-    <div class="cn-reason">มีการลดหนี้เนื่องจาก : <span id="reason">ราคาสินค้าไม่ถูกต้อง</span></div>
+    <div class="cn-reason">มีการลดหนี้เนื่องจาก : <span>ราคาสินค้าไม่ถูกต้อง</span></div>
 
     <div class="cn-signatures">
       <div class="sig-col"><div class="sig-line"></div><div class="sig-label">ผู้ออกเอกสาร</div></div>
@@ -318,10 +322,12 @@ def preview_credit_note(request: Request, payload: dict = Body(...)):
     </div>
 
     <div class="cn-footnote">ต้นฉบับ - ให้ลูกค้าใช้เป็นใบกำกับภาษี</div>
+
   </div>
 </div>
     """
     return HTMLResponse(content=html)
+
 # ==============================================================================
 # END: โค้ดที่แก้ไข
 # ==============================================================================
@@ -330,13 +336,14 @@ def preview_credit_note(request: Request, payload: dict = Body(...)):
 def export_creditnote_pdf(payload: dict = Body(...)):
     base_dir = BASE_DIR
     css_path = base_dir / "static" / "css" / "credit_note.css"
-    static_root_uri = (base_dir / "static").as_uri()
+
+    # เรนเดอร์ HTML จาก preview_credit_note (ซึ่ง "มี" .A4-page แล้ว)
     from fastapi import Request
     dummy_req = Request(scope={"type": "http"})
     html_inner = preview_credit_note(dummy_req, payload).body.decode("utf-8")
-    html_str = f'''<!DOCTYPE html><html><head><meta charset="utf-8" />
-<link rel="stylesheet" href="{static_root_uri}/css/credit_note.css" />
-</head><body><div class="A4-page">{html_inner}</div></body></html>'''
+
+    html_str = f'<!DOCTYPE html><html><head><meta charset="utf-8" /></head><body>{html_inner}</body></html>'
+
     tmp_pdf = Path(tempfile.gettempdir()) / f"credit_note_{payload.get('creditnote_number','document')}.pdf"
     HTML(string=html_str, base_url=str(base_dir)).write_pdf(str(tmp_pdf), stylesheets=[CSS(filename=str(css_path))])
     return FileResponse(path=tmp_pdf, media_type="application/pdf", filename=tmp_pdf.name)

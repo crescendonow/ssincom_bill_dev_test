@@ -212,4 +212,6 @@ btnSave?.addEventListener('click', async () => {
 
     // ✅ เสร็จแล้วไปหน้าพรีวิว (ดึงจาก DB)
     window.location.href = `/credit_note.html?no=${encodeURIComponent(payload.creditnote_number)}`;
+    window.open(`/export-creditnote-pdf?no=${encodeURIComponent(document.getElementById('creditnote_number').value)}`, '_blank');
+
 });
