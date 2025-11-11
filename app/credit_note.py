@@ -436,6 +436,49 @@ def grn_summary(grn: str = Query(..., min_length=1), db: Session = Depends(get_d
         "quantity_sum": quantity_sum,
         "buyer": buyer
     }
+@router.get("/api/products/price")
+def api_product_price(
+    code: str = Query(..., min_length=1),
+    grn: str | None = Query(None),
+    db: Session = Depends(get_db)
+):
+    """
+    คืนราคา/หน่วย (cf_itempricelevel_price) ของรหัสสินค้า (cf_itemid)
+    แหล่งข้อมูล: ss_invoices.invoice_items โดย join ss_invoices.invoices
+    - ถ้าระบุ grn: เอาราคาจาก invoice ของ GRN นั้นก่อน (ใบล่าสุด)
+    - ถ้าไม่พบ: fallback เป็นราคาล่าสุดของรหัสนั้นจากทุกใบ
+    """
+    # 1) พยายามเอาราคาจาก GRN เดียวกัน (ถ้ามีส่งมา)
+    if grn:
+        sql_grn = text("""
+            SELECT it.cf_itempricelevel_price
+            FROM ss_invoices.invoices AS inv
+            JOIN ss_invoices.invoice_items AS it
+              ON inv.idx::text = it.invoice_number
+            WHERE inv.grn_number = :grn
+              AND it.cf_itemid = :code
+            ORDER BY inv.invoice_date DESC NULLS LAST, inv.invoice_number DESC
+            LIMIT 1
+        """)
+        row = db.execute(sql_grn, {"grn": grn, "code": code}).first()
+        if row and row[0] is not None:
+            return {"code": code, "price": float(row[0])}
+
+    # 2) fallback: ราคาล่าสุดของรหัสสินค้านี้ (ดูจากวันที่/เลขที่)
+    sql_last = text("""
+        SELECT it.cf_itempricelevel_price
+        FROM ss_invoices.invoices AS inv
+        JOIN ss_invoices.invoice_items AS it
+          ON inv.idx::text = it.invoice_number
+        WHERE it.cf_itemid = :code
+        ORDER BY inv.invoice_date DESC NULLS LAST, inv.invoice_number DESC
+        LIMIT 1
+    """)
+    row2 = db.execute(sql_last, {"code": code}).first()
+    return {
+        "code": code,
+        "price": float(row2[0]) if row2 and row2[0] is not None else 0.0
+    }
 
 
 

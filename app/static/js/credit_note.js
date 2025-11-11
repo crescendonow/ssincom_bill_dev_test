@@ -252,19 +252,25 @@ async function setBasePriceFromCode(row) {
     const code = (codeInput.value || '').trim();
     if (!code) return;
 
+    const grn = (row.querySelector('.grn_number')?.value || '').trim();
+    const url = `/api/products/price?code=${encodeURIComponent(code)}${grn ? `&grn=${encodeURIComponent(grn)}` : ''}`;
+
     try {
-        const res = await fetch(`/api/products/price?code=${encodeURIComponent(code)}`);
+        const res = await fetch(url, { method: 'GET' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         const price = parseFloat(data?.price || 0);
 
-        // เขียนทั้ง base_price (hidden) และ unit_price (แสดงผล)
-        row.querySelector('.base_price').value = price;
+        row.querySelector('.base_price').value = isNaN(price) ? 0 : price;
         const unitEl = row.querySelector('.unit_price');
-        if (unitEl && !unitEl.value) unitEl.value = to2(price);
+        if (unitEl && !unitEl.value) unitEl.value = (isNaN(price) ? 0 : price).toFixed(2);
 
         updateTotal();
-    } catch (e) { /* ignore */ }
+    } catch (e) {
+        console.error('fetch price error:', e);
+    }
 }
+
 
 function wireProductPriceLookup(row) {
     const codeInput = row.querySelector('.product_code');
