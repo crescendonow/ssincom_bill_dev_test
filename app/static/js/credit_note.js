@@ -242,27 +242,6 @@ function buildPayload() {
     return { creditnote_date: d, creditnote_number: cn, items };
 }
 
-// ใน credit_note.js (ฝั่งฟอร์ม)
-btnSave?.addEventListener('click', async () => {
-    const payload = buildPayload();
-    if (!payload.creditnote_number) { alert('กรุณาสร้างเลขที่ใบลดหนี้ก่อนบันทึก'); return; }
-    if (!payload.items.length) { alert('กรุณาเพิ่มรายการอย่างน้อย 1 รายการ'); return; }
-
-    const res = await fetch('/api/credit-notes', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) { alert(data.detail || 'บันทึกไม่สำเร็จ'); return; }
-
-    // ✅ เสร็จแล้วไปหน้าพรีวิว (ดึงจาก DB)
-    window.location.href = `/credit_note.html?no=${encodeURIComponent(payload.creditnote_number)}`;
-    window.open(
-        `/export-creditnote-pdf?no=${encodeURIComponent(document.getElementById('creditnote_number').value)}`,
-        '_blank'
-    );
-});
-
 // ===== Helper ราคา/จำนวน/VAT =====
 const VAT_RATE = 0.07;
 function to2(n) { return (isNaN(n) ? 0 : n).toFixed(2); }

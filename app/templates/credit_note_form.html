@@ -37,40 +37,30 @@
                 </div>
             </div>
 
-            <div class="flex flex-wrap gap-3 md:gap-4 item-row items-end">
-                <input name="grn_number" placeholder="เลขที่ใบรับสินค้า"
-                    class="grn_number flex-1 min-w-[120px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
-                <input name="invoice_number" placeholder="เลขที่ใบกำกับ"
-                    class="invoice_number flex-1 min-w-[140px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
-                <input name="product_code" placeholder="รหัสสินค้า"
-                    class="product_code w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
-                <input name="description" placeholder="รายละเอียด"
-                    class="description flex-1 min-w-[140px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
-
-                <!-- ราคาเดิม/หน่วย (products.cf_itempricelevel_price) -->
-                <input name="unit_price" type="number" step="0.01" placeholder="ราคาเดิม/หน่วย" oninput="updateTotal()"
-                    class="unit_price w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
-
-                <input name="quantity" type="number" step="0.01" placeholder="จำนวน" oninput="updateTotal()"
-                    class="quantity w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
-                <input name="fine" type="number" step="0.01" placeholder="ราคาบทปรับ (บาท)" oninput="updateTotal()"
-                    class="fine w-28 md:w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
-
-                <!-- ผลลัพธ์อัตโนมัติ: มูลค่ารวม VAT 7% -->
-                <input name="old_total_vat" placeholder="มูลค่าเดิม (รวม VAT)" readonly
-                    class="old_total_vat w-40 bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5 text-right" />
-                <input name="new_total_vat" placeholder="มูลค่าใหม่ (รวม VAT)" readonly
-                    class="new_total_vat w-40 bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5 text-right" />
-
-                <!-- เก็บราคาฐานเพื่อส่ง payload -->
-                <input type="hidden" class="base_price" value="0" />
-                <button type="button" onclick="removeItem(this)"
-                    class="text-red-600 hover:text-white-800 font-semibold px-2"><i class="fas fa-trash"></i></button>
+            <!-- ใส่คอนเทนเนอร์ items -->
+            <div id="items" class="space-y-3 md:space-y-4">
+                <div class="flex flex-wrap gap-3 md:gap-4 item-row items-end">
+                    <!-- (คงอินพุตทั้งหมดของแถวแรกไว้ตามเดิม) -->
+                    <input name="grn_number" ... class="grn_number ..." />
+                    <input name="invoice_number" ... class="invoice_number ..." />
+                    <input name="product_code" ... class="product_code ..." />
+                    <input name="description" ... class="description ..." />
+                    <input name="unit_price" type="number" step="0.01" ... class="unit_price ..."
+                        oninput="updateTotal()" />
+                    <input name="quantity" type="number" step="0.01" ... class="quantity ..." oninput="updateTotal()" />
+                    <input name="fine" type="number" step="0.01" ... class="fine ..." oninput="updateTotal()" />
+                    <input name="old_total_vat" placeholder="มูลค่าเดิม (รวม VAT)" readonly class="old_total_vat ..." />
+                    <input name="new_total_vat" placeholder="มูลค่าใหม่ (รวม VAT)" readonly class="new_total_vat ..." />
+                    <input type="hidden" class="base_price" value="0" />
+                    <button type="button" onclick="removeItem(this)" class="text-red-600 ..."><i
+                            class="fas fa-trash"></i></button>
+                </div>
             </div>
 
             <div class="mt-2">
-                <button type="button" onclick="addItem()" class="text-blue-600 hover:text-blue-800 font-semibold"><i class="fa-solid fa-plus"></i>
-                    เพิ่มรายการ</button>
+                <button type="button" onclick="addItem()" class="text-blue-600 hover:text-blue-800 font-semibold">
+                    <i class="fa-solid fa-plus"></i> เพิ่มรายการ
+                </button>
             </div>
         </div>
 
