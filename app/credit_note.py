@@ -370,7 +370,6 @@ def suggest_grn(q: str = Query(""), limit: int = Query(10, ge=1, le=50), db: Ses
 
 @router.get("/api/grn/summary")
 def grn_summary(grn: str = Query(..., min_length=1), db: Session = Depends(get_db)):
-    # invoice_number แรก + personid จาก ss_invoices.invoices
     sql = text("""
         WITH inv_first AS (
           SELECT invoice_number, personid
@@ -410,9 +409,10 @@ def grn_summary(grn: str = Query(..., min_length=1), db: Session = Depends(get_d
     descriptions = row[3] or []
     quantity_sum = float(row[4] or 0)
 
-    # map personid -> ข้อมูลลูกค้า จาก ORM (products.customer_list)
+    # (ออปชัน) map personid -> ข้อมูลลูกค้า (ปรับ model ให้ตรงตารางของคุณ)
     buyer = None
-    if personid:
+    try:
+        from . import models
         c = db.query(models.CustomerList).filter(models.CustomerList.personid == personid).first()
         if c:
             buyer = {
@@ -425,6 +425,8 @@ def grn_summary(grn: str = Query(..., min_length=1), db: Session = Depends(get_d
                 "zipcode": c.cf_personzipcode,
                 "prov": c.cf_provincename,
             }
+    except Exception:
+        buyer = None
 
     return {
         "invoice_number": invoice_number,
@@ -434,5 +436,6 @@ def grn_summary(grn: str = Query(..., min_length=1), db: Session = Depends(get_d
         "quantity_sum": quantity_sum,
         "buyer": buyer
     }
+
 
 

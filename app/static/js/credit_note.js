@@ -21,7 +21,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const payload = buildPayload();
         if (!payload.creditnote_number) { alert('กรุณาสร้างเลขที่ใบลดหนี้ก่อนบันทึก'); return; }
         if (!payload.items.length) { alert('กรุณาเพิ่มรายการอย่างน้อย 1 รายการ'); return; }
-        const res = await fetch('/api/credit-notes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const res = await fetch('/api/credit-notes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) { alert(data.detail || 'บันทึกไม่สำเร็จ'); return; }
         alert(`บันทึกสำเร็จ เลขที่เอกสาร: ${data.creditnote_number}`);
@@ -29,7 +33,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btnPreview?.addEventListener('click', async () => {
         const payload = buildPayload();
-        const res = await fetch('/api/credit-notes/preview', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const res = await fetch('/api/credit-notes/preview', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
         const html = await res.text();
         const view = document.getElementById('preview');
         view.classList.remove('hidden');
@@ -98,17 +106,18 @@ function wireRow(row) {
 async function fetchAndFillGRNSummary(grn, ctx) {
     const { invoiceInput, codeInput, descInput, qtyInput, dlCode, dlDesc } = ctx;
     if (!grn) return;
+
     const res = await fetch(`/api/grn/summary?grn=${encodeURIComponent(grn)}`);
     const data = await res.json().catch(() => null);
     if (!data) return;
 
-    // 1) ใบกำกับใบแรก + เติมให้แถว
+    // 1) ใบกำกับใบแรก
     if (invoiceInput && data.invoice_number) {
         invoiceInput.value = data.invoice_number;
         invoiceInput.readOnly = true;
     }
 
-    // 2) เติม datalist + auto เลือกตัวแรก
+    // 2) เติม datalist + auto เลือกค่าแรก
     if (Array.isArray(data.product_codes)) {
         dlCode.innerHTML = data.product_codes.map(v => `<option value="${v}">`).join('');
         if (codeInput && !codeInput.value && data.product_codes.length) codeInput.value = data.product_codes[0];
@@ -120,33 +129,32 @@ async function fetchAndFillGRNSummary(grn, ctx) {
         if (descInput) descInput.readOnly = true;
     }
 
-    // 3) จำนวนรวมจาก invoice_items -> ใส่และล็อก
+    // 3) จำนวนรวมจาก invoice_items
     if (qtyInput) {
-        qtyInput.value = (data.quantity_sum ?? 0).toFixed(2);
+        qtyInput.value = Number(data.quantity_sum || 0).toFixed(2);
         qtyInput.readOnly = true;
     }
 
-    // 4) ดึงราคาหน่วยจากรหัสสินค้า (ถ้ามี) แล้วล็อก unit_price
+    // 4) ดึงราคาหน่วยอัตโนมัติจาก code
     const row = qtyInput?.closest('.item-row');
     if (row) {
-        await setBasePriceFromCode(row); // เติม base_price + unit_price
+        await setBasePriceFromCode(row); // เติม unit_price/base_price
         const unitEl = row.querySelector('.unit_price');
         if (unitEl) unitEl.readOnly = true;
+
+        const grnEl = row.querySelector('.grn_number');
+        if (grnEl) grnEl.readOnly = true;
     }
 
-    // 5) กรอก customer จาก personid ของ invoice_number แรก
+    // 5) เติมลูกค้าจาก personid ของ invoice แรก
     if (data.personid) {
         const pidEl = document.getElementById('personid');
         if (pidEl) {
             pidEl.value = data.personid;
-            pidEl.dispatchEvent(new Event('input')); // โหลด suggest
-            await selectCustomerByPersonid();        // เติมชื่อ/ที่อยู่/ภาษี/โทรฯ
+            pidEl.dispatchEvent(new Event('input'));
+            await selectCustomerByPersonid(); // จะ auto-fill name/address/tax/tel/mobile/zipcode/prov
         }
     }
-
-    // 6) ล็อก GRN ด้วย (กันเปลี่ยนหลังออโต้)
-    const grnInput = row?.querySelector('.grn_number');
-    if (grnInput) grnInput.readOnly = true;
 
     updateTotal();
 }
@@ -249,8 +257,10 @@ btnSave?.addEventListener('click', async () => {
 
     // ✅ เสร็จแล้วไปหน้าพรีวิว (ดึงจาก DB)
     window.location.href = `/credit_note.html?no=${encodeURIComponent(payload.creditnote_number)}`;
-    window.open(`/export-creditnote-pdf?no=${encodeURIComponent(document.getElementById('creditnote_number').value)}`, '_blank');
-
+    window.open(
+        `/export-creditnote-pdf?no=${encodeURIComponent(document.getElementById('creditnote_number').value)}`,
+        '_blank'
+    );
 });
 
 // ===== Helper ราคา/จำนวน/VAT =====
@@ -300,37 +310,36 @@ function wireRow(row) {
     const descInput = row.querySelector('.description');
     const qtyInput = row.querySelector('.quantity');
 
-    const dlIdGRN = `dl-grn-${crypto.randomUUID()}`;
-    const dlIdCode = `dl-code-${crypto.randomUUID()}`;
-    const dlIdDesc = `dl-desc-${crypto.randomUUID()}`;
+    const dlGRN = document.createElement('datalist');
+    const dlCode = document.createElement('datalist');
+    const dlDesc = document.createElement('datalist');
+    dlGRN.id = `dl-grn-${crypto.randomUUID()}`;
+    dlCode.id = `dl-code-${crypto.randomUUID()}`;
+    dlDesc.id = `dl-desc-${crypto.randomUUID()}`;
+    document.body.append(dlGRN, dlCode, dlDesc);
 
-    const dlGRN = document.createElement('datalist'); dlGRN.id = dlIdGRN;
-    const dlCode = document.createElement('datalist'); dlCode.id = dlIdCode;
-    const dlDesc = document.createElement('datalist'); dlDesc.id = dlIdDesc;
+    grnInput.setAttribute('list', dlGRN.id);
+    codeInput.setAttribute('list', dlCode.id);
+    descInput.setAttribute('list', dlDesc.id);
 
-    document.body.appendChild(dlGRN);
-    document.body.appendChild(dlCode);
-    document.body.appendChild(dlDesc);
-
-    grnInput.setAttribute('list', dlIdGRN);
-    codeInput.setAttribute('list', dlIdCode);
-    descInput.setAttribute('list', dlIdDesc);
-
-    let grnTimer = null;
+    // suggest GRN
+    let t = null;
     grnInput.addEventListener('input', () => {
-        clearTimeout(grnTimer);
+        clearTimeout(t);
         const q = grnInput.value.trim();
-        grnTimer = setTimeout(async () => {
-            const res = await fetch(`/api/grn/suggest?q=${encodeURIComponent(q)}`);
-            const data = await res.json().catch(() => ({ items: [] }));
-            dlGRN.innerHTML = (data.items || []).map(v => `<option value="${v}">`).join('');
-        }, 200);
+        t = setTimeout(async () => {
+            const r = await fetch(`/api/grn/suggest?q=${encodeURIComponent(q)}`);
+            const d = await r.json().catch(() => ({ items: [] }));
+            dlGRN.innerHTML = (d.items || []).map(v => `<option value="${v}">`).join('');
+        }, 180);
     });
 
-    grnInput.addEventListener('change', () => fetchAndFillGRNSummary(grnInput.value, { invoiceInput, codeInput, descInput, qtyInput, dlCode, dlDesc }));
-    grnInput.addEventListener('blur', () => fetchAndFillGRNSummary(grnInput.value, { invoiceInput, codeInput, descInput, qtyInput, dlCode, dlDesc }));
+    // เมื่อเลือก/blur -> ดึงสรุป
+    const ctx = { invoiceInput, codeInput, descInput, qtyInput, dlCode, dlDesc };
+    grnInput.addEventListener('change', () => fetchAndFillGRNSummary(grnInput.value, ctx));
+    grnInput.addEventListener('blur', () => fetchAndFillGRNSummary(grnInput.value, ctx));
 
-    // ดึงราคาเดิม/หน่วย อัตโนมัติจากรหัสสินค้า
+    // lookup price จากรหัสสินค้า (ถ้าผู้ใช้เปลี่ยนเอง)
     wireProductPriceLookup(row);
 }
 
