@@ -370,29 +370,69 @@ def suggest_grn(q: str = Query(""), limit: int = Query(10, ge=1, le=50), db: Ses
 
 @router.get("/api/grn/summary")
 def grn_summary(grn: str = Query(..., min_length=1), db: Session = Depends(get_db)):
-    # Join condition per requirement:
-    # ss_invoices.invoices.idx = ss_invoices.invoice_items.invoice_number
+    # invoice_number แรก + personid จาก ss_invoices.invoices
     sql = text("""
-        WITH src AS (
-            SELECT inv.invoice_number, it.cf_itemid, it.cf_itemname, it.quantity
-            FROM ss_invoices.invoices AS inv
-            JOIN ss_invoices.invoice_items AS it
-              ON inv.idx::text = it.invoice_number
-            WHERE inv.grn_number = :grn
+        WITH inv_first AS (
+          SELECT invoice_number, personid
+          FROM ss_invoices.invoices
+          WHERE grn_number = :grn
+          ORDER BY invoice_number
+          LIMIT 1
+        ),
+        src AS (
+          SELECT it.cf_itemid, it.cf_itemname, it.quantity
+          FROM ss_invoices.invoices AS inv
+          JOIN ss_invoices.invoice_items AS it
+            ON inv.idx::text = it.invoice_number
+          WHERE inv.grn_number = :grn
         )
         SELECT
-            (SELECT MIN(invoice_number) FROM src) AS invoice_number,
-            (SELECT ARRAY_AGG(DISTINCT cf_itemid) FROM src) AS product_codes,
-            (SELECT ARRAY_AGG(DISTINCT cf_itemname) FROM src) AS descriptions,
-            (SELECT COALESCE(SUM(quantity),0) FROM src) AS quantity_sum
+          (SELECT invoice_number FROM inv_first) AS invoice_number_first,
+          (SELECT personid FROM inv_first) AS personid_first,
+          (SELECT ARRAY_AGG(DISTINCT cf_itemid) FROM src) AS product_codes,
+          (SELECT ARRAY_AGG(DISTINCT cf_itemname) FROM src) AS descriptions,
+          (SELECT COALESCE(SUM(quantity),0) FROM src) AS quantity_sum
     """)
     row = db.execute(sql, {"grn": grn}).first()
-    if not row or row[0] is None:
-        return {"invoice_number": None, "product_codes": [], "descriptions": [], "quantity_sum": 0}
+    if not row:
+        return {
+            "invoice_number": None,
+            "personid": None,
+            "product_codes": [],
+            "descriptions": [],
+            "quantity_sum": 0,
+            "buyer": None
+        }
+
+    invoice_number = row[0]
+    personid = row[1]
+    product_codes = row[2] or []
+    descriptions = row[3] or []
+    quantity_sum = float(row[4] or 0)
+
+    # map personid -> ข้อมูลลูกค้า จาก ORM (products.customer_list)
+    buyer = None
+    if personid:
+        c = db.query(models.CustomerList).filter(models.CustomerList.personid == personid).first()
+        if c:
+            buyer = {
+                "personid": c.personid,
+                "name": c.fname,
+                "addr": c.cf_personaddress,
+                "tax": c.cf_taxid,
+                "tel": c.tel,
+                "mobile": c.mobile,
+                "zipcode": c.cf_personzipcode,
+                "prov": c.cf_provincename,
+            }
+
     return {
-        "invoice_number": row[0],
-        "product_codes": row[1] or [],
-        "descriptions": row[2] or [],
-        "quantity_sum": float(row[3] or 0)
+        "invoice_number": invoice_number,
+        "personid": personid,
+        "product_codes": product_codes,
+        "descriptions": descriptions,
+        "quantity_sum": quantity_sum,
+        "buyer": buyer
     }
+
 

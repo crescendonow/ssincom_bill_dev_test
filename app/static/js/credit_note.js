@@ -101,16 +101,53 @@ async function fetchAndFillGRNSummary(grn, ctx) {
     const res = await fetch(`/api/grn/summary?grn=${encodeURIComponent(grn)}`);
     const data = await res.json().catch(() => null);
     if (!data) return;
-    if (invoiceInput && data.invoice_number) invoiceInput.value = data.invoice_number;
+
+    // 1) ใบกำกับใบแรก + เติมให้แถว
+    if (invoiceInput && data.invoice_number) {
+        invoiceInput.value = data.invoice_number;
+        invoiceInput.readOnly = true;
+    }
+
+    // 2) เติม datalist + auto เลือกตัวแรก
     if (Array.isArray(data.product_codes)) {
         dlCode.innerHTML = data.product_codes.map(v => `<option value="${v}">`).join('');
         if (codeInput && !codeInput.value && data.product_codes.length) codeInput.value = data.product_codes[0];
+        if (codeInput) codeInput.readOnly = true;
     }
     if (Array.isArray(data.descriptions)) {
         dlDesc.innerHTML = data.descriptions.map(v => `<option value="${v}">`).join('');
         if (descInput && !descInput.value && data.descriptions.length) descInput.value = data.descriptions[0];
+        if (descInput) descInput.readOnly = true;
     }
-    if (qtyInput) qtyInput.value = (data.quantity_sum ?? 0).toFixed(2);
+
+    // 3) จำนวนรวมจาก invoice_items -> ใส่และล็อก
+    if (qtyInput) {
+        qtyInput.value = (data.quantity_sum ?? 0).toFixed(2);
+        qtyInput.readOnly = true;
+    }
+
+    // 4) ดึงราคาหน่วยจากรหัสสินค้า (ถ้ามี) แล้วล็อก unit_price
+    const row = qtyInput?.closest('.item-row');
+    if (row) {
+        await setBasePriceFromCode(row); // เติม base_price + unit_price
+        const unitEl = row.querySelector('.unit_price');
+        if (unitEl) unitEl.readOnly = true;
+    }
+
+    // 5) กรอก customer จาก personid ของ invoice_number แรก
+    if (data.personid) {
+        const pidEl = document.getElementById('personid');
+        if (pidEl) {
+            pidEl.value = data.personid;
+            pidEl.dispatchEvent(new Event('input')); // โหลด suggest
+            await selectCustomerByPersonid();        // เติมชื่อ/ที่อยู่/ภาษี/โทรฯ
+        }
+    }
+
+    // 6) ล็อก GRN ด้วย (กันเปลี่ยนหลังออโต้)
+    const grnInput = row?.querySelector('.grn_number');
+    if (grnInput) grnInput.readOnly = true;
+
     updateTotal();
 }
 
