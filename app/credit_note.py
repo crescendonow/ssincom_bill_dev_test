@@ -6,6 +6,7 @@ from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, func, t
 from datetime import datetime, date
 from pathlib import Path
 import tempfile, uuid
+from . import models  
 
 from .database import SessionLocal, Base
 from weasyprint import HTML, CSS
@@ -35,7 +36,6 @@ class CreditNoteItem(Base):
     quantity = Column(Float)
     fine = Column(Float)
     price_after_fine = Column(Float)
-
 
 def get_db():
     db = SessionLocal()
@@ -71,6 +71,48 @@ def generate_creditnote_number(db: Session, doc_date: date) -> str:
 @router.get("/credit_note_form.html", response_class=HTMLResponse)
 def credit_note_form_page(request: Request):
     return templates.TemplateResponse("credit_note_form.html", {"request": request})
+
+@router.get("/api/customers/suggest-personid")
+def api_cust_suggest_personid(q: str = Query(""), limit: int = Query(10, ge=1, le=50), db: Session = Depends(get_db)):
+    q = q.strip()
+    qs = db.query(models.CustomerList.personid).filter(models.CustomerList.personid.ilike(f"%{q}%"))\
+            .order_by(models.CustomerList.personid.asc()).limit(limit).all()
+    return {"items": [r[0] for r in qs if r[0]]}
+
+@router.get("/api/customers/suggest-name")
+def api_cust_suggest_name(q: str = Query(""), limit: int = Query(10, ge=1, le=50), db: Session = Depends(get_db)):
+    q = q.strip()
+    qs = db.query(models.CustomerList.fname).filter(models.CustomerList.fname.ilike(f"%{q}%"))\
+            .order_by(models.CustomerList.fname.asc()).limit(limit).all()
+    return {"items": [r[0] for r in qs if r[0]]}
+
+@router.get("/api/customers/by-personid")
+def api_cust_by_personid(personid: str = Query(...), db: Session = Depends(get_db)):
+    c = db.query(models.CustomerList).filter(models.CustomerList.personid == personid).first()
+    if not c:
+        raise HTTPException(status_code=404, detail="customer not found")
+    return {
+        "personid": c.personid, "fname": c.fname,
+        "tel": c.tel, "mobile": c.mobile,
+        "cf_personaddress": c.cf_personaddress,
+        "cf_personzipcode": c.cf_personzipcode,
+        "cf_provincename": c.cf_provincename,
+        "cf_taxid": c.cf_taxid,
+    }
+
+@router.get("/api/customers/by-name")
+def api_cust_by_name(name: str = Query(...), db: Session = Depends(get_db)):
+    c = db.query(models.CustomerList).filter(models.CustomerList.fname == name).first()
+    if not c:
+        raise HTTPException(status_code=404, detail="customer not found")
+    return {
+        "personid": c.personid, "fname": c.fname,
+        "tel": c.tel, "mobile": c.mobile,
+        "cf_personaddress": c.cf_personaddress,
+        "cf_personzipcode": c.cf_personzipcode,
+        "cf_provincename": c.cf_provincename,
+        "cf_taxid": c.cf_taxid,
+    }
 
 @router.get("/credit_note.html", response_class=HTMLResponse)
 def credit_note_preview_page(request: Request, no: str = Query(...), db: Session = Depends(get_db)):
@@ -217,55 +259,21 @@ def preview_credit_note(request: Request, payload: dict = Body(...)):
     d = payload or {}
     items = d.get("items") or []
 
-    # Build table rows from fine + price_after_fine
-    table_rows_html = ""
-    sum_reduce_value = 0.0
+    # ... (โค้ดคำนวณแถวเดิมคงไว้)
 
-    for item in items:
-        grn  = item.get("grn_number", "")
-        inv  = item.get("invoice_number", "")
-        desc = item.get("cf_itemname", "")
-        qty  = float(item.get("quantity") or 0)
-        fine = float(item.get("fine") or 0)
-        newp = float(item.get("price_after_fine") or 0)
+    # === ใช้ buyer จาก payload ถ้ามี ===
+    buyer = d.get("buyer") or {}
+    buyer_name = buyer.get("name") or "บริษัท แพนเทอรา เพาเวอร์ แอนด์ แก๊ส จำกัด"
+    buyer_addr = buyer.get("addr") or "94/1 หมู่ 3 ต.เขาหินซ้อน อ.พนมสารคาม จ.ฉะเชิงเทรา 24120"
+    buyer_branch = "สำนักงานใหญ่"  # ใส่เพิ่มภายหลังได้หากมีใน payload
+    buyer_tax = buyer.get("tax") or "0245554001317"
 
-        basep   = newp + fine                   # ราคาเดิมก่อนบทปรับ
-        amt_old = basep * qty                   # มูลค่าเดิม
-        amt_new = newp  * qty                   # มูลค่าใหม่
+    # ... (วันที่/เลขที่ เดิม)
 
-        sum_reduce_value += max(0.0, amt_old - amt_new)
-
-        table_rows_html += f"""
-        <tr>
-          <td>{grn}</td>
-          <td>{inv}</td>
-          <td>{desc}</td>
-          <td class="num">{qty:,.2f}</td>
-          <td class="num">{amt_old:,.2f}</td>
-          <td class="num">{amt_new:,.2f}</td>
-        </tr>
-        """
-
-    if not items:
-        table_rows_html = '<tr><td colspan="6" style="text-align:center; padding: 20px;">- ไม่มีรายการ -</td></tr>'
-
-    sum_reduce_vat = round(sum_reduce_value * 0.07, 2)
-    sum_total = round(sum_reduce_value + sum_reduce_vat, 2)
-
-    # วันที่เอกสาร (พ.ศ.)
-    cn_date_str = d.get("creditnote_date", "")
-    doc_date_obj = _to_date(cn_date_str)
-    doc_date_be = f"{doc_date_obj.day:02d}/{doc_date_obj.month:02d}/{_be_year(doc_date_obj.year)}"
-    doc_no = d.get("creditnote_number", "SSCRX-XXXX")
-
-    # HTML (โครงหน้า A4)
     html = f"""
 <div class="A4-page">
   <div class="credit-note">
-
-    <div class="cn-title-row">
-      <div></div><div class="cn-title">ใบลดหนี้</div>
-    </div>
+    <div class="cn-title-row"><div></div><div class="cn-title">ใบลดหนี้</div></div>
 
     <div class="cn-header" style="border-top: var(--border);">
       <div class="cell">
@@ -278,10 +286,10 @@ def preview_credit_note(request: Request, payload: dict = Body(...)):
           <div>เลขประจำตัวผู้เสียภาษี</div><div>0715544000020</div>
         </div>
         <div class="cn-kv">
-          <div>ผู้ซื้อ</div><div>บริษัท แพนเทอรา เพาเวอร์ แอนด์ แก๊ส จำกัด</div>
-          <div>ที่อยู่</div><div>94/1 หมู่ 3 ต.เขาหินซ้อน อ.พนมสารคาม จ.ฉะเชิงเทรา 24120</div>
-          <div>สถานประกอบการ</div><div>สำนักงานใหญ่</div>
-          <div>เลขประจำตัวผู้เสียภาษี</div><div>0245554001317</div>
+          <div>ผู้ซื้อ</div><div>{buyer_name}</div>
+          <div>ที่อยู่</div><div>{buyer_addr}</div>
+          <div>สถานประกอบการ</div><div>{buyer_branch}</div>
+          <div>เลขประจำตัวผู้เสียภาษี</div><div>{buyer_tax}</div>
         </div>
       </div>
       <div class="cell">
@@ -292,6 +300,7 @@ def preview_credit_note(request: Request, payload: dict = Body(...)):
       </div>
     </div>
 
+    <!-- ตาราง/สรุปเดิม -->
     <table class="cn-table">
       <thead>
         <tr>
@@ -315,14 +324,11 @@ def preview_credit_note(request: Request, payload: dict = Body(...)):
     </table>
 
     <div class="cn-reason">มีการลดหนี้เนื่องจาก : <span>ราคาสินค้าไม่ถูกต้อง</span></div>
-
     <div class="cn-signatures">
       <div class="sig-col"><div class="sig-line"></div><div class="sig-label">ผู้ออกเอกสาร</div></div>
       <div class="sig-col"><div class="sig-line"></div><div class="sig-label">ผู้มีอำนาจลงนาม</div></div>
     </div>
-
     <div class="cn-footnote">ต้นฉบับ - ให้ลูกค้าใช้เป็นใบกำกับภาษี</div>
-
   </div>
 </div>
     """

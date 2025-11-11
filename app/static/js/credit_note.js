@@ -215,3 +215,218 @@ btnSave?.addEventListener('click', async () => {
     window.open(`/export-creditnote-pdf?no=${encodeURIComponent(document.getElementById('creditnote_number').value)}`, '_blank');
 
 });
+
+// ===== Helper ราคา/จำนวน/VAT =====
+const VAT_RATE = 0.07;
+function to2(n) { return (isNaN(n) ? 0 : n).toFixed(2); }
+
+async function setBasePriceFromCode(row) {
+    const codeInput = row.querySelector('.product_code');
+    if (!codeInput) return;
+    const code = (codeInput.value || '').trim();
+    if (!code) return;
+
+    try {
+        const res = await fetch(`/api/products/price?code=${encodeURIComponent(code)}`);
+        const data = await res.json();
+        const price = parseFloat(data?.price || 0);
+
+        // เขียนทั้ง base_price (hidden) และ unit_price (แสดงผล)
+        row.querySelector('.base_price').value = price;
+        const unitEl = row.querySelector('.unit_price');
+        if (unitEl && !unitEl.value) unitEl.value = to2(price);
+
+        updateTotal();
+    } catch (e) { /* ignore */ }
+}
+
+function wireProductPriceLookup(row) {
+    const codeInput = row.querySelector('.product_code');
+    const unitInput = row.querySelector('.unit_price');
+
+    codeInput?.addEventListener('change', () => setBasePriceFromCode(row));
+    codeInput?.addEventListener('blur', () => setBasePriceFromCode(row));
+
+    // เมื่อกรอก/แก้ unit_price ให้ sync ไป base_price
+    unitInput?.addEventListener('input', () => {
+        const v = parseFloat(unitInput.value || 0);
+        row.querySelector('.base_price').value = isNaN(v) ? 0 : v;
+        updateTotal();
+    });
+}
+
+// ===== override wireRow ให้ผูก lookup เพิ่มเติม =====
+function wireRow(row) {
+    const grnInput = row.querySelector('.grn_number');
+    const invoiceInput = row.querySelector('.invoice_number');
+    const codeInput = row.querySelector('.product_code');
+    const descInput = row.querySelector('.description');
+    const qtyInput = row.querySelector('.quantity');
+
+    const dlIdGRN = `dl-grn-${crypto.randomUUID()}`;
+    const dlIdCode = `dl-code-${crypto.randomUUID()}`;
+    const dlIdDesc = `dl-desc-${crypto.randomUUID()}`;
+
+    const dlGRN = document.createElement('datalist'); dlGRN.id = dlIdGRN;
+    const dlCode = document.createElement('datalist'); dlCode.id = dlIdCode;
+    const dlDesc = document.createElement('datalist'); dlDesc.id = dlIdDesc;
+
+    document.body.appendChild(dlGRN);
+    document.body.appendChild(dlCode);
+    document.body.appendChild(dlDesc);
+
+    grnInput.setAttribute('list', dlIdGRN);
+    codeInput.setAttribute('list', dlIdCode);
+    descInput.setAttribute('list', dlIdDesc);
+
+    let grnTimer = null;
+    grnInput.addEventListener('input', () => {
+        clearTimeout(grnTimer);
+        const q = grnInput.value.trim();
+        grnTimer = setTimeout(async () => {
+            const res = await fetch(`/api/grn/suggest?q=${encodeURIComponent(q)}`);
+            const data = await res.json().catch(() => ({ items: [] }));
+            dlGRN.innerHTML = (data.items || []).map(v => `<option value="${v}">`).join('');
+        }, 200);
+    });
+
+    grnInput.addEventListener('change', () => fetchAndFillGRNSummary(grnInput.value, { invoiceInput, codeInput, descInput, qtyInput, dlCode, dlDesc }));
+    grnInput.addEventListener('blur', () => fetchAndFillGRNSummary(grnInput.value, { invoiceInput, codeInput, descInput, qtyInput, dlCode, dlDesc }));
+
+    // ดึงราคาเดิม/หน่วย อัตโนมัติจากรหัสสินค้า
+    wireProductPriceLookup(row);
+}
+
+// ===== คำนวณผลรวม + มูลค่าเดิม/ใหม่ (รวม VAT) ต่อแถว =====
+function updateTotal() {
+    let sum = 0;
+    document.querySelectorAll('#items .item-row').forEach(row => {
+        const base = parseFloat(row.querySelector('.base_price')?.value || row.querySelector('.unit_price')?.value || 0); // ราคาเดิม/หน่วย
+        const fine = parseFloat(row.querySelector('.fine')?.value || 0);
+        const qty = parseFloat(row.querySelector('.quantity')?.value || 0);
+
+        // ราคาใหม่ต่อหน่วย = base - fine (ไม่ต่ำกว่า 0)
+        let newUnit = base - (isNaN(fine) ? 0 : fine);
+        if (newUnit < 0) newUnit = 0;
+
+        // (1) มูลค่าเดิมรวม VAT = qty * base * (1+VAT)
+        const oldTotalVat = (qty * base) * (1 + VAT_RATE);
+        // (2) มูลค่าใหม่รวม VAT = qty * newUnit * (1+VAT)
+        const newTotalVat = (qty * newUnit) * (1 + VAT_RATE);
+
+        // แสดงผลแถว (ปัดทศนิยม 2)
+        const oldEl = row.querySelector('.old_total_vat');
+        const newEl = row.querySelector('.new_total_vat');
+        if (oldEl) oldEl.value = to2(oldTotalVat);
+        if (newEl) newEl.value = to2(newTotalVat);
+
+        // รวมไว้ให้ผู้ใช้เห็นด้านบน (รวมเฉพาะ “ราคาใหม่” เหมือนยอดชำระจริง)
+        sum += (qty * newUnit);
+    });
+
+    const el = document.getElementById('total_amount');
+    if (el) el.textContent = '฿ ' + (sum).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+window.updateTotal = updateTotal;
+
+// ===== ลูกค้า (ORM API) =====
+async function loadPersonidSuggest(q) {
+    const res = await fetch(`/api/customers/suggest-personid?q=${encodeURIComponent(q || '')}`);
+    const data = await res.json().catch(() => ({ items: [] }));
+    const dl = document.getElementById('personidList');
+    if (dl) dl.innerHTML = (data.items || []).map(v => `<option value="${v}">`).join('');
+}
+async function loadCustomerNameSuggest(q) {
+    const res = await fetch(`/api/customers/suggest-name?q=${encodeURIComponent(q || '')}`);
+    const data = await res.json().catch(() => ({ items: [] }));
+    const dl = document.getElementById('customerList');
+    if (dl) dl.innerHTML = (data.items || []).map(v => `<option value="${v}">`).join('');
+}
+
+// เรียกเมื่อพิมพ์ personid
+async function selectCustomerByPersonid() {
+    const pid = (document.getElementById('personid')?.value || '').trim();
+    loadPersonidSuggest(pid);
+    if (!pid) return;
+    const res = await fetch(`/api/customers/by-personid?personid=${encodeURIComponent(pid)}`);
+    const c = await res.json().catch(() => null);
+    if (!c) return;
+
+    // เติมฟิลด์
+    (document.getElementById('customer_name') || {}).value = c.fname || '';
+    (document.getElementById('customer_address') || {}).value = c.cf_personaddress || '';
+    (document.getElementById('customer_taxid') || {}).value = c.cf_taxid || '';
+    (document.getElementById('tel') || {}).value = c.tel || '';
+    (document.getElementById('mobile') || {}).value = c.mobile || '';
+    (document.getElementById('cf_personzipcode') || {}).value = c.cf_personzipcode || '';
+    (document.getElementById('cf_provincename') || {}).value = c.cf_provincename || '';
+}
+window.selectCustomerByPersonid = selectCustomerByPersonid;
+
+// เรียกเมื่อพิมพ์ชื่อลูกค้า
+async function selectCustomer() {
+    const name = (document.getElementById('customer_name')?.value || '').trim();
+    loadCustomerNameSuggest(name);
+    if (!name) return;
+    const res = await fetch(`/api/customers/by-name?name=${encodeURIComponent(name)}`);
+    const c = await res.json().catch(() => null);
+    if (!c) return;
+
+    (document.getElementById('personid') || {}).value = c.personid || '';
+    (document.getElementById('customer_address') || {}).value = c.cf_personaddress || '';
+    (document.getElementById('customer_taxid') || {}).value = c.cf_taxid || '';
+    (document.getElementById('tel') || {}).value = c.tel || '';
+    (document.getElementById('mobile') || {}).value = c.mobile || '';
+    (document.getElementById('cf_personzipcode') || {}).value = c.cf_personzipcode || '';
+    (document.getElementById('cf_provincename') || {}).value = c.cf_provincename || '';
+}
+window.selectCustomer = selectCustomer;
+
+// ===== buildPayload: แนบข้อมูลลูกค้าด้วย =====
+function buildPayload() {
+    const d = document.getElementById('cn_date')?.value || new Date().toISOString().slice(0, 10);
+    const cn = document.getElementById('creditnote_number')?.value || '';
+    const items = [];
+
+    document.querySelectorAll('#items .item-row').forEach(row => {
+        const grn = row.querySelector('.grn_number')?.value || '';
+        const inv = row.querySelector('.invoice_number')?.value || '';
+        const code = row.querySelector('.product_code')?.value || '';
+        const name = row.querySelector('.description')?.value || '';
+        const q = parseFloat(row.querySelector('.quantity')?.value || 0);
+        const fine = parseFloat(row.querySelector('.fine')?.value || 0);
+
+        const base = parseFloat(
+            row.querySelector('.base_price')?.value ||
+            row.querySelector('.unit_price')?.value || 0
+        );
+        const price_after_fine = (base - (isNaN(fine) ? 0 : fine));
+
+        if (grn || inv || code || name) {
+            items.push({
+                grn_number: grn,
+                invoice_number: inv,
+                cf_itemid: code,
+                cf_itemname: name,
+                quantity: q,
+                fine: fine,
+                price_after_fine: price_after_fine
+            });
+        }
+    });
+
+    // เก็บหัวลูกค้า
+    const buyer = {
+        name: document.getElementById('customer_name')?.value || '',
+        addr: document.getElementById('customer_address')?.value || '',
+        tax: document.getElementById('customer_taxid')?.value || '',
+        tel: document.getElementById('tel')?.value || '',
+        mobile: document.getElementById('mobile')?.value || '',
+        zipcode: document.getElementById('cf_personzipcode')?.value || '',
+        prov: document.getElementById('cf_provincename')?.value || '',
+        personid: document.getElementById('personid')?.value || '',
+    };
+
+    return { creditnote_date: d, creditnote_number: cn, items, buyer };
+}
+
