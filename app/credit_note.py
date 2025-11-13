@@ -256,34 +256,98 @@ def create_credit_note(payload: dict = Body(...), db: Session = Depends(get_db))
 # ==============================================================================
 @router.post("/api/credit-notes/preview", response_class=HTMLResponse)
 def preview_credit_note(request: Request, payload: dict = Body(...)):
+    """
+    สร้าง HTML ใบลดหนี้จาก payload (ไม่ต้องบันทึกลง DB)
+    ใช้โครงเดียวกับ credit_note.html:
+      - base price (เดิม) = price_after_fine + fine
+      - amt_old = base * qty
+      - amt_new = new * qty
+      - sum_reduce_value = ยอดที่ลดลง (amt_old - amt_new)
+      - vat = 7% ของ sum_reduce_value
+    """
     d = payload or {}
     items = d.get("items") or []
 
-    # ... (โค้ดคำนวณแถวเดิมคงไว้)
+    # --- วันที่ / เลขที่เอกสาร ---
+    date_str = d.get("creditnote_date") or datetime.now().date().isoformat()
+    doc_date = _to_date(date_str)
+    doc_date_be = f"{doc_date.day:02d}/{doc_date.month:02d}/{doc_date.year + 543}"
 
-    # === ใช้ buyer จาก payload ถ้ามี ===
+    # ถ้า user ยังไม่กด generate เลขที่ ให้แสดงเป็น "—"
+    doc_no = (d.get("creditnote_number") or "").strip() or "—"
+
+    # --- คำนวณรายการ ---
+    rows_html_parts = []
+    sum_reduce_value = 0.0
+
+    for it in items:
+        grn  = (it.get("grn_number") or "").strip()
+        inv  = (it.get("invoice_number") or "").strip()
+        desc = (it.get("cf_itemname") or "").strip()
+        qty  = float(it.get("quantity") or 0)
+        fine = float(it.get("fine") or 0)
+        newp = float(it.get("price_after_fine") or 0)   # ราคาใหม่/หน่วย (หลังหัก fine)
+        basep = newp + fine                             # ราคาเดิม/หน่วย (ก่อนหักบทปรับ)
+
+        amt_old = basep * qty
+        amt_new = newp  * qty
+
+        sum_reduce_value += max(0.0, (amt_old - amt_new))
+
+        rows_html_parts.append(
+            "<tr>"
+            f"<td>{grn}</td>"
+            f"<td>{inv}</td>"
+            f"<td>{desc}</td>"
+            f"<td class='num'>{qty:,.2f}</td>"
+            f"<td class='num'>{amt_old:,.2f}</td>"
+            f"<td class='num'>{amt_new:,.2f}</td>"
+            "</tr>"
+        )
+
+    if rows_html_parts:
+        table_rows_html = "".join(rows_html_parts)
+    else:
+        table_rows_html = (
+            "<tr>"
+            "<td colspan='6' style='text-align:center; padding: 20px;'>- ไม่มีรายการ -</td>"
+            "</tr>"
+        )
+
+    sum_reduce_vat = round(sum_reduce_value * 0.07, 2)
+    sum_total = round(sum_reduce_value + sum_reduce_vat, 2)
+
+    # --- ผู้ซื้อจาก payload (fallback เป็น mock เดิม) ---
     buyer = d.get("buyer") or {}
-    buyer_name = buyer.get("name") or "บริษัท แพนเทอรา เพาเวอร์ แอนด์ แก๊ส จำกัด"
-    buyer_addr = buyer.get("addr") or "94/1 หมู่ 3 ต.เขาหินซ้อน อ.พนมสารคาม จ.ฉะเชิงเทรา 24120"
-    buyer_branch = "สำนักงานใหญ่"  # ใส่เพิ่มภายหลังได้หากมีใน payload
-    buyer_tax = buyer.get("tax") or "0245554001317"
+    buyer_name   = buyer.get("name") or {}
+    buyer_addr   = buyer.get("addr") or {}
+    buyer_branch = buyer.get("branch") or {}
+    buyer_tax    = buyer.get("tax") or {}
 
-    # ... (วันที่/เลขที่ เดิม)
+    # --- ผู้ขาย fixed เดิม ---
+    seller_name = "บริษัท เอส แอนด์ เอส อินคอม จำกัด"
+    seller_addr = "69 หมู่ 10 ต.พังตรุ อ.พนมทวน จ.กาญจนบุรี 71140"
+    seller_phone = "0888088840"
+    seller_branch = "สำนักงานใหญ่"
+    seller_tax = "0715544000020"
 
     html = f"""
 <div class="A4-page">
   <div class="credit-note">
-    <div class="cn-title-row"><div></div><div class="cn-title">ใบลดหนี้</div></div>
+    <div class="cn-title-row">
+      <div></div>
+      <div class="cn-title">ใบลดหนี้</div>
+    </div>
 
     <div class="cn-header" style="border-top: var(--border);">
       <div class="cell">
         <div class="cn-store-title">สถานที่ออกเอกสาร</div>
         <div class="cn-kv" style="margin-bottom:6px;">
-          <div>ผู้ขาย/ผู้ประกอบการ</div><div>บริษัท เอส แอนด์ เอส อินคอม จำกัด</div>
-          <div>ที่อยู่</div><div>69 หมู่ 10 ต.พังตรุ อ.พนมทวน จ.กาญจนบุรี 71140</div>
-          <div>โทร.</div><div>0888088840</div>
-          <div>สถานประกอบการ</div><div>สำนักงานใหญ่</div>
-          <div>เลขประจำตัวผู้เสียภาษี</div><div>0715544000020</div>
+          <div>ผู้ขาย/ผู้ประกอบการ</div><div>{seller_name}</div>
+          <div>ที่อยู่</div><div>{seller_addr}</div>
+          <div>โทร.</div><div>{seller_phone}</div>
+          <div>สถานประกอบการ</div><div>{seller_branch}</div>
+          <div>เลขประจำตัวผู้เสียภาษี</div><div>{seller_tax}</div>
         </div>
         <div class="cn-kv">
           <div>ผู้ซื้อ</div><div>{buyer_name}</div>
@@ -293,14 +357,17 @@ def preview_credit_note(request: Request, payload: dict = Body(...)):
         </div>
       </div>
       <div class="cell">
-        <div class="cn-kv"><div>วันที่ออกเอกสาร</div><div>{doc_date_be}</div></div>
+        <div class="cn-kv">
+          <div>วันที่ออกเอกสาร</div><div>{doc_date_be}</div>
+        </div>
       </div>
       <div class="cell">
-        <div class="cn-kv"><div>เลขที่</div><div>{doc_no}</div></div>
+        <div class="cn-kv">
+          <div>เลขที่</div><div>{doc_no}</div>
+        </div>
       </div>
     </div>
 
-    <!-- ตาราง/สรุปเดิม -->
     <table class="cn-table">
       <thead>
         <tr>
@@ -308,8 +375,8 @@ def preview_credit_note(request: Request, payload: dict = Body(...)):
           <th style="width:15%;">เลขที่ใบกำกับ</th>
           <th>รายละเอียด</th>
           <th class="num" style="width:12%;">จำนวน</th>
-          <th class="num" style="width:15%;">มูลค่าสินค้า/บริการ (เดิม)</th>
-          <th class="num" style="width:15%;">มูลค่าสินค้า/บริการ (ใหม่)</th>
+          <th class="num" style="width:15%;">มูลค่าบริการ/สินค้า (เดิม)</th>
+          <th class="num" style="width:15%;">มูลค่าบริการ/สินค้า (ใหม่)</th>
         </tr>
       </thead>
       <tbody>
@@ -318,21 +385,40 @@ def preview_credit_note(request: Request, payload: dict = Body(...)):
     </table>
 
     <table class="cn-summary">
-      <tr><td class="label">มูลค่าที่ปรับปรุงลดลง (บาท)</td><td class="num">{sum_reduce_value:,.2f}</td></tr>
-      <tr><td class="label">ภาษีมูลค่าเพิ่มที่ลดลง (บาท)</td><td class="num">{sum_reduce_vat:,.2f}</td></tr>
-      <tr><td class="label">รวมเป็นเงินปรับปรุงทั้งสิ้น</td><td class="num">{sum_total:,.2f}</td></tr>
+      <tr>
+        <td class="label">มูลค่าที่ปรับปรุงลดลง (บาท)</td>
+        <td class="num">{sum_reduce_value:,.2f}</td>
+      </tr>
+      <tr>
+        <td class="label">ภาษีมูลค่าเพิ่มที่ลดลง (บาท)</td>
+        <td class="num">{sum_reduce_vat:,.2f}</td>
+      </tr>
+      <tr>
+        <td class="label">รวมเป็นเงินปรับปรุงทั้งสิ้น</td>
+        <td class="num">{sum_total:,.2f}</td>
+      </tr>
     </table>
 
     <div class="cn-reason">มีการลดหนี้เนื่องจาก : <span>ราคาสินค้าไม่ถูกต้อง</span></div>
+
     <div class="cn-signatures">
-      <div class="sig-col"><div class="sig-line"></div><div class="sig-label">ผู้ออกเอกสาร</div></div>
-      <div class="sig-col"><div class="sig-line"></div><div class="sig-label">ผู้มีอำนาจลงนาม</div></div>
+      <div class="sig-col">
+        <div class="sig-line"></div>
+        <div class="sig-label">ผู้ออกเอกสาร</div>
+      </div>
+      <div class="sig-col">
+        <div class="sig-line"></div>
+        <div class="sig-label">ผู้มีอำนาจลงนาม</div>
+      </div>
     </div>
+
     <div class="cn-footnote">ต้นฉบับ - ให้ลูกค้าใช้เป็นใบกำกับภาษี</div>
   </div>
 </div>
-    """
+    """.strip()
+
     return HTMLResponse(content=html)
+
 
 # ==============================================================================
 # END: โค้ดที่แก้ไข
