@@ -42,8 +42,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const view = document.getElementById('preview');
         view.classList.remove('hidden');
         view.innerHTML = html;
-        window.scrollTo({ top: view.offsetTop - 10, behavior: 'smooth' });
-    });
 
     btnPDF?.addEventListener('click', async () => {
         const payload = buildPayload();

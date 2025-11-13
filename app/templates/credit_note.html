@@ -50,14 +50,14 @@
         <table class="cn-table">
             <thead>
                 <tr>
-                    <th style="width:15%;">เลขที่ใบรับสินค้า</th>
-                    <th style="width:15%;">เลขที่ใบกำกับ</th>
+                    <th style="width:12%;">วันที่</th>
+                    <th style="width:18%;">ใบกำกับภาษีเดิมเลขที่</th>
                     <th>รายละเอียด</th>
-                    <th class="num" style="width:12%;">จำนวน</th>
-                    <th class="num" style="width:15%;">มูลค่าบริการ/สินค้า (เดิม)</th>
-                    <th class="num" style="width:15%;">มูลค่าบริการ/สินค้า (ใหม่)</th>
+                    <th class="num" style="width:15%;">มูลค่าสินค้า/บริการ (เดิม)</th>
+                    <th class="num" style="width:15%;">มูลค่าสินค้า/บริการ (ใหม่)</th>
                 </tr>
             </thead>
+
             <tbody>
                 {% if rows|length == 0 %}
                 <tr>
@@ -69,7 +69,6 @@
                     <td>{{ r.grn }}</td>
                     <td>{{ r.inv }}</td>
                     <td>{{ r.desc }}</td>
-                    <td class="num">{{ "%.2f"|format(r.qty) }}</td>
                     <td class="num">{{ "{:,.2f}".format(r.amt_old) }}</td>
                     <td class="num">{{ "{:,.2f}".format(r.amt_new) }}</td>
                 </tr>

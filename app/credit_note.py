@@ -136,10 +136,9 @@ def credit_note_preview_page(request: Request, no: str = Query(...), db: Session
         amt_old = basep * qty
         amt_new = newp  * qty
         rows.append({
-            "grn": it.grn_number or "",
+            "date": be_date,                 
             "inv": it.invoice_number or "",
             "desc": it.cf_itemname or "",
-            "qty": qty,
             "amt_old": amt_old,
             "amt_new": amt_new
         })
