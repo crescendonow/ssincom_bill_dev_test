@@ -198,7 +198,8 @@ function addItem() {
     <!-- เก็บราคาฐาน -->
     <input type="hidden" class="base_price" value="0" />
 
-    <button type="button" onclick="removeItem(this)" class="text-red-600 hover:text-red-800 font-semibold px-2">🗑️</button>
+    <button type="button" onclick="removeItem(this)" class="text-red-600 hover:text-red-800 font-semibold px-2"><i
+                            class="fas fa-trash"></i></button>
   `;
 
     wrap.appendChild(div);
