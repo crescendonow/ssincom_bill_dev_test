@@ -161,28 +161,55 @@ async function fetchAndFillGRNSummary(grn, ctx) {
 
 function addItem() {
     const wrap = document.getElementById('items');
+    if (!wrap) return;
+
     const div = document.createElement('div');
     div.className = "flex flex-wrap gap-3 md:gap-4 item-row items-end";
     div.innerHTML = `
-    <input name="grn_number" placeholder="GRN No"
+    <input name="grn_number" placeholder="เลขที่ใบรับสินค้า"
       class="grn_number flex-1 min-w-[120px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
+
     <input name="invoice_number" placeholder="เลขที่ใบกำกับ"
       class="invoice_number flex-1 min-w-[140px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
+
     <input name="product_code" placeholder="รหัสสินค้า"
       class="product_code w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
+
     <input name="description" placeholder="รายละเอียด"
       class="description flex-1 min-w-[140px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
-    <input name="quantity" type="number" step="0.01" placeholder="จำนวน" oninput="updateTotal()"
-      class="quantity w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
-    <input name="fine" type="number" step="0.01" placeholder="ราคาบทปรับ(บาท)" oninput="updateTotal()"
-      class="fine w-28 md:w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
+
+    <!-- ราคา/หน่วย (จะ autofill จากรหัสสินค้า) -->
+    <input name="unit_price" type="number" step="0.01" placeholder="ราคา/หน่วย"
+      class="unit_price w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" oninput="updateTotal()" />
+
+    <input name="quantity" type="number" step="0.01" placeholder="จำนวน"
+      class="quantity w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" oninput="updateTotal()" />
+
+    <input name="fine" type="number" step="0.01" placeholder="บทปรับ/หน่วย (บาท)"
+      class="fine w-28 md:w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" oninput="updateTotal()" />
+
+    <!-- แสดงผลรวม VAT 7% -->
+    <input name="old_total_vat" placeholder="มูลค่าเดิม (รวม VAT)" readonly
+      class="old_total_vat w-40 bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5 text-right" />
+
+    <input name="new_total_vat" placeholder="มูลค่าใหม่ (รวม VAT)" readonly
+      class="new_total_vat w-40 bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5 text-right" />
+
+    <!-- เก็บราคาฐาน -->
     <input type="hidden" class="base_price" value="0" />
+
     <button type="button" onclick="removeItem(this)" class="text-red-600 hover:text-red-800 font-semibold px-2">🗑️</button>
   `;
+
     wrap.appendChild(div);
-    wireRow(div);
+
+    // ผูก autocomplete + summary + ดึงราคา + คำนวณ
+    wireRow(div);               // ผูก datalist + /api/grn/suggest + /api/grn/summary
+    wireProductPriceLookup(div); // ผูกดึงราคา /api/products/price เมื่อเปลี่ยนรหัสสินค้า
+    updateTotal();
 }
 window.addItem = addItem;
+
 
 
 function removeItem(btn) { btn.closest('.item-row')?.remove(); updateTotal(); }
