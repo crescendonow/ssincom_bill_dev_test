@@ -213,11 +213,16 @@ function addItem() {
 
     // ผูก autocomplete + summary + ดึงราคา + คำนวณ
     wireRow(div);               // ผูก datalist + /api/grn/suggest + /api/grn/summary
-    wireProductPriceLookup(div); // ผูกดึงราคา /api/products/price เมื่อเปลี่ยนรหัสสินค้า
     updateTotal();
 }
 window.addItem = addItem;
 
+// ผูก autocomplete + lookup ให้ทุกแถวที่มีอยู่ตอนโหลดหน้า
+function wireAutocompleteForAllRows() {
+    document.querySelectorAll('#items .item-row').forEach(row => {
+        wireRow(row); // ผูก GRN suggest + summary + product price lookup
+    });
+}
 
 
 function removeItem(btn) { btn.closest('.item-row')?.remove(); updateTotal(); }
