@@ -123,6 +123,27 @@ def credit_note_preview_page(request: Request, no: str = Query(...), db: Session
 
     items = db.query(CreditNoteItem).filter(CreditNoteItem.creditnote_number == no).all()
 
+    # --- map invoice_number -> วันที่ใบกำกับ (พ.ศ.) ---
+    inv_date_map: dict[str, str] = {}
+    from sqlalchemy import text  # ถ้ายังไม่ได้ import ไว้ข้างบนก็เพิ่มบรรทัดนี้
+
+    for it in items:
+        inv_no = (it.invoice_number or "").strip()
+        if not inv_no or inv_no in inv_date_map:
+            continue
+        row = db.execute(
+            text("""
+                SELECT invoice_date
+                FROM ss_invoices.invoices
+                WHERE invoice_number = :inv
+                LIMIT 1
+            """),
+            {"inv": inv_no},
+        ).first()
+        if row and row[0]:
+            d = row[0]
+            inv_date_map[inv_no] = f"{d.day:02d}/{d.month:02d}/{d.year + 543}"
+
     # สร้างข้อมูลสำหรับรายงาน
     rows = []
     sum_reduce_value = 0.0
@@ -135,9 +156,13 @@ def credit_note_preview_page(request: Request, no: str = Query(...), db: Session
         basep = newp + fine                                  # ราคาเดิม (ก่อนหักบทปรับ)
         amt_old = basep * qty
         amt_new = newp  * qty
+
+        inv_no = (it.invoice_number or "").strip()
+        row_date_be = inv_date_map.get(inv_no, "")
+
         rows.append({
-            "date": be_date,                 
-            "inv": it.invoice_number or "",
+            "date": row_date_be,               # << ใช้วันที่จาก invoice_date
+            "inv": inv_no,
             "desc": it.cf_itemname or "",
             "amt_old": amt_old,
             "amt_new": amt_new
@@ -147,11 +172,10 @@ def credit_note_preview_page(request: Request, no: str = Query(...), db: Session
     vat = round(sum_reduce_value * 0.07, 2)
     grand = round(sum_reduce_value + vat, 2)
 
-    # วันที่ (พ.ศ.)
+    # วันที่เอกสาร (หัวใบลดหนี้) ให้ใช้ created_at เดิม
     d = head.created_at or datetime.now().date()
     be_date = f"{d.day:02d}/{d.month:02d}/{d.year + 543}"
 
-    # ส่งให้ template credit_note.html (หน้ารายงาน)
     ctx = {
         "request": request,
         "doc_no": head.creditnote_number,
@@ -160,6 +184,7 @@ def credit_note_preview_page(request: Request, no: str = Query(...), db: Session
         "sum_reduce_value": sum_reduce_value,
         "sum_reduce_vat": vat,
         "sum_total": grand,
+        
         # mock ข้อมูลผู้ขาย/ผู้ซื้อ (แก้เป็นของจริงได้)
         "seller": {
             "name": "บริษัท เอส แอนด์ เอส อินคอม จำกัด",

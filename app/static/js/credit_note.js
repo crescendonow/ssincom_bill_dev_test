@@ -42,16 +42,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const view = document.getElementById('preview');
         view.classList.remove('hidden');
         view.innerHTML = html;
+    });   // <<--- อันนี้คือวงเล็บที่หาย
 
     btnPDF?.addEventListener('click', async () => {
         const payload = buildPayload();
-        const res = await fetch('/export-creditnote-pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-        if (!res.ok) { const t = await res.text(); alert(t || 'สร้าง PDF ไม่สำเร็จ'); return; }
+        const res = await fetch('/export-creditnote-pdf', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const t = await res.text();
+            alert(t || 'สร้าง PDF ไม่สำเร็จ');
+            return;
+        }
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url; a.download = `credit_note_${payload.creditnote_number || 'document'}.pdf`;
-        document.body.appendChild(a); a.click(); a.remove();
+        a.href = url;
+        a.download = `credit_note_${payload.creditnote_number || 'document'}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
         URL.revokeObjectURL(url);
     });
 
@@ -59,9 +71,6 @@ document.addEventListener('DOMContentLoaded', () => {
     wireAutocompleteForAllRows();
 });
 
-function wireAutocompleteForAllRows() {
-    document.querySelectorAll('#items .item-row').forEach(row => wireRow(row));
-}
 
 function wireRow(row) {
     const grnInput = row.querySelector('.grn_number');
