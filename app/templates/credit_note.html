@@ -9,70 +9,78 @@
       </div>
     </div>
 
-    <!-- ส่วนหัว: สถานที่ออกเอกสาร + ผู้ขาย/ผู้ซื้อ + วันที่/เลขที่ -->
+    <!-- ส่วนหัวหลัก -->
     <div class="cn-header">
       <!-- แถวหัวข้อ -->
-      <div class="cn-header-row cn-header-row1">
+      <div class="cn-header-row">
         <div class="cn-header-cell span2 cn-header-title">สถานที่ออกเอกสาร</div>
         <div class="cn-header-cell cn-header-title">วันที่ออกเอกสาร</div>
         <div class="cn-header-cell cn-header-title">เลขที่</div>
       </div>
 
       <!-- แถวข้อมูล -->
-      <div class="cn-header-row cn-header-row2">
-        <!-- ซ้าย: ผู้ขาย + ผู้ซื้อ (กิน 2 ส่วน) -->
+      <div class="cn-header-row">
+        <!-- ซ้าย: ชื่อผู้ประกอบการ + ชื่อลูกค้า (กิน 2/4 ของหน้า) -->
         <div class="cn-header-cell span2">
-          <!-- ผู้ขาย -->
-          <table class="cn-kv-table">
-            <tr>
-              <td>ผู้ขาย/ผู้ประกอบการ</td>
-              <td>{{ seller.name }}</td>
-            </tr>
-            <tr>
-              <td>ที่อยู่</td>
-              <td>{{ seller.addr }}</td>
-            </tr>
-            <tr>
-              <td>โทร.</td>
-              <td>{{ seller.phone }}</td>
-            </tr>
-            <tr>
-              <td>สถานประกอบการ</td>
-              <td>{{ seller.branch }}</td>
-            </tr>
-            <tr>
-              <td>เลขประจำตัวผู้เสียภาษี</td>
-              <td>{{ seller.tax }}</td>
-            </tr>
-          </table>
+          <div class="cn-header-inner">
+            <!-- ผู้ประกอบการ -->
+            <div class="cn-party">
+              <div class="cn-party-title">ชื่อผู้ประกอบการ</div>
+              <table class="cn-kv-table">
+                <tr>
+                  <td>ผู้ขาย/ผู้ประกอบการ</td>
+                  <td>{{ seller.name }}</td>
+                </tr>
+                <tr>
+                  <td>ที่อยู่</td>
+                  <td>{{ seller.addr }}</td>
+                </tr>
+                <tr>
+                  <td>โทร.</td>
+                  <td>{{ seller.phone }}</td>
+                </tr>
+                <tr>
+                  <td>สถานประกอบการ</td>
+                  <td>{{ seller.branch }}</td>
+                </tr>
+                <tr>
+                  <td>เลขประจำตัวผู้เสียภาษี</td>
+                  <td>{{ seller.tax }}</td>
+                </tr>
+              </table>
+            </div>
 
-          <!-- ผู้ซื้อ -->
-          <table class="cn-kv-table cn-kv-table-buyer">
-            <tr>
-              <td>ชื่อลูกค้า</td>
-              <td>{{ buyer.name }}</td>
-            </tr>
-            <tr>
-              <td>ที่อยู่</td>
-              <td>{{ buyer.addr }}</td>
-            </tr>
-            <tr>
-              <td>สถานประกอบการ</td>
-              <td>{{ buyer.branch }}</td>
-            </tr>
-            <tr>
-              <td>เลขประจำตัวผู้เสียภาษี</td>
-              <td>{{ buyer.tax }}</td>
-            </tr>
-          </table>
+            <!-- ลูกค้า -->
+            <div class="cn-party">
+              <div class="cn-party-title">ชื่อลูกค้า</div>
+              <table class="cn-kv-table cn-kv-table-buyer">
+                <tr>
+                  <td>ชื่อลูกค้า</td>
+                  <td>{{ buyer.name }}</td>
+                </tr>
+                <tr>
+                  <td>ที่อยู่</td>
+                  <td>{{ buyer.addr }}</td>
+                </tr>
+                <tr>
+                  <td>สถานประกอบการ</td>
+                  <td>{{ buyer.branch }}</td>
+                </tr>
+                <tr>
+                  <td>เลขประจำตัวผู้เสียภาษี</td>
+                  <td>{{ buyer.tax }}</td>
+                </tr>
+              </table>
+            </div>
+          </div>
         </div>
 
-        <!-- กลาง: ค่าวันที่ออกเอกสาร -->
+        <!-- กลาง: วันที่ออกเอกสาร -->
         <div class="cn-header-cell">
           <div class="cn-doc-value">{{ doc_date_be }}</div>
         </div>
 
-        <!-- ขวา: ค่าเลขที่ -->
+        <!-- ขวา: เลขที่ -->
         <div class="cn-header-cell">
           <div class="cn-doc-value">{{ doc_no }}</div>
         </div>
@@ -125,6 +133,7 @@
         </tr>
       </table>
 
+      <!-- ดันส่วนนี้ไปท้ายกระดาษ -->
       <div class="cn-bottom">
         <div class="cn-reason">
           มีการลดหนี้เนื่องจาก : <span>{{ reason }}</span>
