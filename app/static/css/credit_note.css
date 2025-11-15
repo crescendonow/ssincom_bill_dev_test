@@ -53,7 +53,7 @@ body {
 
 .cn-header {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1.5fr 1.5fr;
   /* ซ้าย-ขวา แบ่งคนละครึ่ง */
   gap: 0;
   border-bottom: var(--border);
