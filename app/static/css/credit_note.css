@@ -66,10 +66,9 @@ body {
 
 .cn-header {
   display: grid;
-  grid-template-columns: 1.7fr 1fr;
-  /* ซ้ายกว้างกว่าหน่อย */
-  gap: 0;
-  border-bottom: var(--border);
+  grid-template-columns: 1.4fr 1fr;
+  gap: 12px;
+  padding-bottom: 6px;
 }
 
 .cn-header .cell {
