@@ -66,7 +66,8 @@ body {
 
 .cn-header {
   display: grid;
-  grid-template-columns: 1.7fr 1fr; /* ซ้ายกว้างกว่าหน่อย */
+  grid-template-columns: 1.7fr 1fr;
+  /* ซ้ายกว้างกว่าหน่อย */
   gap: 0;
   border-bottom: var(--border);
 }
@@ -79,6 +80,35 @@ body {
 
 .cn-header .cell:last-child {
   border-right: none;
+}
+
+/* จัด layout ฝั่งขวา */
+.right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* กล่องวันที่ + เลขที่ */
+.doc-info {
+  grid-template-columns: 110px 1fr;
+  font-weight: 600;
+}
+
+/* ผู้ซื้อ */
+.buyer-title {
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.buyer-kv {
+  grid-template-columns: 110px 1fr;
+}
+
+/* เส้นคั่นทึบ */
+.cn-divider {
+  border-bottom: 2px solid #000;
+  margin: 4px 0 8px 0;
 }
 
 .cn-doc-cell {
