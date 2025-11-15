@@ -44,10 +44,30 @@ body {
   background: #fff;
   color: #000;
   border: var(--border);
+  display: flex;
+  flex-direction: column;
 }
 
 .credit-note {
   width: 100%;
+  flex: 1;
+  /* ✅ เพิ่ม */
+  display: flex;
+  /* ✅ เพิ่ม */
+  flex-direction: column;
+  /* ✅ เพิ่ม */
+}
+
+main {
+  flex: 1;
+  /* ✅ ให้ main กินพื้นที่ที่เหลือ */
+  display: flex;
+  flex-direction: column;
+}
+
+.cn-bottom {
+  margin-top: auto;
+  /* ✅ ดันลงท้ายกระดาษ */
 }
 
 /* แถวบน: ใบลดหนี้ / ต้นฉบับ */
@@ -142,6 +162,7 @@ body {
 .cn-doc-info tr:last-child td {
   border-bottom: none;
 }
+
 /* ตารางหลัก */
 .cn-table {
   width: 100%;

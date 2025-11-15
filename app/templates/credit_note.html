@@ -1,6 +1,5 @@
 <div class="A4-page">
   <div class="credit-note">
-
     <!-- แถวบนขวา: ใบลดหนี้ / ต้นฉบับ -->
     <div class="cn-top-row">
       <div class="cn-top-left"></div>
@@ -18,7 +17,7 @@
         <div class="cn-parties">
           <!-- ผู้ประกอบการ (ผู้ขาย) -->
           <div class="cn-party">
-            <div class="cn-party-title">ผู้ประกอบการ</div>
+            <div class="cn-party-title">ชื่อผู้ประกอบการ</div>
             <table class="cn-kv-table">
               <tr>
                 <td>ผู้ขาย/ผู้ประกอบการ</td>
@@ -48,7 +47,7 @@
             <div class="cn-party-title">ผู้ซื้อ</div>
             <table class="cn-kv-table">
               <tr>
-                <td>ผู้ซื้อ</td>
+                <td>ชื่อลูกค้า</td>
                 <td>{{ buyer.name }}</td>
               </tr>
               <tr>
@@ -88,20 +87,21 @@
       <table class="cn-table">
         <thead>
           <tr>
-            <th style="width: 12%;">วันที่</th>
-            <th style="width: 18%;">ใบกำกับภาษีเดิมเลขที่</th>
+            <th style="width: 12%">วันที่</th>
+            <th style="width: 18%">ใบกำกับภาษีเดิมเลขที่</th>
             <th>รายละเอียด</th>
-            <th class="num" style="width: 15%;">มูลค่าสินค้า/บริการ (เดิม)</th>
-            <th class="num" style="width: 15%;">มูลค่าสินค้า/บริการ (ใหม่)</th>
+            <th class="num" style="width: 15%">มูลค่าสินค้า/บริการ (เดิม)</th>
+            <th class="num" style="width: 15%">มูลค่าสินค้า/บริการ (ใหม่)</th>
           </tr>
         </thead>
         <tbody>
           {% if rows|length == 0 %}
           <tr>
-            <td colspan="5" style="text-align:center; padding:20px;">- ไม่มีรายการ -</td>
+            <td colspan="5" style="text-align: center; padding: 20px">
+              - ไม่มีรายการ -
+            </td>
           </tr>
-          {% else %}
-          {% for r in rows %}
+          {% else %} {% for r in rows %}
           <tr>
             <td>{{ r.date }}</td>
             <td>{{ r.inv }}</td>
@@ -109,8 +109,7 @@
             <td class="num">{{ "{:,.2f}".format(r.amt_old) }}</td>
             <td class="num">{{ "{:,.2f}".format(r.amt_new) }}</td>
           </tr>
-          {% endfor %}
-          {% endif %}
+          {% endfor %} {% endif %}
         </tbody>
       </table>
 
@@ -129,23 +128,23 @@
         </tr>
       </table>
 
-      <div class="cn-reason">
-        มีการลดหนี้เนื่องจาก : <span>{{ reason }}</span>
-      </div>
-
-      <div class="cn-signatures">
-        <div class="sig-col">
-          <div class="sig-line"></div>
-          <div class="sig-label">ผู้ออกเอกสาร</div>
+      <div class="cn-bottom">
+        <div class="cn-reason">
+          มีการลดหนี้เนื่องจาก : <span>{{ reason }}</span>
         </div>
-        <div class="sig-col">
-          <div class="sig-line"></div>
-          <div class="sig-label">ผู้มีอำนาจลงนาม</div>
-        </div>
-      </div>
 
-      <div class="cn-footnote">
-        ต้นฉบับ - ให้ลูกค้าใช้เป็นใบกำกับภาษี
+        <div class="cn-signatures">
+          <div class="sig-col">
+            <div class="sig-line"></div>
+            <div class="sig-label">ผู้ออกเอกสาร</div>
+          </div>
+          <div class="sig-col">
+            <div class="sig-line"></div>
+            <div class="sig-label">ผู้มีอำนาจลงนาม</div>
+          </div>
+        </div>
+
+        <div class="cn-footnote">ต้นฉบับ - ให้ลูกค้าใช้เป็นใบกำกับภาษี</div>
       </div>
     </main>
   </div>
