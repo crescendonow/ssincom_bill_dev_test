@@ -46,20 +46,102 @@ body {
   border: var(--border);
 }
 
-/* ส่วนเนื้อหาใบลดหนี้ */
 .credit-note {
   width: 100%;
 }
 
-.cn-header {
+/* แถวบน: ใบลดหนี้ / ต้นฉบับ */
+.cn-top-row {
   display: grid;
-  grid-template-columns: 1.5fr 1.5fr;
-  /* ซ้าย-ขวา แบ่งคนละครึ่ง */
-  gap: 0;
+  grid-template-columns: 2.5fr 1fr;
   border-bottom: var(--border);
-  /* เส้นทึบคั่นระหว่างหัวกับตาราง */
 }
 
+.cn-top-right {
+  border-left: var(--border);
+  text-align: center;
+  padding: 6px 8px;
+}
+
+.cn-doc-title {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+}
+
+.cn-doc-copy {
+  font-size: var(--fs-xs);
+  margin-top: 2px;
+}
+
+/* ส่วนหัวหลัก */
+.cn-header {
+  display: grid;
+  grid-template-columns: 2.5fr 1fr;
+  border-bottom: var(--border);
+}
+
+.cn-header-left {
+  border-right: var(--border);
+}
+
+.cn-store-title {
+  padding: 4px 8px;
+  border-bottom: var(--border);
+  font-weight: 700;
+}
+
+/* ผู้ขาย / ผู้ซื้อ ซ้าย-ขวา */
+.cn-parties {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.cn-party {
+  border-right: var(--border);
+}
+
+.cn-party:last-child {
+  border-right: none;
+}
+
+.cn-party-title {
+  padding: 4px 8px;
+  border-bottom: var(--border);
+  font-weight: 700;
+}
+
+.cn-kv-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cn-kv-table td {
+  padding: 2px 8px;
+  vertical-align: top;
+}
+
+.cn-kv-table td:first-child {
+  width: 40%;
+}
+
+/* กล่องวันที่/เลขที่ */
+.cn-header-right {
+  display: flex;
+}
+
+.cn-doc-info {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cn-doc-info td {
+  padding: 4px 8px;
+  border-bottom: var(--border);
+}
+
+.cn-doc-info tr:last-child td {
+  border-bottom: none;
+}
 /* ตารางหลัก */
 .cn-table {
   width: 100%;
