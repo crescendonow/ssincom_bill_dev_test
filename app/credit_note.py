@@ -278,17 +278,9 @@ def create_credit_note(payload: dict = Body(...), db: Session = Depends(get_db))
 # ==============================================================================
 # START: โค้ดที่แก้ไข
 # ==============================================================================
-@router.post("/api/credit-notes/preview", response_class=HTMLResponse)
-def preview_credit_note(request: Request, payload: dict = Body(...)):
-    """
-    สร้าง HTML ใบลดหนี้จาก payload (ไม่ต้องบันทึกลง DB)
-    ใช้โครงเดียวกับ credit_note.html:
-      - base price (เดิม) = price_after_fine + fine
-      - amt_old = base * qty
-      - amt_new = new * qty
-      - sum_reduce_value = ยอดที่ลดลง (amt_old - amt_new)
-      - vat = 7% ของ sum_reduce_value
-    """
+from sqlalchemy import text  # ถ้ายังไม่ได้ import ด้านบนให้เพิ่ม
+
+def _build_creditnote_context_from_payload(payload: dict, db: Session) -> dict:
     d = payload or {}
     items = d.get("items") or []
 
@@ -297,171 +289,121 @@ def preview_credit_note(request: Request, payload: dict = Body(...)):
     doc_date = _to_date(date_str)
     doc_date_be = f"{doc_date.day:02d}/{doc_date.month:02d}/{doc_date.year + 543}"
 
-    # ถ้า user ยังไม่กด generate เลขที่ ให้แสดงเป็น "—"
     doc_no = (d.get("creditnote_number") or "").strip() or "—"
 
-    # --- คำนวณรายการ ---
-    rows_html_parts = []
+    # --- map invoice_number -> วันที่ใบกำกับ (พ.ศ.) เหมือน credit_note_preview_page ---
+    inv_date_map: dict[str, str] = {}
+
+    for it in items:
+        inv_no = (it.get("invoice_number") or "").strip()
+        if not inv_no or inv_no in inv_date_map:
+            continue
+        row = db.execute(
+            text("""
+                SELECT invoice_date
+                FROM ss_invoices.invoices
+                WHERE invoice_number = :inv
+                LIMIT 1
+            """),
+            {"inv": inv_no},
+        ).first()
+        if row and row[0]:
+            d_inv = row[0]
+            inv_date_map[inv_no] = f"{d_inv.day:02d}/{d_inv.month:02d}/{d_inv.year + 543}"
+
+    # --- คำนวณรายการ เหมือน logic เดิม ---
+    rows = []
     sum_reduce_value = 0.0
 
     for it in items:
-        grn  = (it.get("grn_number") or "").strip()
-        inv  = (it.get("invoice_number") or "").strip()
-        desc = (it.get("cf_itemname") or "").strip()
-        qty  = float(it.get("quantity") or 0)
-        fine = float(it.get("fine") or 0)
-        newp = float(it.get("price_after_fine") or 0)   # ราคาใหม่/หน่วย (หลังหัก fine)
-        basep = newp + fine                             # ราคาเดิม/หน่วย (ก่อนหักบทปรับ)
+        inv_no = (it.get("invoice_number") or "").strip()
+        desc   = (it.get("cf_itemname") or "").strip()
+        qty    = float(it.get("quantity") or 0)
+        fine   = float(it.get("fine") or 0)
+        newp   = float(it.get("price_after_fine") or 0)   # ราคาใหม่/หน่วย
+        basep  = newp + fine                              # ราคาเดิม/หน่วย
 
         amt_old = basep * qty
         amt_new = newp  * qty
 
+        row_date_be = inv_date_map.get(inv_no, "")
+
+        rows.append({
+            "date": row_date_be,
+            "inv": inv_no,
+            "desc": desc,
+            "amt_old": amt_old,
+            "amt_new": amt_new,
+        })
+
         sum_reduce_value += max(0.0, (amt_old - amt_new))
-
-        rows_html_parts.append(
-            "<tr>"
-            f"<td>{grn}</td>"
-            f"<td>{inv}</td>"
-            f"<td>{desc}</td>"
-            f"<td class='num'>{qty:,.2f}</td>"
-            f"<td class='num'>{amt_old:,.2f}</td>"
-            f"<td class='num'>{amt_new:,.2f}</td>"
-            "</tr>"
-        )
-
-    if rows_html_parts:
-        table_rows_html = "".join(rows_html_parts)
-    else:
-        table_rows_html = (
-            "<tr>"
-            "<td colspan='6' style='text-align:center; padding: 20px;'>- ไม่มีรายการ -</td>"
-            "</tr>"
-        )
 
     sum_reduce_vat = round(sum_reduce_value * 0.07, 2)
     sum_total = round(sum_reduce_value + sum_reduce_vat, 2)
 
-    # --- ผู้ซื้อจาก payload (fallback เป็น mock เดิม) ---
-    buyer = d.get("buyer") or {}
-    buyer_name   = buyer.get("name") or {}
-    buyer_addr   = buyer.get("addr") or {}
-    buyer_branch = buyer.get("branch") or {}
-    buyer_tax    = buyer.get("tax") or {}
+    # --- buyer จาก payload (optional) ---
+    buyer_payload = d.get("buyer") or {}
+    buyer = {
+        "name":   buyer_payload.get("name")   or "",
+        "addr":   buyer_payload.get("addr")   or "",
+        "branch": buyer_payload.get("branch") or "",
+        "tax":    buyer_payload.get("tax")    or "",
+    }
 
-    # --- ผู้ขาย fixed เดิม ---
-    seller_name = "บริษัท เอส แอนด์ เอส อินคอม จำกัด"
-    seller_addr = "69 หมู่ 10 ต.พังตรุ อ.พนมทวน จ.กาญจนบุรี 71140"
-    seller_phone = "0888088840"
-    seller_branch = "สำนักงานใหญ่"
-    seller_tax = "0715544000020"
+    # --- seller fixed เดิม ---
+    seller = {
+        "name":   "บริษัท เอส แอนด์ เอส อินคอม จำกัด",
+        "addr":   "69 หมู่ 10 ต.พังตรุ อ.พนมทวน จ.กาญจนบุรี 71140",
+        "phone":  "0888088840",
+        "branch": "สำนักงานใหญ่",
+        "tax":    "0715544000020",
+    }
 
-    html = f"""
-<div class="A4-page">
-  <div class="credit-note">
-    <div class="cn-title-row">
-      <div></div>
-      <div class="cn-title">ใบลดหนี้</div>
-    </div>
+    ctx = {
+        "doc_no": doc_no,
+        "doc_date_be": doc_date_be,
+        "rows": rows,
+        "sum_reduce_value": sum_reduce_value,
+        "sum_reduce_vat": sum_reduce_vat,
+        "sum_total": sum_total,
+        "seller": seller,
+        "buyer": buyer,
+        "reason": d.get("reason") or "ราคาสินค้าไม่ถูกต้อง",
+    }
+    return ctx
 
-    <div class="cn-header" style="border-top: var(--border);">
-      <div class="cell">
-        <div class="cn-store-title">สถานที่ออกเอกสาร</div>
-        <div class="cn-kv" style="margin-bottom:6px;">
-          <div>ผู้ขาย/ผู้ประกอบการ</div><div>{seller_name}</div>
-          <div>ที่อยู่</div><div>{seller_addr}</div>
-          <div>โทร.</div><div>{seller_phone}</div>
-          <div>สถานประกอบการ</div><div>{seller_branch}</div>
-          <div>เลขประจำตัวผู้เสียภาษี</div><div>{seller_tax}</div>
-        </div>
-        <div class="cn-kv">
-          <div>ผู้ซื้อ</div><div>{buyer_name}</div>
-          <div>ที่อยู่</div><div>{buyer_addr}</div>
-          <div>สถานประกอบการ</div><div>{buyer_branch}</div>
-          <div>เลขประจำตัวผู้เสียภาษี</div><div>{buyer_tax}</div>
-        </div>
-      </div>
-      <div class="cell">
-        <div class="cn-kv">
-          <div>วันที่ออกเอกสาร</div><div>{doc_date_be}</div>
-        </div>
-      </div>
-      <div class="cell">
-        <div class="cn-kv">
-          <div>เลขที่</div><div>{doc_no}</div>
-        </div>
-      </div>
-    </div>
-
-    <table class="cn-table">
-      <thead>
-        <tr>
-          <th style="width:15%;">เลขที่ใบรับสินค้า</th>
-          <th style="width:15%;">เลขที่ใบกำกับ</th>
-          <th>รายละเอียด</th>
-          <th class="num" style="width:12%;">จำนวน</th>
-          <th class="num" style="width:15%;">มูลค่าบริการ/สินค้า (เดิม)</th>
-          <th class="num" style="width:15%;">มูลค่าบริการ/สินค้า (ใหม่)</th>
-        </tr>
-      </thead>
-      <tbody>
-        {table_rows_html}
-      </tbody>
-    </table>
-
-    <table class="cn-summary">
-      <tr>
-        <td class="label">มูลค่าที่ปรับปรุงลดลง (บาท)</td>
-        <td class="num">{sum_reduce_value:,.2f}</td>
-      </tr>
-      <tr>
-        <td class="label">ภาษีมูลค่าเพิ่มที่ลดลง (บาท)</td>
-        <td class="num">{sum_reduce_vat:,.2f}</td>
-      </tr>
-      <tr>
-        <td class="label">รวมเป็นเงินปรับปรุงทั้งสิ้น</td>
-        <td class="num">{sum_total:,.2f}</td>
-      </tr>
-    </table>
-
-    <div class="cn-reason">มีการลดหนี้เนื่องจาก : <span>ราคาสินค้าไม่ถูกต้อง</span></div>
-
-    <div class="cn-signatures">
-      <div class="sig-col">
-        <div class="sig-line"></div>
-        <div class="sig-label">ผู้ออกเอกสาร</div>
-      </div>
-      <div class="sig-col">
-        <div class="sig-line"></div>
-        <div class="sig-label">ผู้มีอำนาจลงนาม</div>
-      </div>
-    </div>
-
-    <div class="cn-footnote">ต้นฉบับ - ให้ลูกค้าใช้เป็นใบกำกับภาษี</div>
-  </div>
-</div>
-    """.strip()
-
-    return HTMLResponse(content=html)
-
+@router.post("/api/credit-notes/preview", response_class=HTMLResponse)
+def preview_credit_note(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
+    """
+    Preview จาก payload โดยใช้ template credit_note.html จริง
+    """
+    ctx = _build_creditnote_context_from_payload(payload, db)
+    ctx["request"] = request
+    return templates.TemplateResponse("credit_note.html", ctx)
 
 # ==============================================================================
 # END: โค้ดที่แก้ไข
 # ==============================================================================
 
 @router.post("/export-creditnote-pdf")
-def export_creditnote_pdf(payload: dict = Body(...)):
+def export_creditnote_pdf(payload: dict = Body(...), db: Session = Depends(get_db)):
     base_dir = BASE_DIR
     css_path = base_dir / "static" / "css" / "credit_note.css"
 
-    # เรนเดอร์ HTML จาก preview_credit_note (ซึ่ง "มี" .A4-page แล้ว)
-    from fastapi import Request
-    dummy_req = Request(scope={"type": "http"})
-    html_inner = preview_credit_note(dummy_req, payload).body.decode("utf-8")
+    # ใช้ context จาก payload เหมือน preview
+    ctx = _build_creditnote_context_from_payload(payload, db)
+
+    # เรนเดอร์ template credit_note.html ด้วย Jinja2 แบบตรง ๆ (ไม่ผ่าน FastAPI)
+    template = templates.env.get_template("credit_note.html")
+    html_inner = template.render(ctx)
 
     html_str = f'<!DOCTYPE html><html><head><meta charset="utf-8" /></head><body>{html_inner}</body></html>'
 
     tmp_pdf = Path(tempfile.gettempdir()) / f"credit_note_{payload.get('creditnote_number','document')}.pdf"
-    HTML(string=html_str, base_url=str(base_dir)).write_pdf(str(tmp_pdf), stylesheets=[CSS(filename=str(css_path))])
+    HTML(string=html_str, base_url=str(base_dir)).write_pdf(
+        str(tmp_pdf),
+        stylesheets=[CSS(filename=str(css_path))]
+    )
     return FileResponse(path=tmp_pdf, media_type="application/pdf", filename=tmp_pdf.name)
 
 # -------- GRN APIs --------
