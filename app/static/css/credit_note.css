@@ -62,12 +62,12 @@ body {
 
 .cn-top-row {
   display: grid;
-  grid-template-columns: 2.5fr 1fr;
+  grid-template-columns: 3fr 1fr;
+  /* ขยายคอลัมน์ขวาให้กว้างขึ้น */
   border-bottom: var(--border);
 }
 
 .cn-top-left {
-  /* เว้นไว้เผื่ออนาคต ถ้าต้องการข้อมูลฝั่งซ้าย */
   border-right: var(--border);
 }
 
@@ -77,13 +77,18 @@ body {
 }
 
 .cn-doc-title {
-  font-size: var(--fs-lg);
+  font-size: var(--fs-md);
+  /* ลดขนาดลงเล็กน้อยกันตัดบรรทัด */
   font-weight: 700;
+  white-space: nowrap;
+  /* ไม่ให้ตัดบรรทัดคำว่า "ใบลดหนี้" */
 }
 
 .cn-doc-copy {
   font-size: var(--fs-xs);
   margin-top: 2px;
+  white-space: nowrap;
+  /* ไม่ให้ตัดบรรทัดคำว่า "ต้นฉบับ" */
 }
 
 /* =========================
