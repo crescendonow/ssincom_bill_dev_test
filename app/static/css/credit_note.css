@@ -11,25 +11,43 @@
   --border-2: 2px solid #000;
 }
 
-* { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
-body { font-family: var(--font-body); font-size: var(--fs-sm); line-height: var(--line); color:#000; }
+* {
+  box-sizing: border-box;
+}
 
-@page { size: A4 portrait; margin: 10mm; }
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  line-height: var(--line);
+  color: #000;
+}
+
+@page {
+  size: A4 portrait;
+  margin: 10mm;
+}
 
 .A4-page {
   width: 190mm;
   min-height: 277mm;
   margin: 0 auto;
   font-family: "TH Sarabun New", "Tahoma", "Sukhumvit Set", "Thonburi",
-            "Noto Sans Thai", "Noto Sans", Arial, sans-serif;
+    "Noto Sans Thai", "Noto Sans", Arial, sans-serif;
   background: #fff;
   color: #000;
   padding: 8mm;
   border: var(--border);
 }
 
-.credit-note { width: 100%; }
+.credit-note {
+  width: 100%;
+}
 
 .cn-title-row {
   display: grid;
@@ -38,7 +56,13 @@ body { font-family: var(--font-body); font-size: var(--fs-sm); line-height: var(
   border-bottom: var(--border-2);
   padding-bottom: 6px;
 }
-.cn-title { font-size: 18pt; font-weight: 700; text-align: right; padding-right: 8px; }
+
+.cn-title {
+  font-size: 18pt;
+  font-weight: 700;
+  text-align: right;
+  padding-right: 8px;
+}
 
 .cn-header {
   display: grid;
@@ -46,35 +70,135 @@ body { font-family: var(--font-body); font-size: var(--fs-sm); line-height: var(
   gap: 0;
   border-bottom: var(--border);
 }
+
 .cn-header .cell {
   border-right: var(--border);
   padding: 6px 8px;
   min-height: 32px;
 }
-.cn-header .cell:last-child { border-right: none; }
 
-.cn-store-title { font-weight: 700; margin-bottom: 6px; }
-.cn-kv { display: grid; grid-template-columns: 110px 1fr; gap: 2px 6px; align-items: start; }
-.cn-kv div { padding: 0; }
+.cn-header .cell:last-child {
+  border-right: none;
+}
 
-.cn-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-.cn-table th, .cn-table td { border: var(--border); padding: 6px 8px; vertical-align: top; }
-.cn-table thead th { text-align: left; font-weight: 700; }
-.cn-table td.num, .cn-table th.num { text-align: right; }
+/* layout ผู้ขาย / ผู้ซื้อ แบบ 2 คอลัมน์ */
+.cn-party-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 12px;
+}
 
-.cn-summary { width: 100%; border-collapse: collapse; margin-top: 8px; }
-.cn-summary td { border: var(--border); padding: 6px 8px; }
-.cn-summary td.label { width: 65%; }
-.cn-summary td.num { text-align: right; width: 35%; font-weight: 700; }
+.cn-party-title {
+  font-weight: 700;
+  margin-bottom: 2px;
+}
 
-.cn-reason { border: var(--border); padding: 6px 8px; min-height: 40px; margin-top: 6px; }
+/* ปรับ label ในกล่องผู้ขาย/ผู้ซื้อให้แคบลงหน่อย จะได้ไม่ดันตัวเลขหลุดบรรทัด */
+.cn-party .cn-kv {
+  grid-template-columns: 100px 1fr;
+}
 
-.cn-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 20mm; margin-top: 16mm; align-items: end; }
-.sig-col { text-align: center; }
-.sig-line { border-top: var(--border); width: 90%; margin: 0 auto 4px; height: 0; }
-.sig-label { font-size: var(--fs-xs); }
+.cn-store-title {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
 
-.cn-footnote { font-size: var(--fs-xxs); margin-top: 8px; }
+.cn-kv {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 2px 6px;
+  align-items: start;
+}
 
-@media print { .noprint, #btnPDF, #btnSave, #btnPreview { display: none !important; } }
+.cn-kv div {
+  padding: 0;
+}
 
+.cn-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+.cn-table th,
+.cn-table td {
+  border: var(--border);
+  padding: 6px 8px;
+  vertical-align: top;
+}
+
+.cn-table thead th {
+  text-align: left;
+  font-weight: 700;
+}
+
+.cn-table td.num,
+.cn-table th.num {
+  text-align: right;
+}
+
+.cn-summary {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+.cn-summary td {
+  border: var(--border);
+  padding: 6px 8px;
+}
+
+.cn-summary td.label {
+  width: 65%;
+}
+
+.cn-summary td.num {
+  text-align: right;
+  width: 35%;
+  font-weight: 700;
+}
+
+.cn-reason {
+  border: var(--border);
+  padding: 6px 8px;
+  min-height: 40px;
+  margin-top: 6px;
+}
+
+.cn-signatures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20mm;
+  margin-top: 16mm;
+  align-items: end;
+}
+
+.sig-col {
+  text-align: center;
+}
+
+.sig-line {
+  border-top: var(--border);
+  width: 90%;
+  margin: 0 auto 4px;
+  height: 0;
+}
+
+.sig-label {
+  font-size: var(--fs-xs);
+}
+
+.cn-footnote {
+  font-size: var(--fs-xxs);
+  margin-top: 8px;
+}
+
+@media print {
+
+  .noprint,
+  #btnPDF,
+  #btnSave,
+  #btnPreview {
+    display: none !important;
+  }
+}
