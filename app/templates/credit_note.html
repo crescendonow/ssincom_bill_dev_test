@@ -1,9 +1,10 @@
 <!-- credit_note.html (Jinja) -->
 <div class="A4-page mx-auto bg-white my-8 relative">
-  <div class="credit-note">
-
-    <!-- HEADER: 2 COLUMN ด้วย TAILWIND -->
-    <header class="flex justify-between items-start px-8 pt-6 pb-4 border-b-2 border-black">
+  <div class="credit-note text-[12pt]">
+    <!-- HEADER: 2 COLUMN -->
+    <header
+      class="grid grid-cols-[2fr,1fr] gap-4 px-8 pt-6 pb-4 border-b-2 border-black"
+    >
       <!-- LEFT COLUMN : บริษัท + หัวเอกสาร -->
       <div class="text-xs leading-tight">
         <h1 class="text-2xl font-bold">บริษัท เอส แอนด์ เอส อินคอม จำกัด</h1>
@@ -20,7 +21,8 @@
       </div>
 
       <!-- RIGHT COLUMN : วันที่/เลขที่ + ผู้ซื้อ -->
-      <div class="text-xs w-64 space-y-2">
+      <div class="text-xs space-y-3">
+        <!-- วันที่ + เลขที่ -->
         <div class="grid grid-cols-[auto,1fr] gap-x-2 gap-y-1">
           <span class="font-bold">วันที่ออกเอกสาร</span>
           <span>{{ doc_date_be }}</span>
@@ -29,7 +31,8 @@
           <span>{{ doc_no }}</span>
         </div>
 
-        <div class="mt-2">
+        <!-- ผู้ซื้อ -->
+        <div>
           <div class="font-bold">ชื่อผู้ซื้อ</div>
           <div class="ml-4 space-y-0.5">
             <div>{{ buyer.name }}</div>
