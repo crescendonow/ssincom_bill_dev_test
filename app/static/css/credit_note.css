@@ -1,4 +1,5 @@
-/* credit_note.css — print layout aligned to sample */
+/* credit_note.css — print layout */
+
 :root {
   --font-body: "Noto Sans Thai", Arial, sans-serif;
   --fs-xxs: 10pt;
@@ -33,6 +34,7 @@ body {
   margin: 10mm;
 }
 
+/* กรอบกระดาษ A4 */
 .A4-page {
   width: 190mm;
   min-height: 277mm;
@@ -41,123 +43,18 @@ body {
     "Noto Sans Thai", "Noto Sans", Arial, sans-serif;
   background: #fff;
   color: #000;
-  padding: 8mm;
   border: var(--border);
 }
 
+/* ส่วนเนื้อหาใบลดหนี้ */
 .credit-note {
   width: 100%;
 }
 
-.cn-title-row {
-  display: grid;
-  grid-template-columns: 1fr 190px;
-  align-items: center;
-  border-bottom: var(--border-2);
-  padding-bottom: 6px;
-}
-
-.cn-title {
-  font-size: 18pt;
-  font-weight: 700;
-  text-align: right;
-  padding-right: 8px;
-}
-
-.cn-header {
-  display: grid;
-  grid-template-columns: 1.4fr 1fr;
-  gap: 12px;
-  padding-bottom: 6px;
-}
-
-.cn-header .cell {
-  border-right: var(--border);
-  padding: 6px 8px;
-  min-height: 32px;
-}
-
-.cn-header .cell:last-child {
-  border-right: none;
-}
-
-/* จัด layout ฝั่งขวา */
-.right-col {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* กล่องวันที่ + เลขที่ */
-.doc-info {
-  grid-template-columns: 110px 1fr;
-  font-weight: 600;
-}
-
-/* ผู้ซื้อ */
-.buyer-title {
-  font-weight: 700;
-  margin-bottom: 2px;
-}
-
-.buyer-kv {
-  grid-template-columns: 110px 1fr;
-}
-
-/* เส้นคั่นทึบ */
-.cn-divider {
-  border-bottom: 2px solid #000;
-  margin: 4px 0 8px 0;
-}
-
-.cn-doc-cell {
-  /* ให้ตัวหนังสือเล็กลงนิดหน่อย แบบกล่องขวาของ bill_note */
-  font-size: var(--fs-sm);
-}
-
-.cn-doc-kv {
-  /* ปรับความกว้าง label / ค่าในกล่องวันที่-เลขที่ */
-  grid-template-columns: 90px 1fr;
-}
-
-
-/* layout ผู้ขาย / ผู้ซื้อ แบบ 2 คอลัมน์ */
-.cn-party-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 12px;
-}
-
-.cn-party-title {
-  font-weight: 700;
-  margin-bottom: 2px;
-}
-
-/* ปรับ label ในกล่องผู้ขาย/ผู้ซื้อให้แคบลงหน่อย จะได้ไม่ดันตัวเลขหลุดบรรทัด */
-.cn-party .cn-kv {
-  grid-template-columns: 100px 1fr;
-}
-
-.cn-store-title {
-  font-weight: 700;
-  margin-bottom: 6px;
-}
-
-.cn-kv {
-  display: grid;
-  grid-template-columns: 110px 1fr;
-  gap: 2px 6px;
-  align-items: start;
-}
-
-.cn-kv div {
-  padding: 0;
-}
-
+/* ตารางหลัก */
 .cn-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 8px;
 }
 
 .cn-table th,
@@ -177,10 +74,10 @@ body {
   text-align: right;
 }
 
+/* ตารางสรุป */
 .cn-summary {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 8px;
 }
 
 .cn-summary td {
@@ -198,18 +95,18 @@ body {
   font-weight: 700;
 }
 
+/* เหตุผลลดหนี้ */
 .cn-reason {
   border: var(--border);
   padding: 6px 8px;
   min-height: 40px;
-  margin-top: 6px;
 }
 
+/* ลายเซ็น */
 .cn-signatures {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20mm;
-  margin-top: 16mm;
   align-items: end;
 }
 
@@ -228,11 +125,12 @@ body {
   font-size: var(--fs-xs);
 }
 
+/* ฟุตโน้ต */
 .cn-footnote {
   font-size: var(--fs-xxs);
-  margin-top: 8px;
 }
 
+/* ซ่อนปุ่มตอนพิมพ์ */
 @media print {
 
   .noprint,
