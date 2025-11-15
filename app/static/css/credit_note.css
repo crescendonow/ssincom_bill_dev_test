@@ -9,7 +9,6 @@
   --fs-lg: 14pt;
   --line: 1.25;
   --border: 1px solid #000;
-  --border-2: 2px solid #000;
 }
 
 * {
@@ -62,8 +61,8 @@ body {
 
 .cn-top-row {
   display: grid;
-  grid-template-columns: 3fr 1fr;
-  /* ขยายคอลัมน์ขวาให้กว้างขึ้น */
+  grid-template-columns: 3fr 1.2fr;
+  /* ซ้ายโล่ง, ขวาใบลดหนี้ */
   border-bottom: var(--border);
 }
 
@@ -78,17 +77,14 @@ body {
 
 .cn-doc-title {
   font-size: var(--fs-md);
-  /* ลดขนาดลงเล็กน้อยกันตัดบรรทัด */
   font-weight: 700;
   white-space: nowrap;
-  /* ไม่ให้ตัดบรรทัดคำว่า "ใบลดหนี้" */
 }
 
 .cn-doc-copy {
   font-size: var(--fs-xs);
   margin-top: 2px;
   white-space: nowrap;
-  /* ไม่ให้ตัดบรรทัดคำว่า "ต้นฉบับ" */
 }
 
 /* =========================
@@ -112,10 +108,6 @@ body {
   padding: 4px 8px;
 }
 
-.cn-header-row .cn-header-cell:first-child {
-  border-left: none;
-}
-
 /* cell ที่กิน 2 ช่องด้านซ้าย */
 .span2 {
   grid-column: span 2;
@@ -125,6 +117,26 @@ body {
 .cn-header-title {
   text-align: center;
   font-weight: 700;
+}
+
+/* ภายในช่องซ้าย (ผู้ประกอบการ + ลูกค้า) แบ่ง 2 คอลัมน์ */
+.cn-header-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.cn-party {
+  border-right: var(--border);
+}
+
+.cn-party:last-child {
+  border-right: none;
+}
+
+.cn-party-title {
+  font-weight: 700;
+  padding: 2px 4px;
+  border-bottom: var(--border);
 }
 
 /* ตาราง key-value สำหรับผู้ขาย/ผู้ซื้อ */
@@ -142,9 +154,9 @@ body {
   width: 40%;
 }
 
-/* ตารางของผู้ซื้อ ให้ห่างจากผู้ขายเล็กน้อย */
+/* ตารางของผู้ซื้อ ให้ห่างจากผู้ขายเล็กน้อย (ในแต่ละคอลัมน์) */
 .cn-kv-table-buyer {
-  margin-top: 6px;
+  margin-top: 2px;
 }
 
 /* ค่า doc_date / doc_no */
@@ -214,7 +226,7 @@ main {
 
 .cn-bottom {
   margin-top: auto;
-  /* ดันส่วนนี้ไปไว้ท้ายกระดาษ */
+  /* ดันส่วนนี้ไปท้ายกระดาษ */
 }
 
 /* เหตุผลลดหนี้ */
@@ -255,10 +267,7 @@ main {
   margin-top: 8px;
 }
 
-/* =========================
-   ซ่อนปุ่ม/ส่วนที่ไม่ต้องการตอนพิมพ์
-   ========================= */
-
+/* ซ่อนปุ่มตอนพิมพ์ */
 @media print {
 
   .noprint,

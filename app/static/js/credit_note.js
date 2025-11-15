@@ -10,65 +10,87 @@ document.addEventListener('DOMContentLoaded', () => {
     const todayISO = new Date().toISOString().slice(0, 10);
     if (cnDateEl && !cnDateEl.value) cnDateEl.value = todayISO;
 
-    btnGenNo?.addEventListener('click', async () => {
-        const d = cnDateEl.value || todayISO;
-        const res = await fetch(`/api/credit-notes/generate-number?date=${encodeURIComponent(d)}`);
-        const data = await res.json();
-        if (data && data.number) cnNoEl.value = data.number;
-    });
+    btnGenNo.addEventListener("click", async () => {
+        const d = cnDateEl.value; // YYYY-MM-DD จาก <input type="date">
 
-    btnSave?.addEventListener('click', async () => {
-        const payload = buildPayload();
-        if (!payload.creditnote_number) { alert('กรุณาสร้างเลขที่ใบลดหนี้ก่อนบันทึก'); return; }
-        if (!payload.items.length) { alert('กรุณาเพิ่มรายการอย่างน้อย 1 รายการ'); return; }
-        const res = await fetch('/api/credit-notes', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) { alert(data.detail || 'บันทึกไม่สำเร็จ'); return; }
-        alert(`บันทึกสำเร็จ เลขที่เอกสาร: ${data.creditnote_number}`);
-    });
-
-    btnPreview?.addEventListener('click', async () => {
-        const payload = buildPayload();
-        const res = await fetch('/api/credit-notes/preview', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        const html = await res.text();
-        const view = document.getElementById('preview');
-        view.classList.remove('hidden');
-        view.innerHTML = html;
-    });   // <<--- อันนี้คือวงเล็บที่หาย
-
-    btnPDF?.addEventListener('click', async () => {
-        const payload = buildPayload();
-        const res = await fetch('/export-creditnote-pdf', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        if (!res.ok) {
-            const t = await res.text();
-            alert(t || 'สร้าง PDF ไม่สำเร็จ');
+        if (!d) {
+            alert("กรุณาเลือกวันที่เอกสารก่อนสร้างเลขเอกสาร");
             return;
         }
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `credit_note_${payload.creditnote_number || 'document'}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-    });
 
-    // Autocomplete & autofill for all rows
-    wireAutocompleteForAllRows();
+        try {
+            const url = `/api/credit-notes/generate-number?date=${encodeURIComponent(d)}`;
+            const res = await fetch(url);
+
+            if (!res.ok) {
+                // ถ้า backend error จะไม่พัง json() แต่เรา log ข้อความจริง ๆ จะเห็นสาเหตุ
+                const text = await res.text();
+                console.error("generate-number error", res.status, text);
+                alert("ไม่สามารถสร้างเลขเอกสารได้\nรหัสผิดพลาด: " + res.status);
+                return;
+            }
+
+            const data = await res.json();
+            cnNoEl.value = data.number || "";
+        } catch (err) {
+            console.error("fetch /generate-number failed:", err);
+            alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+        }
+    });
+});
+
+btnSave?.addEventListener('click', async () => {
+    const payload = buildPayload();
+    if (!payload.creditnote_number) { alert('กรุณาสร้างเลขที่ใบลดหนี้ก่อนบันทึก'); return; }
+    if (!payload.items.length) { alert('กรุณาเพิ่มรายการอย่างน้อย 1 รายการ'); return; }
+    const res = await fetch('/api/credit-notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { alert(data.detail || 'บันทึกไม่สำเร็จ'); return; }
+    alert(`บันทึกสำเร็จ เลขที่เอกสาร: ${data.creditnote_number}`);
+});
+
+btnPreview?.addEventListener('click', async () => {
+    const payload = buildPayload();
+    const res = await fetch('/api/credit-notes/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    const html = await res.text();
+    const view = document.getElementById('preview');
+    view.classList.remove('hidden');
+    view.innerHTML = html;
+});   // <<--- อันนี้คือวงเล็บที่หาย
+
+btnPDF?.addEventListener('click', async () => {
+    const payload = buildPayload();
+    const res = await fetch('/export-creditnote-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+        const t = await res.text();
+        alert(t || 'สร้าง PDF ไม่สำเร็จ');
+        return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `credit_note_${payload.creditnote_number || 'document'}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+});
+
+// Autocomplete & autofill for all rows
+wireAutocompleteForAllRows();
 });
 
 
