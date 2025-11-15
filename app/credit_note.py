@@ -199,7 +199,7 @@ def credit_note_preview_page(request: Request, no: str = Query(...), db: Session
             "branch": "สำนักงานใหญ่",
             "tax": "0245554001317",
         },
-        "reason": "ราคาสินค้าไม่ถูกต้อง",
+        "reason": "คิดราคาสินค้าไม่ถูกต้อง",
     }
     return templates.TemplateResponse("credit_note.html", ctx)
 
@@ -368,7 +368,7 @@ def _build_creditnote_context_from_payload(payload: dict, db: Session) -> dict:
         "sum_total": sum_total,
         "seller": seller,
         "buyer": buyer,
-        "reason": d.get("reason") or "ราคาสินค้าไม่ถูกต้อง",
+        "reason": d.get("reason") or "คิดราคาสินค้าไม่ถูกต้อง",
     }
     return ctx
 

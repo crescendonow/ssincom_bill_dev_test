@@ -95,48 +95,45 @@ main {
 
 /* ส่วนหัวหลัก */
 .cn-header {
+  border-bottom: var(--border);
+}
+
+/* grid 3 คอลัมน์: 2/4, 1/4, 1/4 */
+.cn-header-row {
   display: grid;
-  grid-template-columns: 2.5fr 1fr;
-  border-bottom: var(--border);
+  grid-template-columns: 2fr 1fr 1fr;
 }
 
-.cn-header-left {
+.cn-header-cell {
   border-right: var(--border);
+  border-bottom: var(--border);
+  padding: 4px 8px;
 }
 
-.cn-store-title {
-  padding: 4px 8px;
-  border-bottom: var(--border);
+/* cell ตัวแรกของแต่ละแถวไม่ต้องมีเส้นซ้ายเพิ่มซ้ำกับกรอบนอก */
+.cn-header-row .cn-header-cell:first-child {
+  border-left: none;
+}
+
+/* แถวหัวข้อ */
+.cn-header-title {
+  text-align: center;
   font-weight: 700;
 }
 
-/* ผู้ขาย / ผู้ซื้อ ซ้าย-ขวา */
-.cn-parties {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+/* cell ที่กิน 2 ช่องด้านซ้าย */
+.span2 {
+  grid-column: span 2;
 }
 
-.cn-party {
-  border-right: var(--border);
-}
-
-.cn-party:last-child {
-  border-right: none;
-}
-
-.cn-party-title {
-  padding: 4px 8px;
-  border-bottom: var(--border);
-  font-weight: 700;
-}
-
+/* ตารางข้อมูลผู้ขาย/ผู้ซื้อ */
 .cn-kv-table {
   width: 100%;
   border-collapse: collapse;
 }
 
 .cn-kv-table td {
-  padding: 2px 8px;
+  padding: 2px 4px;
   vertical-align: top;
 }
 
@@ -144,23 +141,15 @@ main {
   width: 40%;
 }
 
-/* กล่องวันที่/เลขที่ */
-.cn-header-right {
-  display: flex;
+/* เว้นระยะระหว่างตารางผู้ขายกับผู้ซื้อ */
+.cn-kv-table-buyer {
+  margin-top: 6px;
 }
 
-.cn-doc-info {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.cn-doc-info td {
-  padding: 4px 8px;
-  border-bottom: var(--border);
-}
-
-.cn-doc-info tr:last-child td {
-  border-bottom: none;
+/* ค่า doc_date / doc_no */
+.cn-doc-value {
+  text-align: center;
+  padding: 4px 0;
 }
 
 /* ตารางหลัก */
