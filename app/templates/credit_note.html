@@ -1,48 +1,54 @@
-<!-- credit_note.html (Jinja) -->
-<div class="A4-page mx-auto bg-white my-8 relative">
-  <div class="credit-note text-[12pt]">
-    <!-- HEADER: 2 COLUMN -->
-    <header
-      class="grid grid-cols-[2fr,1fr] gap-4 px-8 pt-6 pb-4 border-b-2 border-black"
-    >
-      <!-- LEFT COLUMN : บริษัท + หัวเอกสาร -->
-      <div class="text-xs leading-tight">
-        <h1 class="text-2xl font-bold">บริษัท เอส แอนด์ เอส อินคอม จำกัด</h1>
-        <p>69 หมู่ 10 ต.พังตรุ อ.พนมทวน จ.กาญจนบุรี 71140</p>
-        <p>Tel.0-3558-9274 email:mailtossincom@gmail.com</p>
-        <p>website:www.ssincom.com</p>
+    <div class="cn-header grid grid-cols-2" style="border-top: var(--border);">
+        <!-- ซ้าย : ผู้ขาย / ผู้ประกอบการ -->
+        <div class="cell">
+            <div class="cn-store-title">สถานที่ออกเอกสาร</div>
 
-        <div class="mt-3 text-center">
-          <h2 class="text-3xl font-bold">ใบลดหนี้</h2>
-          <p class="text-lg font-bold">CREDIT NOTE</p>
-          <p class="text-base">เลขประจำตัวผู้เสียภาษีอากร</p>
-          <h2 class="text-2xl font-bold">0715544000020</h2>
-        </div>
-      </div>
+            <div class="cn-kv" style="margin-bottom:6px;">
+                <div>ผู้ขาย/ผู้ประกอบการ</div>
+                <div>{{ seller.name }}</div>
 
-      <!-- RIGHT COLUMN : วันที่/เลขที่ + ผู้ซื้อ -->
-      <div class="text-xs space-y-3">
-        <!-- วันที่ + เลขที่ -->
-        <div class="grid grid-cols-[auto,1fr] gap-x-2 gap-y-1">
-          <span class="font-bold">วันที่ออกเอกสาร</span>
-          <span>{{ doc_date_be }}</span>
+                <div>ที่อยู่</div>
+                <div>{{ seller.addr }}</div>
 
-          <span class="font-bold">เลขที่</span>
-          <span>{{ doc_no }}</span>
+                <div>โทร.</div>
+                <div>{{ seller.phone }}</div>
+
+                <div>สถานประกอบการ</div>
+                <div>{{ seller.branch }}</div>
+
+                <div>เลขประจำตัวผู้เสียภาษี</div>
+                <div>{{ seller.tax }}</div>
+            </div>
         </div>
 
-        <!-- ผู้ซื้อ -->
-        <div>
-          <div class="font-bold">ชื่อผู้ซื้อ</div>
-          <div class="ml-4 space-y-0.5">
-            <div>{{ buyer.name }}</div>
-            <div>ที่อยู่ {{ buyer.addr }}</div>
-            <div>สถานประกอบการ {{ buyer.branch }}</div>
-            <div>เลขประจำตัวผู้เสียภาษี {{ buyer.tax }}</div>
-          </div>
+        <!-- ขวา : วันที่ออกเอกสาร + เลขที่ + ผู้ซื้อ -->
+        <div class="cell">
+            <!-- วันที่ + เลขที่ -->
+            <div class="cn-kv" style="margin-bottom:6px;">
+                <div><strong>วันที่ออกเอกสาร</strong></div>
+                <div>{{ doc_date_be }}</div>
+
+                <div><strong>เลขที่</strong></div>
+                <div>{{ doc_no }}</div>
+            </div>
+
+            <!-- ผู้ซื้อ -->
+            <div class="cn-kv">
+                <div>ผู้ซื้อ</div>
+                <div>{{ buyer.name }}</div>
+
+                <div>ที่อยู่</div>
+                <div>{{ buyer.addr }}</div>
+
+                <div>สถานประกอบการ</div>
+                <div>{{ buyer.branch }}</div>
+
+                <div>เลขประจำตัวผู้เสียภาษี</div>
+                <div>{{ buyer.tax }}</div>
+            </div>
         </div>
-      </div>
-    </header>
+    </div>
+
 
     <!-- MAIN CONTENT -->
     <main class="px-8 pb-8">
