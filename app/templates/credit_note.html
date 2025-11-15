@@ -1,122 +1,109 @@
-    <div class="cn-header grid grid-cols-2" style="border-top: var(--border);">
-        <!-- ซ้าย : ผู้ขาย / ผู้ประกอบการ -->
-        <div class="cell">
-            <div class="cn-store-title">สถานที่ออกเอกสาร</div>
+<div class="cn-header" style="border-top: var(--border);">
+    <div class="cn-store-title" style="padding: 6px 8px;">สถานที่ออกเอกสาร</div>
 
-            <div class="cn-kv" style="margin-bottom:6px;">
-                <div>ผู้ขาย/ผู้ประกอบการ</div>
-                <div>{{ seller.name }}</div>
+    <div class="cn-kv" style="margin-bottom:6px; padding: 0 8px;">
+        <div>ผู้ขาย/ผู้ประกอบการ</div>
+        <div>{{ seller.name }}</div>
 
-                <div>ที่อยู่</div>
-                <div>{{ seller.addr }}</div>
+        <div>ที่อยู่</div>
+        <div>{{ seller.addr }}</div>
 
-                <div>โทร.</div>
-                <div>{{ seller.phone }}</div>
+        <div>โทร.</div>
+        <div>{{ seller.phone }}</div>
 
-                <div>สถานประกอบการ</div>
-                <div>{{ seller.branch }}</div>
+        <div>สถานประกอบการ</div>
+        <div>{{ seller.branch }}</div>
 
-                <div>เลขประจำตัวผู้เสียภาษี</div>
-                <div>{{ seller.tax }}</div>
-            </div>
-        </div>
-
-        <!-- ขวา : วันที่ออกเอกสาร + เลขที่ + ผู้ซื้อ -->
-        <div class="cell">
-            <!-- วันที่ + เลขที่ -->
-            <div class="cn-kv" style="margin-bottom:6px;">
-                <div><strong>วันที่ออกเอกสาร</strong></div>
-                <div>{{ doc_date_be }}</div>
-
-                <div><strong>เลขที่</strong></div>
-                <div>{{ doc_no }}</div>
-            </div>
-
-            <!-- ผู้ซื้อ -->
-            <div class="cn-kv">
-                <div>ผู้ซื้อ</div>
-                <div>{{ buyer.name }}</div>
-
-                <div>ที่อยู่</div>
-                <div>{{ buyer.addr }}</div>
-
-                <div>สถานประกอบการ</div>
-                <div>{{ buyer.branch }}</div>
-
-                <div>เลขประจำตัวผู้เสียภาษี</div>
-                <div>{{ buyer.tax }}</div>
-            </div>
-        </div>
+        <div>เลขประจำตัวผู้เสียภาษี</div>
+        <div>{{ seller.tax }}</div>
     </div>
 
+    <div class="cn-kv" style="padding: 0 8px 6px;">
+        <div>ผู้ซื้อ</div>
+        <div>{{ buyer.name }}</div>
 
-    <!-- MAIN CONTENT -->
-    <main class="px-8 pb-8">
-      <!-- ตารางรายละเอียด -->
-      <table class="cn-table w-full border-collapse mt-4">
-        <thead>
-          <tr>
-            <th style="width: 12%">วันที่</th>
-            <th style="width: 18%">ใบกำกับภาษีเดิมเลขที่</th>
-            <th>รายละเอียด</th>
-            <th class="num" style="width: 15%">มูลค่าสินค้า/บริการ (เดิม)</th>
-            <th class="num" style="width: 15%">มูลค่าสินค้า/บริการ (ใหม่)</th>
-          </tr>
-        </thead>
+        <div>ที่อยู่</div>
+        <div>{{ buyer.addr }}</div>
 
-        <tbody>
-          {% if rows|length == 0 %}
-          <tr>
-            <td colspan="6" style="text-align: center; padding: 20px">
-              - ไม่มีรายการ -
-            </td>
-          </tr>
-          {% else %} {% for r in rows %}
-          <tr>
-            <td>{{ r.date }}</td>
-            <td>{{ r.inv }}</td>
-            <td>{{ r.desc }}</td>
-            <td class="num">{{ "{:,.2f}".format(r.amt_old) }}</td>
-            <td class="num">{{ "{:,.2f}".format(r.amt_new) }}</td>
-          </tr>
-          {% endfor %} {% endif %}
-        </tbody>
-      </table>
+        <div>สถานประกอบการ</div>
+        <div>{{ buyer.branch }}</div>
 
-      <!-- สรุปยอด -->
-      <table class="cn-summary w-full border-collapse mt-4">
-        <tr>
-          <td class="label">มูลค่าที่ปรับปรุงลดลง (บาท)</td>
-          <td class="num">{{ "{:,.2f}".format(sum_reduce_value) }}</td>
-        </tr>
-        <tr>
-          <td class="label">ภาษีมูลค่าเพิ่มที่ลดลง (บาท)</td>
-          <td class="num">{{ "{:,.2f}".format(sum_reduce_vat) }}</td>
-        </tr>
-        <tr>
-          <td class="label">รวมเป็นเงินปรับปรุงทั้งสิ้น</td>
-          <td class="num">{{ "{:,.2f}".format(sum_total) }}</td>
-        </tr>
-      </table>
+        <div>เลขประจำตัวผู้เสียภาษี</div>
+        <div>{{ buyer.tax }}</div>
+    </div>
+    
+    <div class="cn-kv" style="margin-bottom:6px; padding: 0 8px 6px;">
+        <div><strong>วันที่ออกเอกสาร</strong></div>
+        <div>{{ doc_date_be }}</div>
 
-      <!-- เหตุผล -->
-      <div class="cn-reason mt-2">
-        มีการลดหนี้เนื่องจาก : <span>{{ reason }}</span>
-      </div>
+        <div><strong>เลขที่</strong></div>
+        <div>{{ doc_no }}</div>
+    </div>
+</div>
 
-      <!-- ลายเซ็น -->
-      <div class="cn-signatures mt-10">
-        <div class="sig-col">
-          <div class="sig-line"></div>
-          <div class="sig-label">ผู้ออกเอกสาร</div>
-        </div>
-        <div class="sig-col">
-          <div class="sig-line"></div>
-          <div class="sig-label">ผู้มีอำนาจลงนาม</div>
-        </div>
-      </div>
 
-      <div class="cn-footnote mt-2">ต้นฉบับ - ให้ลูกค้าใช้เป็นใบกำกับภาษี</div>
-    </main>
+<main class="px-8 pb-8">
+  <table class="cn-table w-full border-collapse mt-4">
+    <thead>
+      <tr>
+        <th style="width: 12%">วันที่</th>
+        <th style="width: 18%">ใบกำกับภาษีเดิมเลขที่</th>
+        <th>รายละเอียด</th>
+        <th class="num" style="width: 15%">มูลค่าสินค้า/บริการ (เดิม)</th>
+        <th class="num" style="width: 15%">มูลค่าสินค้า/บริการ (ใหม่)</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {% if rows|length == 0 %}
+      <tr>
+        <td colspan="6" style="text-align: center; padding: 20px">
+          - ไม่มีรายการ -
+        </td>
+      </tr>
+      {% else %} {% for r in rows %}
+      <tr>
+        <td>{{ r.date }}</td>
+        <td>{{ r.inv }}</td>
+        <td>{{ r.desc }}</td>
+        <td class="num">{{ "{:,.2f}".format(r.amt_old) }}</td>
+        <td class="num">{{ "{:,.2f}".format(r.amt_new) }}</td>
+      </tr>
+      {% endfor %} {% endif %}
+    </tbody>
+  </table>
+
+  <table class="cn-summary w-full border-collapse mt-4">
+    <tr>
+      <td class="label">มูลค่าที่ปรับปรุงลดลง (บาท)</td>
+      <td class="num">{{ "{:,.2f}".format(sum_reduce_value) }}</td>
+    </tr>
+    <tr>
+      <td class="label">ภาษีมูลค่าเพิ่มที่ลดลง (บาท)</td>
+      <td class="num">{{ "{:,.2f}".format(sum_reduce_vat) }}</td>
+    </tr>
+    <tr>
+      <td class="label">รวมเป็นเงินปรับปรุงทั้งสิ้น</td>
+      <td class="num">{{ "{:,.2f}".format(sum_total) }}</td>
+    </tr>
+  </table>
+
+  <div class="cn-reason mt-2">
+    มีการลดหนี้เนื่องจาก : <span>{{ reason }}</span>
   </div>
+
+  <div class="cn-signatures mt-10">
+    <div class="sig-col">
+      <div class="sig-line"></div>
+      <div class="sig-label">ผู้ออกเอกสาร</div>
+    </div>
+    <div class="sig-col">
+      <div class="sig-line"></div>
+      <div class="sig-label">ผู้มีอำนาจลงนาม</div>
+    </div>
+  </div>
+
+  <div class="cn-footnote mt-2">ต้นฉบับ - ให้ลูกค้าใช้เป็นใบกำกับภาษี</div>
+</main>
+</div>
 </div>
