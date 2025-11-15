@@ -6,44 +6,51 @@
       <div class="cn-title">ใบลดหนี้</div>
     </div>
 
-    <div class="cn-header" style="border-top: var(--border)">
+        <div class="cn-header" style="border-top: var(--border);">
+      <!-- ซ้าย: ผู้ประกอบการ + ผู้ซื้อ -->
       <div class="cell">
         <div class="cn-store-title">สถานที่ออกเอกสาร</div>
 
-        <div class="cn-party-grid">
-          <!-- ฝั่งผู้ขาย / ผู้ประกอบการ -->
-          <div class="cn-party">
-            <div class="cn-party-title">ชื่อผู้ประกอบการ / ผู้ขาย</div>
-            <div class="cn-kv">
-              <div>ชื่อผู้ประกอบการ</div>
-              <div>{{ seller.name }}</div>
-              <div>ที่อยู่</div>
-              <div>{{ seller.addr }}</div>
-              <div>โทร.</div>
-              <div>{{ seller.phone }}</div>
-              <div>สถานประกอบการ</div>
-              <div>{{ seller.branch }}</div>
-              <div>เลขประจำตัวผู้เสียภาษี</div>
-              <div>{{ seller.tax }}</div>
-            </div>
-          </div>
+        <!-- ผู้ประกอบการ / ผู้ขาย -->
+        <div class="cn-kv">
+          <div>ชื่อผู้ประกอบการ</div>
+          <div>{{ seller.name }}</div>
+          <div>ที่อยู่</div>
+          <div>{{ seller.addr }}</div>
+          <div>โทร.</div>
+          <div>{{ seller.phone }}</div>
+          <div>สถานประกอบการ</div>
+          <div>{{ seller.branch }}</div>
+          <div>เลขประจำตัวผู้เสียภาษี</div>
+          <div>{{ seller.tax }}</div>
+        </div>
 
-          <!-- ฝั่งผู้ซื้อ -->
-          <div class="cn-party">
-            <div class="cn-party-title">ชื่อผู้ซื้อ</div>
-            <div class="cn-kv">
-              <div>ชื่อผู้ซื้อ</div>
-              <div>{{ buyer.name }}</div>
-              <div>ที่อยู่</div>
-              <div>{{ buyer.addr }}</div>
-              <div>สถานประกอบการ</div>
-              <div>{{ buyer.branch }}</div>
-              <div>เลขประจำตัวผู้เสียภาษี</div>
-              <div>{{ buyer.tax }}</div>
-            </div>
-          </div>
+        <!-- เว้นบรรทัดเล็กน้อย -->
+        <div style="height:4px;"></div>
+
+        <!-- ผู้ซื้อ -->
+        <div class="cn-kv">
+          <div>ชื่อผู้ซื้อ</div>
+          <div>{{ buyer.name }}</div>
+          <div>ที่อยู่</div>
+          <div>{{ buyer.addr }}</div>
+          <div>สถานประกอบการ</div>
+          <div>{{ buyer.branch }}</div>
+          <div>เลขประจำตัวผู้เสียภาษี</div>
+          <div>{{ buyer.tax }}</div>
         </div>
       </div>
+
+      <!-- ขวา: กล่องข้อมูลเอกสาร คล้าย bill_note -->
+      <div class="cell cn-doc-cell">
+        <div class="cn-kv cn-doc-kv">
+          <div>วันที่ออกเอกสาร</div>
+          <div>{{ doc_date_be }}</div>
+          <div>เลขที่</div>
+          <div>{{ doc_no }}</div>
+        </div>
+      </div>
+    </div>
 
       <div class="cell">
         <div class="cn-kv">

@@ -66,7 +66,7 @@ body {
 
 .cn-header {
   display: grid;
-  grid-template-columns: 1fr 220px 220px;
+  grid-template-columns: 1.7fr 1fr; /* ซ้ายกว้างกว่าหน่อย */
   gap: 0;
   border-bottom: var(--border);
 }
@@ -80,6 +80,17 @@ body {
 .cn-header .cell:last-child {
   border-right: none;
 }
+
+.cn-doc-cell {
+  /* ให้ตัวหนังสือเล็กลงนิดหน่อย แบบกล่องขวาของ bill_note */
+  font-size: var(--fs-sm);
+}
+
+.cn-doc-kv {
+  /* ปรับความกว้าง label / ค่าในกล่องวันที่-เลขที่ */
+  grid-template-columns: 90px 1fr;
+}
+
 
 /* layout ผู้ขาย / ผู้ซื้อ แบบ 2 คอลัมน์ */
 .cn-party-grid {
