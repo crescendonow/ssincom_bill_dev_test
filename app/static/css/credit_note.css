@@ -1,4 +1,4 @@
-/* credit_note.css — print layout */
+/* credit_note.css — A4 print layout for Credit Note */
 
 :root {
   --font-body: "Noto Sans Thai", Arial, sans-serif;
@@ -29,6 +29,7 @@ body {
   color: #000;
 }
 
+/* ขนาดกระดาษสำหรับพิมพ์ */
 @page {
   size: A4 portrait;
   margin: 10mm;
@@ -51,34 +52,26 @@ body {
 .credit-note {
   width: 100%;
   flex: 1;
-  /* ✅ เพิ่ม */
-  display: flex;
-  /* ✅ เพิ่ม */
-  flex-direction: column;
-  /* ✅ เพิ่ม */
-}
-
-main {
-  flex: 1;
-  /* ✅ ให้ main กินพื้นที่ที่เหลือ */
   display: flex;
   flex-direction: column;
 }
 
-.cn-bottom {
-  margin-top: auto;
-  /* ✅ ดันลงท้ายกระดาษ */
-}
+/* =========================
+   แถวบน: ใบลดหนี้ / ต้นฉบับ
+   ========================= */
 
-/* แถวบน: ใบลดหนี้ / ต้นฉบับ */
 .cn-top-row {
   display: grid;
   grid-template-columns: 2.5fr 1fr;
   border-bottom: var(--border);
 }
 
+.cn-top-left {
+  /* เว้นไว้เผื่ออนาคต ถ้าต้องการข้อมูลฝั่งซ้าย */
+  border-right: var(--border);
+}
+
 .cn-top-right {
-  border-left: var(--border);
   text-align: center;
   padding: 6px 8px;
 }
@@ -93,32 +86,29 @@ main {
   margin-top: 2px;
 }
 
-/* ส่วนหัวหลัก */
+/* =========================
+   ส่วนหัว 3 คอลัมน์
+   ========================= */
+
 .cn-header {
   border-bottom: var(--border);
 }
 
-/* grid 3 คอลัมน์: 2/4, 1/4, 1/4 */
+/* แถวของ header ใช้ grid 3 คอลัมน์: 2/4, 1/4, 1/4 */
 .cn-header-row {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr;
 }
 
+/* cell แต่ละช่อง */
 .cn-header-cell {
   border-right: var(--border);
   border-bottom: var(--border);
   padding: 4px 8px;
 }
 
-/* cell ตัวแรกของแต่ละแถวไม่ต้องมีเส้นซ้ายเพิ่มซ้ำกับกรอบนอก */
 .cn-header-row .cn-header-cell:first-child {
   border-left: none;
-}
-
-/* แถวหัวข้อ */
-.cn-header-title {
-  text-align: center;
-  font-weight: 700;
 }
 
 /* cell ที่กิน 2 ช่องด้านซ้าย */
@@ -126,7 +116,13 @@ main {
   grid-column: span 2;
 }
 
-/* ตารางข้อมูลผู้ขาย/ผู้ซื้อ */
+/* หัวข้อบรรทัดแรก: สถานที่ออกเอกสาร / วันที่ออกเอกสาร / เลขที่ */
+.cn-header-title {
+  text-align: center;
+  font-weight: 700;
+}
+
+/* ตาราง key-value สำหรับผู้ขาย/ผู้ซื้อ */
 .cn-kv-table {
   width: 100%;
   border-collapse: collapse;
@@ -141,7 +137,7 @@ main {
   width: 40%;
 }
 
-/* เว้นระยะระหว่างตารางผู้ขายกับผู้ซื้อ */
+/* ตารางของผู้ซื้อ ให้ห่างจากผู้ขายเล็กน้อย */
 .cn-kv-table-buyer {
   margin-top: 6px;
 }
@@ -150,6 +146,16 @@ main {
 .cn-doc-value {
   text-align: center;
   padding: 4px 0;
+}
+
+/* =========================
+   เนื้อหาใบลดหนี้
+   ========================= */
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ตารางหลัก */
@@ -175,10 +181,11 @@ main {
   text-align: right;
 }
 
-/* ตารางสรุป */
+/* ตารางสรุปด้านล่าง */
 .cn-summary {
   width: 100%;
   border-collapse: collapse;
+  margin-top: 4px;
 }
 
 .cn-summary td {
@@ -196,11 +203,21 @@ main {
   font-weight: 700;
 }
 
+/* =========================
+   ส่วนท้าย (เหตุผล + ลายเซ็น + footnote)
+   ========================= */
+
+.cn-bottom {
+  margin-top: auto;
+  /* ดันส่วนนี้ไปไว้ท้ายกระดาษ */
+}
+
 /* เหตุผลลดหนี้ */
 .cn-reason {
   border: var(--border);
   padding: 6px 8px;
   min-height: 40px;
+  margin-top: 4px;
 }
 
 /* ลายเซ็น */
@@ -209,6 +226,7 @@ main {
   grid-template-columns: 1fr 1fr;
   gap: 20mm;
   align-items: end;
+  margin-top: 16px;
 }
 
 .sig-col {
@@ -226,12 +244,16 @@ main {
   font-size: var(--fs-xs);
 }
 
-/* ฟุตโน้ต */
+/* ฟุตโน้ตด้านล่างสุด */
 .cn-footnote {
   font-size: var(--fs-xxs);
+  margin-top: 8px;
 }
 
-/* ซ่อนปุ่มตอนพิมพ์ */
+/* =========================
+   ซ่อนปุ่ม/ส่วนที่ไม่ต้องการตอนพิมพ์
+   ========================= */
+
 @media print {
 
   .noprint,
