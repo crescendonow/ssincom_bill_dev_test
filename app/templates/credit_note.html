@@ -1,29 +1,25 @@
-<!-- credit_note.html -->
-<script src="https://cdn.tailwindcss.com"></script>
-
+<!-- credit_note.html (Jinja) -->
 <div class="A4-page mx-auto bg-white my-8 relative">
-  <div class="credit-note text-[12pt]">
-    <!-- HEADER 2 COLUMN โดยใช้ flex ของ Tailwind -->
-    <header
-      class="flex justify-between items-start p-8 pb-4 border-b-2 border-black"
-    >
-      <!-- LEFT COLUMN : บริษัท / โลโก้ -->
+  <div class="credit-note">
+
+    <!-- HEADER: 2 COLUMN ด้วย TAILWIND -->
+    <header class="flex justify-between items-start px-8 pt-6 pb-4 border-b-2 border-black">
+      <!-- LEFT COLUMN : บริษัท + หัวเอกสาร -->
       <div class="text-xs leading-tight">
         <h1 class="text-2xl font-bold">บริษัท เอส แอนด์ เอส อินคอม จำกัด</h1>
         <p>69 หมู่ 10 ต.พังตรุ อ.พนมทวน จ.กาญจนบุรี 71140</p>
         <p>Tel.0-3558-9274 email:mailtossincom@gmail.com</p>
         <p>website:www.ssincom.com</p>
+
+        <div class="mt-3 text-center">
+          <h2 class="text-3xl font-bold">ใบลดหนี้</h2>
+          <p class="text-lg font-bold">CREDIT NOTE</p>
+          <p class="text-base">เลขประจำตัวผู้เสียภาษีอากร</p>
+          <h2 class="text-2xl font-bold">0715544000020</h2>
+        </div>
       </div>
 
-      <!-- TITLE ตรงกลางเล็กน้อย (ยังอยู่คอลัมน์ซ้าย) -->
-      <div class="text-center text-xs">
-        <h2 class="text-3xl font-bold">ใบลดหนี้</h2>
-        <p class="text-lg font-bold">CREDIT NOTE</p>
-        <p class="text-base">เลขประจำตัวผู้เสียภาษีอากร</p>
-        <h2 class="text-2xl font-bold">0715544000020</h2>
-      </div>
-
-      <!-- RIGHT COLUMN : วันที่ / เลขที่ / ผู้ซื้อ -->
+      <!-- RIGHT COLUMN : วันที่/เลขที่ + ผู้ซื้อ -->
       <div class="text-xs w-64 space-y-2">
         <div class="grid grid-cols-[auto,1fr] gap-x-2 gap-y-1">
           <span class="font-bold">วันที่ออกเอกสาร</span>
