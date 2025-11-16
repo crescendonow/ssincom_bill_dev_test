@@ -237,18 +237,19 @@ section.border-t-2.border-b-2 p strong {
 
 .cn-top-right {
   text-align: center;
-  padding: 6px 8px;
+  padding: 4px 8px;
 }
 
 .cn-doc-title {
-  font-size: var(--print-h3);
+  font-size: 16pt;
+  /* ลดให้เล็กลงหน่อย */
   font-weight: 700;
   white-space: nowrap;
 }
 
 .cn-doc-copy {
-  font-size: var(--print-xs);
-  margin-top: 2px;
+  font-size: 13pt;
+  margin-top: 0;
   white-space: nowrap;
 }
 
@@ -266,7 +267,8 @@ section.border-t-2.border-b-2 p strong {
 .cn-header-cell {
   border-right: var(--border);
   border-bottom: var(--border);
-  padding: 4px 8px;
+  padding: 3px 6px;
+  font-size: 13pt;
 }
 
 /* cell ที่กิน 2 ช่องด้านซ้าย */
@@ -307,8 +309,9 @@ section.border-t-2.border-b-2 p strong {
 }
 
 .cn-kv-table td {
-  padding: 2px 4px;
+  padding: 1px 4px;
   vertical-align: top;
+  font-size: 12pt;
 }
 
 .cn-kv-table td:first-child {
@@ -324,6 +327,7 @@ section.border-t-2.border-b-2 p strong {
 .cn-doc-value {
   text-align: center;
   padding: 4px 0;
+  font-size: 13pt;
 }
 
 /* เนื้อหาใบลดหนี้ */
@@ -342,8 +346,9 @@ main {
 .cn-table th,
 .cn-table td {
   border: var(--border);
-  padding: 6px 8px;
+  padding: 4px 6px;
   vertical-align: top;
+  font-size: 13pt;
 }
 
 .cn-table thead th {
@@ -365,7 +370,8 @@ main {
 
 .cn-summary td {
   border: var(--border);
-  padding: 6px 8px;
+  padding: 4px 6px;
+  font-size: 13pt;
 }
 
 .cn-summary td.label {
@@ -386,9 +392,10 @@ main {
 
 .cn-reason {
   border: var(--border);
-  padding: 6px 8px;
-  min-height: 40px;
+  padding: 4px 6px;
+  min-height: 32px;
   margin-top: 4px;
+  font-size: 13pt;
 }
 
 .cn-signatures {
@@ -411,21 +418,10 @@ main {
 }
 
 .sig-label {
-  font-size: var(--print-small);
+  font-size: 12pt;
 }
 
 .cn-footnote {
-  font-size: var(--print-xs);
+  font-size: 11pt;
   margin-top: 8px;
-}
-
-/* ซ่อนปุ่มในโหมดพิมพ์ (ใช้ร่วมกับ bill_note) */
-@media print {
-
-  .noprint,
-  #btnPDF,
-  #btnSave,
-  #btnPreview {
-    display: none !important;
-  }
 }
