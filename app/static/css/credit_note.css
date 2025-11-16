@@ -500,8 +500,6 @@ main {
   display: table;
   width: 100%;
   border-left: var(--border);
-  border-right: var(--border);
-  /* ← แก้ให้ถูก */
   border-bottom: var(--border);
   /* ← แยกบรรทัดให้ถูกต้อง */
   border-spacing: 0;
@@ -524,6 +522,7 @@ main {
 /* ขวา */
 .cn-signatures .sig-col:last-child {
   width: 30%;
+  border-right: var(--border);
 }
 
 /* เส้นเซ็น */
