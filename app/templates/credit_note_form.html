@@ -150,6 +150,16 @@
                 <label class="block mb-1 text-sm font-medium text-gray-700">รวมเป็นเงิน</label>
                 <div class="text-right text-lg md:text-xl font-bold text-green-700" id="total_amount">฿ 0.00</div>
             </div>
+            <div>
+                <label for="cn_variant" class="block mb-1 text-sm font-medium text-gray-700">
+                    รูปแบบสำหรับ Preview
+                </label>
+                <select id="cn_variant"
+                        class="mt-1 w-full border rounded p-2 bg-white text-sm">
+                    <option value="creditnote_original">ต้นฉบับ</option>
+                    <option value="creditnote_copy">สำเนา</option>
+                </select>
+            </div>
             <div class="text-right space-x-2">
                 <button id="btnPreview" type="button"
                     class="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-800">

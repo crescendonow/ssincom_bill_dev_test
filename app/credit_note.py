@@ -265,43 +265,48 @@ def get_credit_note(no: str, db: Session = Depends(get_db)):
 @router.post("/export-creditnote-pdf")
 def export_creditnote_pdf(payload: dict = Body(...), db: Session = Depends(get_db)):
     """
-    สร้าง PDF ใบลดหนี้จาก payload เดียวกับ /api/credit-notes/preview
+    สร้าง PDF ใบลดหนี้จาก payload เดียว แต่รวมทั้ง "ต้นฉบับ" และ "สำเนา"
+    เป็นไฟล์ PDF เดียวกัน (2 หน้า)
     """
     base_dir = BASE_DIR
     css_path = base_dir / "static" / "css" / "credit_note.css"
 
-    # 1) สร้าง context เหมือน preview
-    ctx = _build_creditnote_context_from_payload(payload, db)
+    # 1) สร้าง context พื้นฐานเหมือน preview (ไม่สน variant ใน payload)
+    ctx_common = _build_creditnote_context_from_payload(payload, db)
 
-    # 2) render HTML ด้วย template เดียวกับ preview
+    # 2) เตรียม template
     try:
         template = templates.env.get_template("credit_note.html")
     except Exception as e:
-        # ถ้า template ไม่เจอหรือผิด path จะมาล้มตรงนี้
         raise HTTPException(status_code=500, detail=f"template error: {e}")
 
+    # 3) render HTML สองชุด: ต้นฉบับ + สำเนา
     try:
-        html_inner = template.render(ctx)
+        ctx_original = {**ctx_common, "variant": "creditnote_original"}
+        ctx_copy     = {**ctx_common, "variant": "creditnote_copy"}
+
+        html_original = template.render(ctx_original)
+        html_copy     = template.render(ctx_copy)
     except Exception as e:
-        # error ตอน render jinja (เช่น ตัวแปรชื่อผิด)
         raise HTTPException(status_code=500, detail=f"render error: {e}")
 
+    # 4) รวมเป็น HTML เดียว ใช้ page-break คั่นกลาง
     html_str = (
-        "<!DOCTYPE html><html><head><meta charset='utf-8' /></head>"
-        f"<body>{html_inner}</body></html>"
+        "<!DOCTYPE html><html><head><meta charset='utf-8' /></head><body>"
+        f"{html_original}"
+        "<div style='page-break-after:always;'></div>"
+        f"{html_copy}"
+        "</body></html>"
     )
 
-    # 3) เขียนไฟล์ PDF ด้วย WeasyPrint
-        # 3) เขียนไฟล์ PDF ด้วย WeasyPrint
+    # 5) เขียนไฟล์ PDF ด้วย WeasyPrint
     try:
-        # ทำชื่อไฟล์ให้ปลอดภัย (ตัด /, \ และช่องว่างที่มีปัญหา)
         raw_no = (payload.get("creditnote_number") or "document").strip()
         safe_no = (
             raw_no.replace("/", "-")
                   .replace("\\", "-")
                   .replace(" ", "_")
         )
-
         tmp_pdf = Path(tempfile.gettempdir()) / f"credit_note_{safe_no}.pdf"
 
         HTML(string=html_str, base_url=str(base_dir)).write_pdf(
@@ -309,10 +314,8 @@ def export_creditnote_pdf(payload: dict = Body(...), db: Session = Depends(get_d
             stylesheets=[CSS(filename=str(css_path))]
         )
     except Exception as e:
-        # จับ error จาก WeasyPrint (เช่น css_path ผิด, dependency cairo ขาด)
         raise HTTPException(status_code=500, detail=f"weasyprint error: {e}")
 
-    # 4) ส่งไฟล์กลับไปให้ browser ดาวน์โหลด
     if not tmp_pdf.exists():
         raise HTTPException(status_code=500, detail="PDF file not generated")
 
@@ -321,6 +324,7 @@ def export_creditnote_pdf(payload: dict = Body(...), db: Session = Depends(get_d
         media_type="application/pdf",
         filename=tmp_pdf.name
     )
+
 
 
 @router.get("/api/credit-notes/generate-number", response_class=JSONResponse)
@@ -473,6 +477,7 @@ def _build_creditnote_context_from_payload(payload: dict, db: Session) -> dict:
         "seller": seller,
         "buyer": buyer,
         "reason": d.get("reason") or "คิดราคาสินค้าไม่ถูกต้อง",
+        "variant": d.get("variant") or "creditnote_original",
     }
     return ctx
 

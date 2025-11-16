@@ -263,6 +263,7 @@ function updateTotal() {
 window.updateTotal = updateTotal;
 
 
+// ===== buildPayload: แนบข้อมูลลูกค้า + variant =====
 function buildPayload() {
     const d = document.getElementById('cn_date')?.value || new Date().toISOString().slice(0, 10);
     const cn = document.getElementById('creditnote_number')?.value || '';
@@ -275,11 +276,12 @@ function buildPayload() {
         const name = row.querySelector('.description')?.value || '';
         const q = parseFloat(row.querySelector('.quantity')?.value || 0);
         const fine = parseFloat(row.querySelector('.fine')?.value || 0);
+
         const base = parseFloat(
             row.querySelector('.base_price')?.value ||
-            row.querySelector('.product_code')?.dataset.price || 0
+            row.querySelector('.unit_price')?.value || 0
         );
-        const price_after_fine = (base - fine);
+        const price_after_fine = (base - (isNaN(fine) ? 0 : fine));
 
         if (grn || inv || code || name) {
             items.push({
@@ -294,7 +296,22 @@ function buildPayload() {
         }
     });
 
-    return { creditnote_date: d, creditnote_number: cn, items };
+    // เก็บหัวลูกค้า
+    const buyer = {
+        name: document.getElementById('customer_name')?.value || '',
+        addr: document.getElementById('customer_address')?.value || '',
+        tax: document.getElementById('customer_taxid')?.value || '',
+        tel: document.getElementById('tel')?.value || '',
+        mobile: document.getElementById('mobile')?.value || '',
+        zipcode: document.getElementById('cf_personzipcode')?.value || '',
+        prov: document.getElementById('cf_provincename')?.value || '',
+        personid: document.getElementById('personid')?.value || '',
+    };
+
+    // รูปแบบสำหรับ Preview
+    const variant = document.getElementById('cn_variant')?.value || 'creditnote_original';
+
+    return { creditnote_date: d, creditnote_number: cn, items, buyer, variant };
 }
 
 // ===== Helper ราคา/จำนวน/VAT =====

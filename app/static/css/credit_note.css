@@ -354,13 +354,13 @@ section.border-t-2.border-b-2 p strong {
   font-weight: 400;
   /* ตัวบาง */
   text-decoration: underline;
-  margin-bottom: 5mm;
+  margin-bottom: 2mm;
   /* เว้น 0.5 ซม. */
 }
 
 /* บรรทัดข้อมูล */
 .cn-info-line {
-  margin-bottom: 5mm;
+  margin-bottom: 2mm;
   /* 0.5 ซม. ต่อบรรทัด */
 }
 
@@ -388,29 +388,45 @@ main {
 }
 
 /* ตารางหลัก */
+/* ตารางหลัก */
 .cn-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 5mm;
-  /* เว้นช่องว่าง 0.5 ซม. จากบล็อกด้านบน */
+  margin-top: 2mm;              /* ระยะห่างจาก header ~0.5 ซม. */
+  border-left: var(--border);   /* ให้กรอบซ้าย–ขวาเท่ากับ cn-header-row */
+  border-right: var(--border);
+  border-bottom: var(--border); /* เส้นล่างตาราง */
 }
 
+/* ทุกเซลล์ใช้เส้นแนวตั้งเหมือน header */
 .cn-table th,
 .cn-table td {
-  border: var(--border);
   padding: 4px 6px;
   vertical-align: top;
   font-size: 13pt;
-  /* ขนาด 14 */
   font-weight: 400;
-  /* ตัวบาง */
+  border-left: var(--border);   /* เส้นแบ่งคอลัมน์ */
 }
 
+/* คอลัมน์แรกใช้เส้นซ้ายจาก border ของ table แทน ไม่ต้องซ้ำ */
+.cn-table th:first-child,
+.cn-table td:first-child {
+  border-left: none;
+}
+
+/* หัวตาราง: มีเส้นบน/ล่าง */
 .cn-table thead th {
   text-align: left;
-  font-weight: 400;
-  /* หัวตารางเป็นตัวบางเช่นกัน */
+  border-top: var(--border);
+  border-bottom: var(--border);
 }
+
+/* แถวเนื้อหา: ไม่ต้องมีเส้นคั่นระหว่างแถว (ไม่มี border-top/bottom) */
+.cn-table tbody td {
+  border-top: none;
+  border-bottom: none;
+}
+
 
 .cn-table td.num,
 .cn-table th.num {
@@ -554,13 +570,10 @@ main {
 }
 
 /* ให้เส้นตารางของใบลดหนี้ใช้ขนาดเดียวกับ cn-header-row ทั้งหมด */
-.credit-note thead tr {
-  border-top: var(--border) !important;
-  border-bottom: var(--border) !important;
-}
-
-.credit-note tbody tr {
-  border-bottom: var(--border) !important;
+/* ให้ตารางสรุปยังมีเส้นบน/ล่างของแต่ละแถวได้ */
+.cn-summary tr {
+  border-top: var(--border);
+  border-bottom: var(--border);
 }
 
 .credit-note tfoot tr {
