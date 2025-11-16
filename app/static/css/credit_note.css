@@ -438,7 +438,7 @@ main {
   width: 70%;
   /* กว้างเท่ากับ 3 คอลัมน์แรกของตารางด้านบน */
   border-collapse: collapse;
-  margin-top: 5mm;
+  margin-top: 2mm;
 }
 
 /* ทุกช่องมีเส้นบน–ล่าง */

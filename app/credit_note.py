@@ -292,11 +292,10 @@ def export_creditnote_pdf(payload: dict = Body(...), db: Session = Depends(get_d
 
     # 4) รวมเป็น HTML เดียว ใช้ page-break คั่นกลาง
     html_str = (
-        "<!DOCTYPE html><html><head><meta charset='utf-8' /></head><body>"
-        f"{html_original}"
-        "<div style='page-break-after:always;'></div>"
-        f"{html_copy}"
-        "</body></html>"
+                "<!DOCTYPE html><html><head><meta charset='utf-8' /></head><body>"
+                f"{html_original}"
+                f"{html_copy}"
+                "</body></html>"
     )
 
     # 5) เขียนไฟล์ PDF ด้วย WeasyPrint
