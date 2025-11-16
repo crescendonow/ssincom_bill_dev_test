@@ -270,69 +270,41 @@ section.border-t-2.border-b-2 p strong {
    HEADER TOP ROW (2/4 – 1/4 – 1/4)
 ----------------------------------------------------- */
 
+/* แถวหัวข้อ 2/4 – 1/4 – 1/4 (ใช้กับทั้งแถวหัวและแถวข้อมูล) */
 .cn-header-row {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr;
-  /* ← 2/4 – 1/4 – 1/4 */
+  /* col1=สถานที่ออกเอกสาร, col2=วันที่, col3=เลขที่ */
 }
 
-/* cell ของหัวข้อ */
+/* cell พื้นฐานของ header-row */
 .cn-header-cell {
   border-right: var(--border);
   border-bottom: var(--border);
   padding: 6px 8px;
-  text-align: center;
-  font-weight: 700;
-  /* ตัวทึบ */
   font-size: 14pt;
-  /* ขนาด 14 */
   line-height: 1.3;
 }
 
-/* คอลัมน์แบบ 2/4 */
-.col-2 {
-  grid-column: span 1;
-  /* ปกติ แต่คุมผ่าน grid-template-columns */
-}
-
-/* คอลัมน์แบบ 1/4 */
-.col-1 {
-  grid-column: span 1;
-}
-
-/* ยกเลิก span2 แบบเก่า */
-.span2 {
-  grid-column: unset !important;
-}
-
-
-/* หัวข้อแถวแรก */
+/* หัวตารางบรรทัดแรก (หัวข้อ) */
 .cn-header-title {
   text-align: center;
   font-weight: 700;
 }
 
-/* ภายในช่องซ้าย แบ่ง 2 คอลัมน์สำหรับผู้ประกอบการ/ลูกค้า */
-.cn-header-inner {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+/* ซ้าย: ผู้ประกอบการ (เท่ากับคอลัมน์ สถานที่ออกเอกสาร = col1) */
+.cn-header-body-seller {
+  /* วางอยู่คอลัมน์ 1 โดยไม่ span → กว้างเท่าหัว "สถานที่ออกเอกสาร" */
+  grid-column: 1 / 2;
 }
 
-.cn-party {
-  border-right: var(--border);
+/* ขวา: ลูกค้า (กินคอลัมน์ วันที่ออกเอกสาร + เลขที่ = col2+col3) */
+.cn-header-body-buyer {
+  /* กินตั้งแต่คอลัมน์ที่ 2 ถึง 3 → รวมความกว้าง 2/4 */
+  grid-column: 2 / 4;
 }
 
-.cn-party:last-child {
-  border-right: none;
-}
-
-.cn-party-title {
-  font-weight: 700;
-  padding: 2px 4px;
-  border-bottom: var(--border);
-}
-
-/* ตาราง key-value ผู้ขาย/ผู้ซื้อ */
+/* ตาราง key-value */
 .cn-kv-table {
   width: 100%;
   border-collapse: collapse;
@@ -344,13 +316,15 @@ section.border-t-2.border-b-2 p strong {
   font-size: 12pt;
 }
 
-.cn-kv-table td:first-child {
-  width: 40%;
-}
-
-/* ตารางของผู้ซื้อ ให้ห่างจากผู้ขายเล็กน้อย */
-.cn-kv-table-buyer {
-  margin-top: 2px;
+/* บรรทัดหัว "ชื่อผู้ประกอบการ" / "ชื่อลูกค้า" */
+.cn-kv-title {
+  font-size: 14pt;
+  /* ขนาด 14 */
+  font-weight: 400;
+  /* ตัวบาง */
+  text-decoration: underline;
+  /* ขีดเส้นใต้ */
+  padding-bottom: 2px;
 }
 
 /* ค่า doc_date / doc_no */
