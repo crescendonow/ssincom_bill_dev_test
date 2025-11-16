@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!d) { alert("กรุณาเลือกวันที่เอกสารก่อนสร้างเลขเอกสาร"); return; }
 
         try {
-            const url = `/api/credit-notes/generate-number?date=${encodeURIComponent(d)}`;
+            const url = `/api/credit-notes/generate-number/?date=${encodeURIComponent(d)}`;
             const res = await fetch(url);
             if (!res.ok) {
                 const text = await res.text();

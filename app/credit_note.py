@@ -278,16 +278,12 @@ def export_creditnote_pdf(no: str = Query(...), db: Session = Depends(get_db)):
     return FileResponse(path=tmp_pdf, media_type="application/pdf", filename=tmp_pdf.name)
 
 
+@router.get("/api/credit-notes/generate-number", response_class=JSONResponse)
 @router.get("/api/credit-notes/generate-number/", response_class=JSONResponse)
 def api_generate_number(
     date: str = Query(..., description="วันที่เอกสารรูปแบบ YYYY-MM-DD"),
     db: Session = Depends(get_db),
 ):
-    """
-    คืนเลขที่ใบลดหนี้ใหม่ จากวันที่ doc_date
-    ตัวอย่าง: GET /api/credit-notes/generate-number?date=2025-11-16
-    ตอบ: {"number": "SSCR1-1611/2568"}
-    """
     doc_date = _to_date(date)
     number = generate_creditnote_number(db, doc_date)
     return {"number": number}

@@ -247,11 +247,21 @@ section.border-t-2.border-b-2 p strong {
   white-space: nowrap;
 }
 
+.cn-doc-copies {
+  margin-top: 2px;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
 .cn-doc-copy {
-  font-size: 13pt;
-  margin-top: 0;
+  font-size: 12pt;
+  padding: 1px 8px;
+  border: 1px solid #000;
+  border-radius: 2px;
   white-space: nowrap;
 }
+
 
 /* ส่วนหัว 3 คอลัมน์: สถานที่ออกเอกสาร / วันที่ออกเอกสาร / เลขที่ */
 .cn-header {
