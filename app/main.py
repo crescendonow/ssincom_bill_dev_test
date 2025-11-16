@@ -71,7 +71,7 @@ app.include_router(cars_router)
 app.include_router(bill_note_router)
 app.include_router(saletax_router)
 app.include_router(drivers_router)
-app.include_router(credit_note_router)
+app.include_router(credit_router)
 
 # หน้า: รายการใบกำกับภาษี
 @app.get("/summary_invoices.html", response_class=HTMLResponse)
