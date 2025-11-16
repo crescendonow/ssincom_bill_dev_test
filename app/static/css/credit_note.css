@@ -491,56 +491,57 @@ main {
 
 /* ================================
    SIGNATURE BLOCK - TABLE LAYOUT
-   (แก้ให้ใช้ได้ทั้ง Preview + PDF)
+   (ใช้ได้ทั้ง Preview + PDF)
    ================================ */
 
-/* กรอบลายเซ็น: กว้างเต็มหน้า และมีเส้นซ้าย-ขวา-ล่าง */
+/* กรอบลายเซ็น: กว้างเต็มหน้า มีเส้นซ้าย-ล่าง
+   ส่วนเส้นขวาไปใส่ที่ cell ขวาสุดแทน */
 .cn-signatures {
   display: table;
   width: 100%;
   border-left: var(--border);
-  border-right: var(--border);
   border-bottom: var(--border);
   border-spacing: 0;
   margin-top: 0;
 }
 
-/* ช่องซ้าย-ขวาเป็น table-cell (WeasyPrint handle ได้ดี) */
+/* ช่องซ้าย-ขวาเป็น table-cell */
 .sig-col {
   display: table-cell;
   vertical-align: bottom;
   text-align: center;
   padding: 10mm 0 8mm 0;
-  /* ระยะบน-ล่างของแต่ละช่อง */
 }
 
-/* ซ้าย ~70% ขวา ~30% ให้ใกล้เคียงคอลัมน์ตารางด้านบน */
+/* ซ้าย ~70% + เส้นแบ่งกลางด้านขวา */
 .cn-signatures .sig-col:first-child {
   width: 70%;
   border-right: var(--border);
 }
 
+/* ขวา ~30% + เส้นขอบขวาสุดของกล่องลายเซ็น */
 .cn-signatures .sig-col:last-child {
   width: 30%;
+  border-right: var(--border);
+  /* ← เพิ่มบรรทัดนี้ */
 }
 
-/* เส้นเซ็นชื่อ – ยาว 45mm และอยู่กึ่งกลางช่องแนวนอนเสมอ */
+/* เส้นเซ็นชื่อ – ยาว 45mm */
 .sig-line {
   display: inline-block;
   width: 45mm;
-  /* 4.5 ซม. ตามที่ต้องการ */
   border-top: var(--border);
   height: 0;
   margin-bottom: 4mm;
-  /* เว้นก่อนข้อความ */
 }
 
-/* ข้อความใต้เส้น – จัดกลางและไม่ตัดบรรทัด */
+/* ข้อความใต้เส้น */
 .sig-label {
   font-size: 12pt;
   text-align: center;
   white-space: nowrap;
 }
+
 
 .cn-footnote {
   font-size: 11pt;
