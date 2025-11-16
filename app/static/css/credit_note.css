@@ -489,38 +489,54 @@ main {
   /* ชิดกับเส้นล่างของ cn-summary */
 }
 
-/* ช่องซ้ายมีเส้นแบ่งกลางด้านขวา */
+/* ================================
+   SIGNATURE BLOCK (ปรับใหม่ทั้งหมด)
+   ================================ */
+
+/* กรอบลายเซ็น: ซ้าย 70% ขวา 30% */
+.cn-signatures {
+  display: grid;
+  grid-template-columns: 7fr 3fr;
+  border-left: var(--border);
+  border-right: var(--border);
+  border-bottom: var(--border);
+  margin-top: 0;
+}
+
+/* คอลัมน์ซ้ายมีเส้นแบ่งกลาง */
 .cn-signatures .sig-col:first-child {
   border-right: var(--border);
 }
 
+/* จัดแนวเส้นเซ็นให้กึ่งกลางช่อง */
 .sig-col {
-  text-align: center;
-  padding: 10mm 8px 6mm;
-  /* ระยะบน-ข้าง-ล่าง */
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: center;
+  /* จัดกึ่งกลางตามแนวตั้ง */
   align-items: center;
+  /* จัดกึ่งกลางตามแนวนอน */
+  padding: 12mm 0 12mm 0;
+  /* ระยะบน–ล่างที่สวยกว่าใน PDF */
 }
 
-/* เส้นเซ็นชื่อ – ยาว 5.5 ซม. (55 มม.) */
+/* เส้นเซ็นชื่อยาว 45mm = 4.5 cm และอยู่กลางช่อง */
 .sig-line {
   border-top: var(--border);
-  width: 55mm;
-  /* = 5.5 cm */
-  margin: 0 auto 3mm;
-  /* กลางคอลัมน์ + เว้น 3mm ก่อนข้อความ */
+  width: 45mm;
+  /* ✔ ความยาวใหม่ */
   height: 0;
+  margin-bottom: 4mm;
+  /* ระยะห่างก่อนข้อความ */
 }
 
-/* ข้อความใต้เส้นเซ็น – จัดกลางและไม่ตัดบรรทัด */
+/* ข้อความใต้เส้น ขนาด 12pt จัดกลางแน่นอน */
 .sig-label {
   font-size: 12pt;
   text-align: center;
   white-space: nowrap;
-  /* กันตัดคำเป็นหลายบรรทัด */
 }
+
 
 .cn-footnote {
   font-size: 11pt;
