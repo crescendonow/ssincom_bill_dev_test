@@ -1,68 +1,233 @@
-/* credit_note.css — A4 print layout for Credit Note */
-
-:root {
-  --font-body: "Noto Sans Thai", Arial, sans-serif;
-  --fs-xxs: 10pt;
-  --fs-xs: 11pt;
-  --fs-sm: 12pt;
-  --fs-md: 13pt;
-  --fs-lg: 14pt;
-  --line: 1.25;
-  --border: 1px solid #000;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-html,
-body {
-  margin: 0;
-  padding: 0;
-}
+/* ===============================
+   BASE จาก bill_note.css
+   =============================== */
 
 body {
-  font-family: var(--font-body);
-  font-size: var(--fs-sm);
-  line-height: var(--line);
-  color: #000;
+  font-family: "Noto Sans Thai", sans-serif !important;
+  font-optical-sizing: auto;
 }
 
-/* ขนาดกระดาษสำหรับพิมพ์ */
+/* A4 page styles */
 @page {
   size: A4 portrait;
   margin: 10mm;
 }
 
-/* กรอบกระดาษ A4 */
+/* สเกลตัวแปรสำหรับการพิมพ์ */
+:root {
+  /* base สำหรับเนื้อหา */
+  --print-base: 14pt;
+  --print-small: 13pt;
+  --print-xs: 12pt;
+
+  /* หัวข้อ */
+  --print-h1: 20pt;
+  --print-h2: 18pt;
+  --print-h3: 16pt;
+
+  /* ตาราง */
+  --print-table: 14pt;
+  --print-table-small: 13pt;
+
+  /* ระยะห่าง */
+  --print-line-height: 1.45;
+  --print-cell-vpad: 2.2mm;
+  --print-cell-hpad: 2.4mm;
+
+  /* สำหรับใบลดหนี้ */
+  --border: 1px solid #000;
+}
+
+/* โครง A4 เดิม */
 .A4-page {
   width: 190mm;
   min-height: 277mm;
+  height: 277mm;
+  padding: 0;
   margin: 0 auto;
-  font-family: "TH Sarabun New", "Tahoma", "Sukhumvit Set", "Thonburi",
-    "Noto Sans Thai", "Noto Sans", Arial, sans-serif;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  position: relative;
+  border: none;
+  box-shadow: none;
   background: #fff;
-  color: #000;
-  border: var(--border);
-  display: flex;
-  flex-direction: column;
 }
+
+/* พื้นที่ต่าง ๆ ของ A4 (ถ้าไม่มี header/section ใน credit_note.html ก็ไม่เป็นไร) */
+.A4-page header {
+  grid-row: 1;
+  padding: 8mm;
+}
+
+.A4-page section {
+  grid-row: 2;
+  padding: 4mm 8mm;
+}
+
+.A4-page main {
+  grid-row: 3;
+  padding: 0 8mm;
+  overflow: hidden;
+}
+
+.A4-page .page-ender {
+  grid-row: 4;
+  min-height: 38mm;
+}
+
+/* กันตารางแตกหน้า */
+.invoice-table-body tr,
+.summary-footer {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* ------------------- PRINT MODE (จาก bill_note) ------------------- */
+@media print {
+
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  #controls,
+  .page-controls,
+  .noprint,
+  .btn-remove-item,
+  td.action-cell,
+  th.action-cell {
+    display: none !important;
+  }
+
+  /* ฟอนต์และขนาดพื้นฐานในโหมดพิมพ์ (คงที่ด้วย pt) */
+  .A4-page {
+    width: 190mm !important;
+    height: 277mm !important;
+    margin: 0 !important;
+    font-family: "TH Sarabun New", "Tahoma", "Sukhumvit Set", "Thonburi",
+      "Noto Sans Thai", "Noto Sans", Arial, sans-serif;
+    font-size: var(--print-base) !important;
+    line-height: var(--print-line-height);
+    color: #000;
+    box-shadow: none !important;
+    border: none !important;
+    page-break-after: always;
+  }
+
+  .A4-page:last-of-type {
+    page-break-after: auto;
+  }
+
+  /* หัวข้อ */
+  .A4-page h1 {
+    font-size: var(--print-h1);
+    line-height: 1.25;
+  }
+
+  .A4-page h2 {
+    font-size: var(--print-h2);
+    line-height: 1.3;
+  }
+
+  .A4-page h3 {
+    font-size: var(--print-h3);
+    line-height: 1.35;
+  }
+
+  /* ข้อความทั่วไปเล็กลงเล็กน้อยในบางส่วน */
+  .A4-page header .text-xs,
+  .A4-page .text-xs {
+    font-size: var(--print-small);
+  }
+
+  /* ตาราง: ขนาดตัวอักษรและช่องไฟคงที่ */
+  .A4-page table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .A4-page table th,
+  .A4-page table td {
+    font-size: var(--print-table);
+    padding: var(--print-cell-vpad) var(--print-cell-hpad);
+    vertical-align: middle;
+  }
+
+  /* หัวตารางให้หนาขึ้นและคงเส้น 2px */
+  .A4-page thead tr {
+    border-top: 2px solid #000;
+    border-bottom: 2px solid #000;
+  }
+
+  .A4-page tbody tr {
+    border-bottom: 0.3px solid #ccc;
+  }
+
+  .A4-page tfoot .summary-footer tr {
+    border-top: 2px solid #000;
+  }
+
+  /* บริเวณสรุปท้ายหน้า */
+  .summary-footer td {
+    font-size: var(--print-table);
+  }
+
+  .total-in-words {
+    font-size: var(--print-small);
+  }
+
+  /* ย่อตัวหนังสือจุก ๆ บางจุดให้คงที่ (วันที่/เลขหน้า/ฯลฯ) */
+  .cust-tax-id,
+  .cust-branch,
+  .cust-person-id,
+  .bill-number,
+  .bill-date,
+  .payment-due-date,
+  .page-number {
+    font-size: var(--print-small);
+  }
+}
+
+/* Equalize font size ใน section แบบ bill_note (ไม่กระทบใบลดหนี้มากนัก) */
+section.border-t-2.border-b-2 p,
+section.border-t-2.border-b-2 p span,
+section.border-t-2.border-b-2 p strong {
+  font-size: var(--print-base);
+  line-height: var(--print-line-height);
+  color: #000;
+}
+
+/* screen mode */
+@media screen {
+
+  section.border-t-2.border-b-2 p,
+  section.border-t-2.border-b-2 p span,
+  section.border-t-2.border-b-2 p strong {
+    font-size: 13pt;
+    line-height: 1.45;
+  }
+}
+
+/* ===============================
+   ส่วนของใบลดหนี้ (Credit Note)
+   =============================== */
 
 .credit-note {
   width: 100%;
-  flex: 1;
   display: flex;
   flex-direction: column;
 }
 
-/* =========================
-   แถวบน: ใบลดหนี้ / ต้นฉบับ
-   ========================= */
-
+/* แถวบน ใบลดหนี้ / ต้นฉบับ / สำเนา */
 .cn-top-row {
   display: grid;
   grid-template-columns: 3fr 1.2fr;
-  /* ซ้ายโล่ง, ขวาใบลดหนี้ */
+  border-top: var(--border);
   border-bottom: var(--border);
 }
 
@@ -76,26 +241,22 @@ body {
 }
 
 .cn-doc-title {
-  font-size: var(--fs-md);
+  font-size: var(--print-h3);
   font-weight: 700;
   white-space: nowrap;
 }
 
 .cn-doc-copy {
-  font-size: var(--fs-xs);
+  font-size: var(--print-xs);
   margin-top: 2px;
   white-space: nowrap;
 }
 
-/* =========================
-   ส่วนหัว 3 คอลัมน์
-   ========================= */
-
+/* ส่วนหัว 3 คอลัมน์: สถานที่ออกเอกสาร / วันที่ออกเอกสาร / เลขที่ */
 .cn-header {
   border-bottom: var(--border);
 }
 
-/* แถวของ header ใช้ grid 3 คอลัมน์: 2/4, 1/4, 1/4 */
 .cn-header-row {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr;
@@ -113,13 +274,13 @@ body {
   grid-column: span 2;
 }
 
-/* หัวข้อบรรทัดแรก: สถานที่ออกเอกสาร / วันที่ออกเอกสาร / เลขที่ */
+/* หัวข้อแถวแรก */
 .cn-header-title {
   text-align: center;
   font-weight: 700;
 }
 
-/* ภายในช่องซ้าย (ผู้ประกอบการ + ลูกค้า) แบ่ง 2 คอลัมน์ */
+/* ภายในช่องซ้าย แบ่ง 2 คอลัมน์สำหรับผู้ประกอบการ/ลูกค้า */
 .cn-header-inner {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -139,7 +300,7 @@ body {
   border-bottom: var(--border);
 }
 
-/* ตาราง key-value สำหรับผู้ขาย/ผู้ซื้อ */
+/* ตาราง key-value ผู้ขาย/ผู้ซื้อ */
 .cn-kv-table {
   width: 100%;
   border-collapse: collapse;
@@ -154,7 +315,7 @@ body {
   width: 40%;
 }
 
-/* ตารางของผู้ซื้อ ให้ห่างจากผู้ขายเล็กน้อย (ในแต่ละคอลัมน์) */
+/* ตารางของผู้ซื้อ ให้ห่างจากผู้ขายเล็กน้อย */
 .cn-kv-table-buyer {
   margin-top: 2px;
 }
@@ -165,10 +326,7 @@ body {
   padding: 4px 0;
 }
 
-/* =========================
-   เนื้อหาใบลดหนี้
-   ========================= */
-
+/* เนื้อหาใบลดหนี้ */
 main {
   flex: 1;
   display: flex;
@@ -220,16 +378,12 @@ main {
   font-weight: 700;
 }
 
-/* =========================
-   ส่วนท้าย (เหตุผล + ลายเซ็น + footnote)
-   ========================= */
-
+/* ส่วนท้าย: เหตุผล + ลายเซ็น + footnote */
 .cn-bottom {
   margin-top: auto;
-  /* ดันส่วนนี้ไปท้ายกระดาษ */
+  /* ดันไปท้ายกระดาษ */
 }
 
-/* เหตุผลลดหนี้ */
 .cn-reason {
   border: var(--border);
   padding: 6px 8px;
@@ -237,7 +391,6 @@ main {
   margin-top: 4px;
 }
 
-/* ลายเซ็น */
 .cn-signatures {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -258,16 +411,15 @@ main {
 }
 
 .sig-label {
-  font-size: var(--fs-xs);
+  font-size: var(--print-small);
 }
 
-/* ฟุตโน้ตด้านล่างสุด */
 .cn-footnote {
-  font-size: var(--fs-xxs);
+  font-size: var(--print-xs);
   margin-top: 8px;
 }
 
-/* ซ่อนปุ่มตอนพิมพ์ */
+/* ซ่อนปุ่มในโหมดพิมพ์ (ใช้ร่วมกับ bill_note) */
 @media print {
 
   .noprint,
