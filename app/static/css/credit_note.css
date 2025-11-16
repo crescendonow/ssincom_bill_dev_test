@@ -286,6 +286,11 @@ section.border-t-2.border-b-2 p strong {
   line-height: 1.3;
 }
 
+/* ให้คอลัมน์ซ้ายสุดของทุก cn-header-row มีเส้นขอบซ้ายต่อเนื่องลงมา */
+.cn-header-row .cn-header-cell:first-child {
+  border-left: var(--border);
+}
+
 /* หัวตารางบรรทัดแรก (หัวข้อ) */
 .cn-header-title {
   text-align: center;
@@ -386,6 +391,8 @@ main {
 .cn-table {
   width: 100%;
   border-collapse: collapse;
+  margin-top: 5mm;
+  /* เว้นช่องว่าง 0.5 ซม. จากบล็อกด้านบน */
 }
 
 .cn-table th,
@@ -393,12 +400,16 @@ main {
   border: var(--border);
   padding: 4px 6px;
   vertical-align: top;
-  font-size: 13pt;
+  font-size: 14pt;
+  /* ขนาด 14 */
+  font-weight: 400;
+  /* ตัวบาง */
 }
 
 .cn-table thead th {
   text-align: left;
-  font-weight: 700;
+  font-weight: 400;
+  /* หัวตารางเป็นตัวบางเช่นกัน */
 }
 
 .cn-table td.num,
@@ -410,13 +421,17 @@ main {
 .cn-summary {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 4px;
+  margin-top: 5mm;
+  /* ให้เว้นระยะเหมือนกัน หรือจะใช้ 4px ก็ได้ถ้าอยากชิด */
 }
 
 .cn-summary td {
   border: var(--border);
   padding: 4px 6px;
-  font-size: 13pt;
+  font-size: 14pt;
+  /* ขนาด 14 */
+  font-weight: 400;
+  /* ตัวบางทั้งหมด */
 }
 
 .cn-summary td.label {
@@ -426,7 +441,6 @@ main {
 .cn-summary td.num {
   text-align: right;
   width: 35%;
-  font-weight: 700;
 }
 
 /* ส่วนท้าย: เหตุผล + ลายเซ็น + footnote */
@@ -469,4 +483,9 @@ main {
 .cn-footnote {
   font-size: 11pt;
   margin-top: 8px;
+}
+
+/* ใช้กับ credit note เท่านั้น: main ไม่ต้องมี padding ด้านข้าง */
+.credit-note main {
+  padding: 0;
 }
