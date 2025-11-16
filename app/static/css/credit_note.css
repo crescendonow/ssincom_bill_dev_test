@@ -436,7 +436,6 @@ main {
 }
 
 .cn-summary td {
-  padding: 4px 6px;
   font-size: 14pt;
   /* ขนาด 14 */
   font-weight: 400;
@@ -465,7 +464,7 @@ main {
 
 .cn-signatures {
   display: grid;
-  grid-template-columns: 7fr 3fr;
+  grid-template-columns: 1fr 1fr;
   /* 3 คอลัมน์แรก : 2 คอลัมน์หลัง */
   gap: 0;
   /* ให้เส้นตรงต่อเนื่อง ถ้าอยากเว้นค่อยเพิ่ม margin ภายใน sig-col แทน */

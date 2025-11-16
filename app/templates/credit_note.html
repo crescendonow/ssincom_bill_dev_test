@@ -106,13 +106,13 @@
           <td class="label">รวมเป็นเงินปรับปรุงทั้งสิ้น</td>
           <td class="num">{{ "{:,.2f}".format(sum_total) }}</td>
         </tr>
+        <tr>
+          <td class="label">มีการลดหนี้เนื่องจาก</td>
+          <td class="label"><span>{{ reason }}</span></td>
+        </tr>
       </table>
 
       <!-- ดันส่วนนี้ไปท้ายกระดาษ -->
-      <div class="cn-bottom">
-        <div class="cn-reason">
-          มีการลดหนี้เนื่องจาก : <span>{{ reason }}</span>
-        </div>
 
         <div class="cn-signatures">
           <div class="sig-col">
