@@ -90,9 +90,9 @@ btnPDF?.addEventListener('click', async () => {
 });
 
 // Autocomplete & autofill for all rows
-wireAutocompleteForAllRows();
-});
-
+if (typeof wireAutocompleteForAllRows === 'function') {
+        wireAutocompleteForAllRows();
+    }
 
 function wireRow(row) {
     const grnInput = row.querySelector('.grn_number');
