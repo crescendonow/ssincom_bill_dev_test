@@ -107,9 +107,11 @@
           <td class="num">{{ "{:,.2f}".format(sum_total) }}</td>
         </tr>
         <tr>
-          <td class="label">มีการลดหนี้เนื่องจาก</td>
-          <td class="label"><span>{{ reason }}</span></td>
+          <td class="label" colspan="2">
+            มีการลดหนี้เนื่องจาก : <span>{{ reason }}</span>
+          </td>
         </tr>
+
       </table>
 
       <!-- ดันส่วนนี้ไปท้ายกระดาษ -->

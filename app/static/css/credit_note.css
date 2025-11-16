@@ -418,28 +418,30 @@ main {
 }
 
 /* ตารางสรุปด้านล่าง */
-/* ตารางสรุปด้านล่าง */
 .cn-summary {
   width: 70%;
-  /* ให้กว้างเท่ากับ 3 คอลัมน์แรกของตารางด้านบน */
+  /* กว้างเท่ากับ 3 คอลัมน์แรกของตารางด้านบน */
   border-collapse: collapse;
   margin-top: 5mm;
 }
 
-/* ให้มีเส้นซ้าย-ขวาครบ */
+/* ทุกช่องมีเส้นบน–ล่าง */
+.cn-summary td {
+  border-top: var(--border);
+  border-bottom: var(--border);
+  font-size: 14pt;
+  font-weight: 400;
+  padding: 4px 6px;
+}
+
+/* ซ้ายสุดมีเส้นซ้าย */
 .cn-summary tr td:first-child {
   border-left: var(--border);
 }
 
+/* ขวาสุดมีเส้นขวา (รวมถึงแถวเหตุผลที่ใช้ colspan=2) */
 .cn-summary tr td:last-child {
   border-right: var(--border);
-}
-
-.cn-summary td {
-  font-size: 14pt;
-  /* ขนาด 14 */
-  font-weight: 400;
-  /* ตัวบางทั้งหมด */
 }
 
 .cn-summary td.num {
@@ -462,25 +464,37 @@ main {
   font-size: 13pt;
 }
 
+/* กล่องลายเซ็น 2 ช่อง (ซ้าย ~70%, ขวา ~30%) */
 .cn-signatures {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  /* 3 คอลัมน์แรก : 2 คอลัมน์หลัง */
-  gap: 0;
-  /* ให้เส้นตรงต่อเนื่อง ถ้าอยากเว้นค่อยเพิ่ม margin ภายใน sig-col แทน */
-  align-items: end;
-  margin-top: 16px;
+  grid-template-columns: 7fr 3fr;
+  /* ซ้าย 70% ขวา 30% */
+  border-left: var(--border);
+  border-right: var(--border);
+  border-bottom: var(--border);
+  margin-top: 0;
+  /* ชิดกับเส้นล่างของ cn-summary */
+}
+
+/* ช่องซ้ายมีเส้นแบ่งกลางด้านขวา */
+.cn-signatures .sig-col:first-child {
+  border-right: var(--border);
 }
 
 .sig-col {
   text-align: center;
-  padding-top: 8mm;
-  /* ถ้าอยากให้เส้นลายเซ็นไม่ชิดกับตารางเกินไป */
+  padding: 10mm 8px 6mm;
+  /* ระยะบน-ข้าง-ล่าง ปรับได้ */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
 }
 
 .sig-line {
   border-top: var(--border);
-  width: 90%;
+  width: 70%;
+  /* ความยาวเส้นเซ็นชื่อ */
   margin: 0 auto 4px;
   height: 0;
 }
