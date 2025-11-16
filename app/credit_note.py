@@ -6,6 +6,7 @@ from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, func, t
 from datetime import datetime, date
 from pathlib import Path
 import tempfile, uuid
+from math import ceil 
 from . import models  
 
 from .database import SessionLocal, Base
@@ -172,6 +173,17 @@ def credit_note_preview_page(request: Request, no: str = Query(...), db: Session
     vat = round(sum_reduce_value * 0.07, 2)
     grand = round(sum_reduce_value + vat, 2)
 
+    # ---------- แบ่งหน้า: 10 แถวต่อหน้า ----------
+    from math import ceil
+    ITEMS_PER_PAGE = 10
+    total_pages = max(1, ceil(len(rows) / ITEMS_PER_PAGE)) if rows else 1
+    pages = []
+    for i in range(total_pages):
+        start = i * ITEMS_PER_PAGE
+        end = start + ITEMS_PER_PAGE
+        pages.append({"rows": rows[start:end]})
+    # -----------------------------------------------
+
     # วันที่เอกสาร (หัวใบลดหนี้) ให้ใช้ created_at เดิม
     d = head.created_at or datetime.now().date()
     be_date = f"{d.day:02d}/{d.month:02d}/{d.year + 543}"
@@ -216,6 +228,8 @@ def credit_note_preview_page(request: Request, no: str = Query(...), db: Session
         "doc_no": head.creditnote_number,
         "doc_date_be": be_date,
         "rows": rows,
+        "pages": pages,
+        "total_pages": total_pages,
         "sum_reduce_value": sum_reduce_value,
         "sum_reduce_vat": vat,
         "sum_total": grand,
@@ -428,6 +442,16 @@ def _build_creditnote_context_from_payload(payload: dict, db: Session) -> dict:
     sum_reduce_vat = round(sum_reduce_value * 0.07, 2)
     sum_total = round(sum_reduce_value + sum_reduce_vat, 2)
 
+    # ---------- แบ่งหน้า: 10 แถวต่อหน้า ----------
+    ITEMS_PER_PAGE = 10
+    total_pages = max(1, ceil(len(rows) / ITEMS_PER_PAGE)) if rows else 1
+    pages = []
+    for i in range(total_pages):
+        start = i * ITEMS_PER_PAGE
+        end = start + ITEMS_PER_PAGE
+        pages.append({"rows": rows[start:end]})
+    # -------------------------------------------
+
     # --- buyer จาก payload / DB ---
     buyer_payload = d.get("buyer") or {}
     personid = buyer_payload.get("personid")
@@ -470,6 +494,8 @@ def _build_creditnote_context_from_payload(payload: dict, db: Session) -> dict:
         "doc_no": doc_no,
         "doc_date_be": doc_date_be,
         "rows": rows,
+        "pages": pages,               # ✅ ใช้ใน template
+        "total_pages": total_pages,   # ✅ ใช้ใน template
         "sum_reduce_value": sum_reduce_value,
         "sum_reduce_vat": sum_reduce_vat,
         "sum_total": sum_total,

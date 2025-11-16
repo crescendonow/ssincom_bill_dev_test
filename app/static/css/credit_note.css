@@ -235,10 +235,18 @@ section.border-t-2.border-b-2 p strong {
 
 /* ส่วนขวา (ใบลดหนี้) ไม่ต้องมีเส้นขอบ */
 .cn-top-right {
-  text-align: center;
+  text-align: right;
   padding: 4px 8px;
   border: none !important;
-  /* ✘ ไม่ต้องมีขอบ */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.cn-doc-title,
+.cn-doc-subtitle,
+.cn-page-number {
+  text-align: right;
 }
 
 /* กล่องข้อความ */
@@ -392,10 +400,13 @@ main {
 .cn-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 2mm;              /* ระยะห่างจาก header ~0.5 ซม. */
-  border-left: var(--border);   /* ให้กรอบซ้าย–ขวาเท่ากับ cn-header-row */
+  margin-top: 2mm;
+  /* ระยะห่างจาก header ~0.5 ซม. */
+  border-left: var(--border);
+  /* ให้กรอบซ้าย–ขวาเท่ากับ cn-header-row */
   border-right: var(--border);
-  border-bottom: var(--border); /* เส้นล่างตาราง */
+  border-bottom: var(--border);
+  /* เส้นล่างตาราง */
 }
 
 /* ทุกเซลล์ใช้เส้นแนวตั้งเหมือน header */
@@ -405,7 +416,8 @@ main {
   vertical-align: top;
   font-size: 13pt;
   font-weight: 400;
-  border-left: var(--border);   /* เส้นแบ่งคอลัมน์ */
+  border-left: var(--border);
+  /* เส้นแบ่งคอลัมน์ */
 }
 
 /* คอลัมน์แรกใช้เส้นซ้ายจาก border ของ table แทน ไม่ต้องซ้ำ */
@@ -516,7 +528,7 @@ main {
   display: table;
   width: 100%;
   border-left: var(--border);
-  border-bottom: var(--border);
+  border-right: var(--border) border-bottom: var(--border);
   border-spacing: 0;
   margin-top: 0;
 }
@@ -538,8 +550,6 @@ main {
 /* ขวา ~30% + เส้นขอบขวาสุดของกล่องลายเซ็น */
 .cn-signatures .sig-col:last-child {
   width: 30%;
-  border-right: var(--border);
-  /* ← เพิ่มบรรทัดนี้ */
 }
 
 /* เส้นเซ็นชื่อ – ยาว 45mm */
