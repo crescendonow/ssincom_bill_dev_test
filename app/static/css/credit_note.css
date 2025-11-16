@@ -492,48 +492,22 @@ main {
   font-size: 13pt;
 }
 
-/* กล่องลายเซ็น 2 ช่อง (ซ้าย ~70%, ขวา ~30%) */
-.cn-signatures {
-  display: grid;
-  grid-template-columns: 7fr 3fr;
-  /* ซ้าย 70% ขวา 30% */
-  border-left: var(--border);
-  border-right: var(--border);
-  border-bottom: var(--border);
-  margin-top: 0;
-  /* ชิดกับเส้นล่างของ cn-summary */
-}
-
-/* ช่องซ้ายมีเส้นแบ่งกลางด้านขวา */
-/* กล่องลายเซ็น 2 ช่อง (ซ้าย ~70%, ขวา ~30%) */
-.cn-signatures {
-  display: grid;
-  grid-template-columns: 7fr 3fr;
-  /* ซ้าย 70% ขวา 30% ตามคอลัมน์ตาราง */
-  border-left: var(--border);
-  border-right: var(--border);
-  border-bottom: var(--border);
-  margin-top: 0;
-  /* ชิดกับเส้นล่างของ cn-summary */
-}
-
 /* ================================
    SIGNATURE BLOCK - TABLE LAYOUT
-   (ใช้ได้ทั้ง Preview + PDF)
    ================================ */
 
-/* กรอบลายเซ็น: กว้างเต็มหน้า มีเส้นซ้าย-ล่าง
-   ส่วนเส้นขวาไปใส่ที่ cell ขวาสุดแทน */
 .cn-signatures {
   display: table;
   width: 100%;
   border-left: var(--border);
-  border-right: var(--border) border-bottom: var(--border);
+  border-right: var(--border);
+  /* ← แก้ให้ถูก */
+  border-bottom: var(--border);
+  /* ← แยกบรรทัดให้ถูกต้อง */
   border-spacing: 0;
   margin-top: 0;
 }
 
-/* ช่องซ้าย-ขวาเป็น table-cell */
 .sig-col {
   display: table-cell;
   vertical-align: bottom;
@@ -541,18 +515,18 @@ main {
   padding: 10mm 0 8mm 0;
 }
 
-/* ซ้าย ~70% + เส้นแบ่งกลางด้านขวา */
+/* ซ้าย */
 .cn-signatures .sig-col:first-child {
   width: 70%;
   border-right: var(--border);
 }
 
-/* ขวา ~30% + เส้นขอบขวาสุดของกล่องลายเซ็น */
+/* ขวา */
 .cn-signatures .sig-col:last-child {
   width: 30%;
 }
 
-/* เส้นเซ็นชื่อ – ยาว 45mm */
+/* เส้นเซ็น */
 .sig-line {
   display: inline-block;
   width: 45mm;
@@ -561,13 +535,12 @@ main {
   margin-bottom: 4mm;
 }
 
-/* ข้อความใต้เส้น */
+/* ข้อความ */
 .sig-label {
   font-size: 12pt;
   text-align: center;
   white-space: nowrap;
 }
-
 
 .cn-footnote {
   font-size: 11pt;
