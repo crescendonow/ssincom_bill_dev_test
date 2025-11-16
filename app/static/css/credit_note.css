@@ -490,53 +490,57 @@ main {
 }
 
 /* ================================
-   SIGNATURE BLOCK (ปรับใหม่ทั้งหมด)
+   SIGNATURE BLOCK - TABLE LAYOUT
+   (แก้ให้ใช้ได้ทั้ง Preview + PDF)
    ================================ */
 
-/* กรอบลายเซ็น: ซ้าย 70% ขวา 30% */
+/* กรอบลายเซ็น: กว้างเต็มหน้า และมีเส้นซ้าย-ขวา-ล่าง */
 .cn-signatures {
-  display: grid;
-  grid-template-columns: 7fr 3fr;
+  display: table;
+  width: 100%;
   border-left: var(--border);
   border-right: var(--border);
   border-bottom: var(--border);
+  border-spacing: 0;
   margin-top: 0;
 }
 
-/* คอลัมน์ซ้ายมีเส้นแบ่งกลาง */
+/* ช่องซ้าย-ขวาเป็น table-cell (WeasyPrint handle ได้ดี) */
+.sig-col {
+  display: table-cell;
+  vertical-align: bottom;
+  text-align: center;
+  padding: 10mm 0 8mm 0;
+  /* ระยะบน-ล่างของแต่ละช่อง */
+}
+
+/* ซ้าย ~70% ขวา ~30% ให้ใกล้เคียงคอลัมน์ตารางด้านบน */
 .cn-signatures .sig-col:first-child {
+  width: 70%;
   border-right: var(--border);
 }
 
-/* จัดแนวเส้นเซ็นให้กึ่งกลางช่อง */
-.sig-col {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  /* จัดกึ่งกลางตามแนวตั้ง */
-  align-items: center;
-  /* จัดกึ่งกลางตามแนวนอน */
-  padding: 12mm 0 12mm 0;
-  /* ระยะบน–ล่างที่สวยกว่าใน PDF */
+.cn-signatures .sig-col:last-child {
+  width: 30%;
 }
 
-/* เส้นเซ็นชื่อยาว 45mm = 4.5 cm และอยู่กลางช่อง */
+/* เส้นเซ็นชื่อ – ยาว 45mm และอยู่กึ่งกลางช่องแนวนอนเสมอ */
 .sig-line {
-  border-top: var(--border);
+  display: inline-block;
   width: 45mm;
-  /* ✔ ความยาวใหม่ */
+  /* 4.5 ซม. ตามที่ต้องการ */
+  border-top: var(--border);
   height: 0;
   margin-bottom: 4mm;
-  /* ระยะห่างก่อนข้อความ */
+  /* เว้นก่อนข้อความ */
 }
 
-/* ข้อความใต้เส้น ขนาด 12pt จัดกลางแน่นอน */
+/* ข้อความใต้เส้น – จัดกลางและไม่ตัดบรรทัด */
 .sig-label {
   font-size: 12pt;
   text-align: center;
   white-space: nowrap;
 }
-
 
 .cn-footnote {
   font-size: 11pt;
