@@ -282,7 +282,7 @@ section.border-t-2.border-b-2 p strong {
   border-right: var(--border);
   border-bottom: var(--border);
   padding: 6px 8px;
-  font-size: 14pt;
+  font-size: 13pt;
   line-height: 1.3;
 }
 
@@ -323,7 +323,7 @@ section.border-t-2.border-b-2 p strong {
 
 /* บรรทัดหัว "ชื่อผู้ประกอบการ" / "ชื่อลูกค้า" */
 .cn-kv-title {
-  font-size: 14pt;
+  font-size: 13pt;
   /* ขนาด 14 */
   font-weight: 400;
   /* ตัวบาง */
@@ -342,7 +342,7 @@ section.border-t-2.border-b-2 p strong {
 /* บล็อกข้อมูลผู้ประกอบการ–ลูกค้า */
 .cn-info-block {
   padding: 6px 8px;
-  font-size: 14pt;
+  font-size: 13pt;
   line-height: 1.35;
   border-right: var(--border);
   border-bottom: var(--border);
@@ -350,7 +350,7 @@ section.border-t-2.border-b-2 p strong {
 
 /* หัวข้อ เช่น “ชื่อผู้ประกอบการ”, “ชื่อลูกค้า” */
 .cn-info-title {
-  font-size: 14pt;
+  font-size: 13pt;
   font-weight: 400;
   /* ตัวบาง */
   text-decoration: underline;
@@ -400,7 +400,7 @@ main {
   border: var(--border);
   padding: 4px 6px;
   vertical-align: top;
-  font-size: 14pt;
+  font-size: 13pt;
   /* ขนาด 14 */
   font-weight: 400;
   /* ตัวบาง */
@@ -429,7 +429,7 @@ main {
 .cn-summary td {
   border-top: var(--border);
   border-bottom: var(--border);
-  font-size: 14pt;
+  font-size: 13pt;
   font-weight: 400;
   padding: 4px 6px;
 }
@@ -477,6 +477,19 @@ main {
 }
 
 /* ช่องซ้ายมีเส้นแบ่งกลางด้านขวา */
+/* กล่องลายเซ็น 2 ช่อง (ซ้าย ~70%, ขวา ~30%) */
+.cn-signatures {
+  display: grid;
+  grid-template-columns: 7fr 3fr;
+  /* ซ้าย 70% ขวา 30% ตามคอลัมน์ตาราง */
+  border-left: var(--border);
+  border-right: var(--border);
+  border-bottom: var(--border);
+  margin-top: 0;
+  /* ชิดกับเส้นล่างของ cn-summary */
+}
+
+/* ช่องซ้ายมีเส้นแบ่งกลางด้านขวา */
 .cn-signatures .sig-col:first-child {
   border-right: var(--border);
 }
@@ -484,23 +497,29 @@ main {
 .sig-col {
   text-align: center;
   padding: 10mm 8px 6mm;
-  /* ระยะบน-ข้าง-ล่าง ปรับได้ */
+  /* ระยะบน-ข้าง-ล่าง */
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
 }
 
+/* เส้นเซ็นชื่อ – ยาว 5.5 ซม. (55 มม.) */
 .sig-line {
   border-top: var(--border);
-  width: 70%;
-  /* ความยาวเส้นเซ็นชื่อ */
-  margin: 0 auto 4px;
+  width: 55mm;
+  /* = 5.5 cm */
+  margin: 0 auto 3mm;
+  /* กลางคอลัมน์ + เว้น 3mm ก่อนข้อความ */
   height: 0;
 }
 
+/* ข้อความใต้เส้นเซ็น – จัดกลางและไม่ตัดบรรทัด */
 .sig-label {
   font-size: 12pt;
+  text-align: center;
+  white-space: nowrap;
+  /* กันตัดคำเป็นหลายบรรทัด */
 }
 
 .cn-footnote {
