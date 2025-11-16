@@ -10,14 +10,11 @@
     </div>
 
     <!-- ส่วนหัวหลัก -->
-    <div class="cn-header">
-      <!-- แถวหัวข้อ -->
-      <div class="cn-header-row">
-        <div class="cn-header-cell span2 cn-header-title">สถานที่ออกเอกสาร</div>
-        <div class="cn-header-cell cn-header-title">วันที่ออกเอกสาร</div>
-        <div class="cn-header-cell cn-header-title">เลขที่</div>
-      </div>
-
+    <div class="cn-header-row">
+  <div class="cn-header-cell cn-header-title col-2">สถานที่ออกเอกสาร</div>
+  <div class="cn-header-cell cn-header-title col-1">วันที่ออกเอกสาร<br>{{ doc_date_be }}</div>
+  <div class="cn-header-cell cn-header-title col-1">เลขที่<br>{{ doc_no }}</div>
+</div>
       <!-- แถวข้อมูล -->
       <div class="cn-header-row">
         <!-- ซ้าย: ชื่อผู้ประกอบการ + ชื่อลูกค้า (กิน 2/4 ของหน้า) -->
@@ -73,16 +70,6 @@
               </table>
             </div>
           </div>
-        </div>
-
-        <!-- กลาง: วันที่ออกเอกสาร -->
-        <div class="cn-header-cell">
-          <div class="cn-doc-value">{{ doc_date_be }}</div>
-        </div>
-
-        <!-- ขวา: เลขที่ -->
-        <div class="cn-header-cell">
-          <div class="cn-doc-value">{{ doc_no }}</div>
         </div>
       </div>
     </div>
