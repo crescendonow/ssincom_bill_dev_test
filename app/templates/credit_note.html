@@ -19,60 +19,46 @@
         เลขที่<br />{{ doc_no }}
       </div>
     </div>
-    <!-- แถวข้อมูล -->
+
+    <!-- แถวข้อมูลใหม่แบบไม่ใช้ตาราง -->
     <div class="cn-header-row">
-      <!-- ซ้าย: ชื่อผู้ประกอบการ (กิน 2/4 = คอลัมน์ สถานที่ออกเอกสาร) -->
-      <div class="cn-header-cell cn-header-body-seller">
-        <table class="cn-kv-table">
-          <tr>
-            <td class="cn-kv-title" colspan="2">ชื่อผู้ประกอบการ</td>
-          </tr>
-          <tr>
-            <td>ผู้ขาย/ผู้ประกอบการ</td>
-            <td>{{ seller.name }}</td>
-          </tr>
-          <tr>
-            <td>ที่อยู่</td>
-            <td>{{ seller.addr }}</td>
-          </tr>
-          <tr>
-            <td>โทร.</td>
-            <td>{{ seller.phone }}</td>
-          </tr>
-          <tr>
-            <td>สถานประกอบการ</td>
-            <td>{{ seller.branch }}</td>
-          </tr>
-          <tr>
-            <td>เลขประจำตัวผู้เสียภาษี</td>
-            <td>{{ seller.tax }}</td>
-          </tr>
-        </table>
+      <!-- ซ้าย: ผู้ประกอบการ -->
+      <div class="cn-header-cell cn-info-block cn-header-body-seller">
+        <div class="cn-info-title">ชื่อผู้ประกอบการ</div>
+
+        <div class="cn-info-line">
+          <span class="label">ผู้ขาย/ผู้ประกอบการ</span>: {{ seller.name }}
+        </div>
+        <div class="cn-info-line">
+          <span class="label">ที่อยู่</span>: {{ seller.addr }}
+        </div>
+        <div class="cn-info-line">
+          <span class="label">โทร.</span>: {{ seller.phone }}
+        </div>
+        <div class="cn-info-line">
+          <span class="label">สถานประกอบการ</span>: {{ seller.branch }}
+        </div>
+        <div class="cn-info-line">
+          <span class="label">เลขประจำตัวผู้เสียภาษี</span>: {{ seller.tax }}
+        </div>
       </div>
 
-      <!-- ขวา: ชื่อลูกค้า (กิน 2/4 = คอลัมน์ วันที่ออกเอกสาร + เลขที่) -->
-      <div class="cn-header-cell cn-header-body-buyer">
-        <table class="cn-kv-table">
-          <tr>
-            <td class="cn-kv-title" colspan="2">ชื่อลูกค้า</td>
-          </tr>
-          <tr>
-            <td>ชื่อลูกค้า</td>
-            <td>{{ buyer.name }}</td>
-          </tr>
-          <tr>
-            <td>ที่อยู่</td>
-            <td>{{ buyer.addr }}</td>
-          </tr>
-          <tr>
-            <td>สถานประกอบการ</td>
-            <td>{{ buyer.branch }}</td>
-          </tr>
-          <tr>
-            <td>เลขประจำตัวผู้เสียภาษี</td>
-            <td>{{ buyer.tax }}</td>
-          </tr>
-        </table>
+      <!-- ขวา: ลูกค้า -->
+      <div class="cn-header-cell cn-info-block cn-header-body-buyer">
+        <div class="cn-info-title">ชื่อลูกค้า</div>
+
+        <div class="cn-info-line">
+          <span class="label">ชื่อลูกค้า</span>: {{ buyer.name }}
+        </div>
+        <div class="cn-info-line">
+          <span class="label">ที่อยู่</span>: {{ buyer.addr }}
+        </div>
+        <div class="cn-info-line">
+          <span class="label">สถานประกอบการ</span>: {{ buyer.branch }}
+        </div>
+        <div class="cn-info-line">
+          <span class="label">เลขประจำตัวผู้เสียภาษี</span>: {{ buyer.tax }}
+        </div>
       </div>
     </div>
 

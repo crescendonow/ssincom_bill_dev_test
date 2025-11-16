@@ -334,6 +334,47 @@ section.border-t-2.border-b-2 p strong {
   font-size: 13pt;
 }
 
+/* บล็อกข้อมูลผู้ประกอบการ–ลูกค้า */
+.cn-info-block {
+  padding: 6px 8px;
+  font-size: 14pt;
+  line-height: 1.35;
+  border-right: var(--border);
+  border-bottom: var(--border);
+}
+
+/* หัวข้อ เช่น “ชื่อผู้ประกอบการ”, “ชื่อลูกค้า” */
+.cn-info-title {
+  font-size: 14pt;
+  font-weight: 400;
+  /* ตัวบาง */
+  text-decoration: underline;
+  margin-bottom: 5mm;
+  /* เว้น 0.5 ซม. */
+}
+
+/* บรรทัดข้อมูล */
+.cn-info-line {
+  margin-bottom: 5mm;
+  /* 0.5 ซม. ต่อบรรทัด */
+}
+
+/* label เช่น “ที่อยู่”, “โทร.” */
+.cn-info-line .label {
+  font-weight: 700;
+}
+
+/* ซ้าย – อยู่คอลัมน์ 1 (2/4) */
+.cn-header-body-seller {
+  grid-column: 1 / 2;
+}
+
+/* ขวา – อยู่คอลัมน์ 2–3 (2/4) */
+.cn-header-body-buyer {
+  grid-column: 2 / 4;
+}
+
+
 /* เนื้อหาใบลดหนี้ */
 main {
   flex: 1;
