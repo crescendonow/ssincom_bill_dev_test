@@ -264,22 +264,54 @@ def get_credit_note(no: str, db: Session = Depends(get_db)):
 
 @router.post("/export-creditnote-pdf")
 def export_creditnote_pdf(payload: dict = Body(...), db: Session = Depends(get_db)):
+    """
+    สร้าง PDF ใบลดหนี้จาก payload เดียวกับ /api/credit-notes/preview
+    """
     base_dir = BASE_DIR
     css_path = base_dir / "static" / "css" / "credit_note.css"
 
+    # 1) สร้าง context เหมือน preview
     ctx = _build_creditnote_context_from_payload(payload, db)
 
-    template = templates.env.get_template("credit_note.html")
-    html_inner = template.render(ctx)
+    # 2) render HTML ด้วย template เดียวกับ preview
+    try:
+        template = templates.env.get_template("credit_note.html")
+    except Exception as e:
+        # ถ้า template ไม่เจอหรือผิด path จะมาล้มตรงนี้
+        raise HTTPException(status_code=500, detail=f"template error: {e}")
 
-    html_str = f'<!DOCTYPE html><html><head><meta charset="utf-8" /></head><body>{html_inner}</body></html>'
+    try:
+        html_inner = template.render(ctx)
+    except Exception as e:
+        # error ตอน render jinja (เช่น ตัวแปรชื่อผิด)
+        raise HTTPException(status_code=500, detail=f"render error: {e}")
 
-    tmp_pdf = Path(tempfile.gettempdir()) / f"credit_note_{payload.get('creditnote_number','document')}.pdf"
-    HTML(string=html_str, base_url=str(base_dir)).write_pdf(
-        str(tmp_pdf),
-        stylesheets=[CSS(filename=str(css_path))]
+    html_str = (
+        "<!DOCTYPE html><html><head><meta charset='utf-8' /></head>"
+        f"<body>{html_inner}</body></html>"
     )
-    return FileResponse(path=tmp_pdf, media_type="application/pdf", filename=tmp_pdf.name)
+
+    # 3) เขียนไฟล์ PDF ด้วย WeasyPrint
+    try:
+        tmp_pdf = Path(tempfile.gettempdir()) / f"credit_note_{payload.get('creditnote_number','document')}.pdf"
+        HTML(string=html_str, base_url=str(base_dir)).write_pdf(
+            str(tmp_pdf),
+            stylesheets=[CSS(filename=str(css_path))]
+        )
+    except Exception as e:
+        # จับ error จาก WeasyPrint (เช่น css_path ผิด, dependency cairo ขาด)
+        raise HTTPException(status_code=500, detail=f"weasyprint error: {e}")
+
+    # 4) ส่งไฟล์กลับไปให้ browser ดาวน์โหลด
+    if not tmp_pdf.exists():
+        raise HTTPException(status_code=500, detail="PDF file not generated")
+
+    return FileResponse(
+        path=tmp_pdf,
+        media_type="application/pdf",
+        filename=tmp_pdf.name
+    )
+
 
 @router.get("/api/credit-notes/generate-number", response_class=JSONResponse)
 @router.get("/api/credit-notes/generate-number/", response_class=JSONResponse)
@@ -446,27 +478,6 @@ def preview_credit_note(request: Request, payload: dict = Body(...), db: Session
 # ==============================================================================
 # END: โค้ดที่แก้ไข
 # ==============================================================================
-
-@router.post("/export-creditnote-pdf")
-def export_creditnote_pdf(payload: dict = Body(...), db: Session = Depends(get_db)):
-    base_dir = BASE_DIR
-    css_path = base_dir / "static" / "css" / "credit_note.css"
-
-    # ใช้ context จาก payload เหมือน preview
-    ctx = _build_creditnote_context_from_payload(payload, db)
-
-    # เรนเดอร์ template credit_note.html ด้วย Jinja2 แบบตรง ๆ (ไม่ผ่าน FastAPI)
-    template = templates.env.get_template("credit_note.html")
-    html_inner = template.render(ctx)
-
-    html_str = f'<!DOCTYPE html><html><head><meta charset="utf-8" /></head><body>{html_inner}</body></html>'
-
-    tmp_pdf = Path(tempfile.gettempdir()) / f"credit_note_{payload.get('creditnote_number','document')}.pdf"
-    HTML(string=html_str, base_url=str(base_dir)).write_pdf(
-        str(tmp_pdf),
-        stylesheets=[CSS(filename=str(css_path))]
-    )
-    return FileResponse(path=tmp_pdf, media_type="application/pdf", filename=tmp_pdf.name)
 
 # -------- GRN APIs --------
 @router.get("/api/grn/suggest")
