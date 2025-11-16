@@ -262,21 +262,24 @@ def get_credit_note(no: str, db: Session = Depends(get_db)):
         ]
     }
 
-@router.get("/export-creditnote-pdf")
-def export_creditnote_pdf(no: str = Query(...), db: Session = Depends(get_db)):
-    # reuse หน้า credit_note.html เป็น HTML รายงาน
-    # เรนเดอร์ Template แล้วค่อยแปลง PDF
-    # (โหลด css เดิม /static/css/credit_note.css)
-    from fastapi import Request
-    req = Request(scope={"type": "http"})
-    html = credit_note_preview_page(req, no, db)  # TemplateResponse
-    html_str = html.body.decode("utf-8")
+@router.post("/export-creditnote-pdf")
+def export_creditnote_pdf(payload: dict = Body(...), db: Session = Depends(get_db)):
+    base_dir = BASE_DIR
+    css_path = base_dir / "static" / "css" / "credit_note.css"
 
-    css_path = (BASE_DIR / "static" / "css" / "credit_note.css")
-    tmp_pdf = Path(tempfile.gettempdir()) / f"credit_note_{no}.pdf"
-    HTML(string=html_str, base_url=str(BASE_DIR)).write_pdf(str(tmp_pdf), stylesheets=[CSS(filename=str(css_path))])
+    ctx = _build_creditnote_context_from_payload(payload, db)
+
+    template = templates.env.get_template("credit_note.html")
+    html_inner = template.render(ctx)
+
+    html_str = f'<!DOCTYPE html><html><head><meta charset="utf-8" /></head><body>{html_inner}</body></html>'
+
+    tmp_pdf = Path(tempfile.gettempdir()) / f"credit_note_{payload.get('creditnote_number','document')}.pdf"
+    HTML(string=html_str, base_url=str(base_dir)).write_pdf(
+        str(tmp_pdf),
+        stylesheets=[CSS(filename=str(css_path))]
+    )
     return FileResponse(path=tmp_pdf, media_type="application/pdf", filename=tmp_pdf.name)
-
 
 @router.get("/api/credit-notes/generate-number", response_class=JSONResponse)
 @router.get("/api/credit-notes/generate-number/", response_class=JSONResponse)
