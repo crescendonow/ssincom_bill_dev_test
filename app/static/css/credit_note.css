@@ -418,24 +418,29 @@ main {
 }
 
 /* ตารางสรุปด้านล่าง */
+/* ตารางสรุปด้านล่าง */
 .cn-summary {
-  width: 100%;
+  width: 70%;
+  /* ให้กว้างเท่ากับ 3 คอลัมน์แรกของตารางด้านบน */
   border-collapse: collapse;
   margin-top: 5mm;
-  /* ให้เว้นระยะเหมือนกัน หรือจะใช้ 4px ก็ได้ถ้าอยากชิด */
+}
+
+/* ให้มีเส้นซ้าย-ขวาครบ */
+.cn-summary tr td:first-child {
+  border-left: var(--border);
+}
+
+.cn-summary tr td:last-child {
+  border-right: var(--border);
 }
 
 .cn-summary td {
-  border: var(--border);
   padding: 4px 6px;
   font-size: 14pt;
   /* ขนาด 14 */
   font-weight: 400;
   /* ตัวบางทั้งหมด */
-}
-
-.cn-summary td.label {
-  width: 65%;
 }
 
 .cn-summary td.num {
@@ -453,20 +458,25 @@ main {
   border: var(--border);
   padding: 4px 6px;
   min-height: 32px;
-  margin-top: 4px;
+  margin-top: 0;
+  /* ← ไม่เว้นช่องว่างจากขอบบน */
   font-size: 13pt;
 }
 
 .cn-signatures {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20mm;
+  grid-template-columns: 7fr 3fr;
+  /* 3 คอลัมน์แรก : 2 คอลัมน์หลัง */
+  gap: 0;
+  /* ให้เส้นตรงต่อเนื่อง ถ้าอยากเว้นค่อยเพิ่ม margin ภายใน sig-col แทน */
   align-items: end;
   margin-top: 16px;
 }
 
 .sig-col {
   text-align: center;
+  padding-top: 8mm;
+  /* ถ้าอยากให้เส้นลายเซ็นไม่ชิดกับตารางเกินไป */
 }
 
 .sig-line {
@@ -488,4 +498,18 @@ main {
 /* ใช้กับ credit note เท่านั้น: main ไม่ต้องมี padding ด้านข้าง */
 .credit-note main {
   padding: 0;
+}
+
+/* ให้เส้นตารางของใบลดหนี้ใช้ขนาดเดียวกับ cn-header-row ทั้งหมด */
+.credit-note thead tr {
+  border-top: var(--border) !important;
+  border-bottom: var(--border) !important;
+}
+
+.credit-note tbody tr {
+  border-bottom: var(--border) !important;
+}
+
+.credit-note tfoot tr {
+  border-top: var(--border) !important;
 }
