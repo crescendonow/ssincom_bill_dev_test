@@ -292,8 +292,18 @@ def export_creditnote_pdf(payload: dict = Body(...), db: Session = Depends(get_d
     )
 
     # 3) เขียนไฟล์ PDF ด้วย WeasyPrint
+        # 3) เขียนไฟล์ PDF ด้วย WeasyPrint
     try:
-        tmp_pdf = Path(tempfile.gettempdir()) / f"credit_note_{payload.get('creditnote_number','document')}.pdf"
+        # ทำชื่อไฟล์ให้ปลอดภัย (ตัด /, \ และช่องว่างที่มีปัญหา)
+        raw_no = (payload.get("creditnote_number") or "document").strip()
+        safe_no = (
+            raw_no.replace("/", "-")
+                  .replace("\\", "-")
+                  .replace(" ", "_")
+        )
+
+        tmp_pdf = Path(tempfile.gettempdir()) / f"credit_note_{safe_no}.pdf"
+
         HTML(string=html_str, base_url=str(base_dir)).write_pdf(
             str(tmp_pdf),
             stylesheets=[CSS(filename=str(css_path))]
