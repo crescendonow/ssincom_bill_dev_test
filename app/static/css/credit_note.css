@@ -266,26 +266,25 @@ section.border-t-2.border-b-2 p strong {
 
 
 /* ส่วนหัว 3 คอลัมน์: สถานที่ออกเอกสาร / วันที่ออกเอกสาร / เลขที่ */
-.cn-header {
-  border-bottom: var(--border);
-}
-
 .cn-header-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
+  /* ← 3 ช่องเท่ากัน */
 }
 
-/* cell แต่ละช่อง */
+/* cell ของหัวข้อ */
 .cn-header-cell {
   border-right: var(--border);
   border-bottom: var(--border);
   padding: 3px 6px;
   font-size: 13pt;
+  text-align: center;
+  font-weight: 700;
 }
 
-/* cell ที่กิน 2 ช่องด้านซ้าย */
+/* ไม่ใช้ span2 แล้ว */
 .span2 {
-  grid-column: span 2;
+  grid-column: unset !important;
 }
 
 /* หัวข้อแถวแรก */
