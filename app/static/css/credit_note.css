@@ -213,36 +213,37 @@ section.border-t-2.border-b-2 p strong {
   }
 }
 
-/* ===============================
-   ส่วนของใบลดหนี้ (Credit Note)
-   =============================== */
+/* ----------------------------------------------------
+   CN TOP ROW (ใบลดหนี้ / ต้นฉบับ–สำเนา)
+   เอาเส้นขอบบน + ซ้าย ออกทั้งหมด เหลือแค่เส้นล่าง
+----------------------------------------------------- */
 
-.credit-note {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-/* แถวบน ใบลดหนี้ / ต้นฉบับ / สำเนา */
 .cn-top-row {
   display: grid;
   grid-template-columns: 3fr 1.2fr;
-  border-top: var(--border);
   border-bottom: var(--border);
+  /* ✔ เหลือไว้แค่เส้นล่าง */
+  border-top: none !important;
+  /* ✘ ตัดเส้นบนออก */
 }
 
+/* ส่วนซ้ายของ top-row ไม่ต้องมีเส้นขอบใด ๆ */
 .cn-top-left {
-  border-right: var(--border);
+  border: none !important;
+  /* ✘ ตัดเส้นซ้ายทิ้ง */
 }
 
+/* ส่วนขวา (ใบลดหนี้) ไม่ต้องมีเส้นขอบ */
 .cn-top-right {
   text-align: center;
   padding: 4px 8px;
+  border: none !important;
+  /* ✘ ไม่ต้องมีขอบ */
 }
 
+/* กล่องข้อความ */
 .cn-doc-title {
   font-size: 16pt;
-  /* ลดให้เล็กลงหน่อย */
   font-weight: 700;
   white-space: nowrap;
 }
@@ -261,6 +262,7 @@ section.border-t-2.border-b-2 p strong {
   border-radius: 2px;
   white-space: nowrap;
 }
+
 
 
 /* ส่วนหัว 3 คอลัมน์: สถานที่ออกเอกสาร / วันที่ออกเอกสาร / เลขที่ */
