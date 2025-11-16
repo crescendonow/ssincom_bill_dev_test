@@ -11,25 +11,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (cnDateEl && !cnDateEl.value) cnDateEl.value = todayISO;
 
     btnGenNo.addEventListener("click", async () => {
-        const d = cnDateEl.value; // YYYY-MM-DD จาก <input type="date">
-
-        if (!d) {
-            alert("กรุณาเลือกวันที่เอกสารก่อนสร้างเลขเอกสาร");
-            return;
-        }
+        const d = cnDateEl.value;
+        if (!d) { alert("กรุณาเลือกวันที่เอกสารก่อนสร้างเลขเอกสาร"); return; }
 
         try {
             const url = `/api/credit-notes/generate-number?date=${encodeURIComponent(d)}`;
             const res = await fetch(url);
-
             if (!res.ok) {
-                // ถ้า backend error จะไม่พัง json() แต่เรา log ข้อความจริง ๆ จะเห็นสาเหตุ
                 const text = await res.text();
                 console.error("generate-number error", res.status, text);
                 alert("ไม่สามารถสร้างเลขเอกสารได้\nรหัสผิดพลาด: " + res.status);
                 return;
             }
-
             const data = await res.json();
             cnNoEl.value = data.number || "";
         } catch (err) {
@@ -91,8 +84,8 @@ btnPDF?.addEventListener('click', async () => {
 
 // Autocomplete & autofill for all rows
 if (typeof wireAutocompleteForAllRows === 'function') {
-        wireAutocompleteForAllRows();
-    }
+    wireAutocompleteForAllRows();
+}
 
 function wireRow(row) {
     const grnInput = row.querySelector('.grn_number');

@@ -176,6 +176,41 @@ def credit_note_preview_page(request: Request, no: str = Query(...), db: Session
     d = head.created_at or datetime.now().date()
     be_date = f"{d.day:02d}/{d.month:02d}/{d.year + 543}"
 
+    # ---------------- Buyer จาก DB ----------------
+    buyer = None
+    try:
+        from . import models
+        # ใช้ invoice แรกที่มีเลขที่
+        first_inv_no = next((it.invoice_number for it in items if it.invoice_number), None)
+        if first_inv_no:
+            Inv = models.Invoice
+            Cust = models.CustomerList
+            buyer = (
+                db.query(Cust)
+                .join(Inv, Inv.personid == Cust.personid)
+                .filter(Inv.invoice_number == first_inv_no)
+                .first()
+            )
+    except Exception:
+        buyer = None
+
+    if buyer:
+        branch_info = "สำนักงานใหญ่" if getattr(buyer, "cf_hq", 0) == 1 else (buyer.cf_branch or "")
+        buyer_ctx = {
+            "name": buyer.fname or "",
+            "addr": buyer.cf_personaddress or "",
+            "branch": branch_info,
+            "tax": buyer.cf_taxid or "",
+        }
+    else:
+        # fallback ค่าเดิม (กันกรณีหา customer ไม่เจอ)
+        buyer_ctx = {
+            "name": "—",
+            "addr": "",
+            "branch": "",
+            "tax": "",
+        }
+
     ctx = {
         "request": request,
         "doc_no": head.creditnote_number,
@@ -184,8 +219,8 @@ def credit_note_preview_page(request: Request, no: str = Query(...), db: Session
         "sum_reduce_value": sum_reduce_value,
         "sum_reduce_vat": vat,
         "sum_total": grand,
-        
-        # mock ข้อมูลผู้ขาย/ผู้ซื้อ (แก้เป็นของจริงได้)
+
+        # Seller fix
         "seller": {
             "name": "บริษัท เอส แอนด์ เอส อินคอม จำกัด",
             "addr": "69 หมู่ 10 ต.พังตรุ อ.พนมทวน จ.กาญจนบุรี 71140",
@@ -193,12 +228,11 @@ def credit_note_preview_page(request: Request, no: str = Query(...), db: Session
             "branch": "สำนักงานใหญ่",
             "tax": "0715544000020",
         },
-        "buyer": {
-            "name": "บริษัท แพนเทอรา เพาเวอร์ แอนด์ แก๊ส จำกัด",
-            "addr": "94/1 หมู่ 3 ต.เขาหินซ้อน อ.พนมสารคาม จ.ฉะเชิงเทรา 24120",
-            "branch": "สำนักงานใหญ่",
-            "tax": "0245554001317",
-        },
+
+        # Buyer จาก products.customer_list
+        "buyer": buyer_ctx,
+
+        # เหตุผล default
         "reason": "คิดราคาสินค้าไม่ถูกต้อง",
     }
     return templates.TemplateResponse("credit_note.html", ctx)
@@ -341,14 +375,34 @@ def _build_creditnote_context_from_payload(payload: dict, db: Session) -> dict:
     sum_reduce_vat = round(sum_reduce_value * 0.07, 2)
     sum_total = round(sum_reduce_value + sum_reduce_vat, 2)
 
-    # --- buyer จาก payload (optional) ---
+    # --- buyer จาก payload / DB ---
     buyer_payload = d.get("buyer") or {}
-    buyer = {
-        "name":   buyer_payload.get("name")   or "",
-        "addr":   buyer_payload.get("addr")   or "",
-        "branch": buyer_payload.get("branch") or "",
-        "tax":    buyer_payload.get("tax")    or "",
-    }
+    personid = buyer_payload.get("personid")
+
+    buyer = None
+    if personid:
+        try:
+            from . import models
+            c = db.query(models.CustomerList).filter(models.CustomerList.personid == personid).first()
+            if c:
+                branch_info = "สำนักงานใหญ่" if getattr(c, "cf_hq", 0) == 1 else (c.cf_branch or "")
+                buyer = {
+                    "name": c.fname or "",
+                    "addr": c.cf_personaddress or "",
+                    "branch": branch_info,
+                    "tax": c.cf_taxid or "",
+                }
+        except Exception:
+            buyer = None
+
+    if not buyer:
+        # fallback ใช้ค่าที่มาจากฟอร์ม
+        buyer = {
+            "name":   buyer_payload.get("name")   or "",
+            "addr":   buyer_payload.get("addr")   or "",
+            "branch": buyer_payload.get("branch") or "",
+            "tax":    buyer_payload.get("tax")    or "",
+        }
 
     # --- seller fixed เดิม ---
     seller = {
