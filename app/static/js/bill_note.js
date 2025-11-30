@@ -166,7 +166,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const pageInvoices = (data.invoices || []).slice(startIdx, startIdx + ITEMS_PER_PAGE);
 
             pageElement.querySelector('.cust-person-id').textContent = data.customer.person_id || '-';
-            pageElement.querySelector('.cust-name').textContent = data.customer.name || '-';
+            
+            const prename = (data.customer.prename || '').trim();
+            const name = (data.customer.name || '').trim();
+            const fullName = prename ? `${prename}${name}` : name;
+            pageElement.querySelector('.cust-name').textContent = fullName || '-';
+
             pageElement.querySelector('.cust-address').textContent = data.customer.address || '-';
             pageElement.querySelector('.cust-tax-id').textContent = data.customer.tax_id || '-';
             pageElement.querySelector('.cust-branch').textContent = data.customer.branch || '-';
