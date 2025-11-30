@@ -2,8 +2,9 @@
 from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, func, text
+from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, func, text, or_
 from datetime import datetime, date
+from typing import Optional
 from pathlib import Path
 import tempfile, uuid
 from math import ceil 
@@ -646,4 +647,169 @@ def api_product_price(
     }
 
 
+# ====================================================
+# SEARCH / DETAIL / UPDATE / DELETE APIs
+# ====================================================
 
+@router.get("/api/search-credit-notes")
+def search_credit_notes(
+    start: Optional[str] = Query(None),
+    end: Optional[str] = Query(None),
+    q: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """ค้นหาใบลดหนี้ตามช่วงวันที่และคำค้นหา"""
+    query = db.query(CreditNote)
+    
+    if start:
+        d_start = _to_date(start)
+        if d_start:
+            query = query.filter(CreditNote.created_at >= d_start)
+    if end:
+        d_end = _to_date(end)
+        if d_end:
+            query = query.filter(CreditNote.created_at <= d_end)
+    if q and q.strip():
+        search_term = f"%{q.strip()}%"
+        query = query.filter(CreditNote.creditnote_number.ilike(search_term))
+    
+    results = query.order_by(CreditNote.created_at.desc(), CreditNote.creditnote_number.desc()).limit(100).all()
+    
+    # สร้างผลลัพธ์พร้อมข้อมูลลูกค้าและยอดรวม
+    output = []
+    for cn in results:
+        # ดึงรายการ items
+        items = db.query(CreditNoteItem).filter(CreditNoteItem.creditnote_number == cn.creditnote_number).all()
+        
+        # คำนวณยอดรวม
+        total_amount = 0.0
+        customer_name = None
+        
+        for it in items:
+            qty = float(it.quantity or 0)
+            price_after_fine = float(it.price_after_fine or 0)
+            total_amount += qty * price_after_fine
+        
+        # หาชื่อลูกค้าจาก invoice แรก
+        if items:
+            first_inv = items[0].invoice_number
+            if first_inv:
+                inv_row = db.execute(
+                    text("SELECT personid FROM ss_invoices.invoices WHERE invoice_number = :inv LIMIT 1"),
+                    {"inv": first_inv}
+                ).first()
+                if inv_row and inv_row[0]:
+                    cust = db.query(models.CustomerList).filter(models.CustomerList.personid == inv_row[0]).first()
+                    if cust:
+                        customer_name = cust.fname
+        
+        output.append({
+            "creditnote_number": cn.creditnote_number,
+            "created_at": str(cn.created_at) if cn.created_at else None,
+            "customer_name": customer_name,
+            "total_amount": round(total_amount, 2),
+        })
+    
+    return output
+
+
+@router.get("/api/credit-notes/{no}/detail")
+def get_credit_note_detail(no: str, db: Session = Depends(get_db)):
+    """ดึงรายละเอียดใบลดหนี้สำหรับแก้ไข (รวมข้อมูลลูกค้า)"""
+    head = db.query(CreditNote).filter(CreditNote.creditnote_number == no).first()
+    if not head:
+        raise HTTPException(404, "not found")
+    
+    items = db.query(CreditNoteItem).filter(CreditNoteItem.creditnote_number == no).all()
+    
+    # หาข้อมูลลูกค้าจาก invoice แรก
+    buyer = None
+    if items:
+        first_inv = items[0].invoice_number
+        if first_inv:
+            inv_row = db.execute(
+                text("SELECT personid FROM ss_invoices.invoices WHERE invoice_number = :inv LIMIT 1"),
+                {"inv": first_inv}
+            ).first()
+            if inv_row and inv_row[0]:
+                cust = db.query(models.CustomerList).filter(models.CustomerList.personid == inv_row[0]).first()
+                if cust:
+                    buyer = {
+                        "personid": cust.personid,
+                        "name": cust.fname,
+                        "addr": cust.cf_personaddress,
+                        "tax": cust.cf_taxid,
+                        "tel": cust.tel,
+                        "mobile": cust.mobile,
+                        "zipcode": cust.cf_personzipcode,
+                        "prov": cust.cf_provincename,
+                    }
+    
+    return {
+        "head": {
+            "creditnote_number": head.creditnote_number,
+            "created_at": str(head.created_at) if head.created_at else None,
+        },
+        "items": [
+            {
+                "grn_number": it.grn_number,
+                "invoice_number": it.invoice_number,
+                "cf_itemid": it.cf_itemid,
+                "cf_itemname": it.cf_itemname,
+                "quantity": it.quantity,
+                "fine": it.fine,
+                "price_after_fine": it.price_after_fine,
+            } for it in items
+        ],
+        "buyer": buyer,
+    }
+
+
+@router.put("/api/credit-notes/{no}")
+def update_credit_note(no: str, payload: dict = Body(...), db: Session = Depends(get_db)):
+    """อัปเดตใบลดหนี้"""
+    head = db.query(CreditNote).filter(CreditNote.creditnote_number == no).first()
+    if not head:
+        raise HTTPException(404, "not found")
+    
+    # อัปเดตวันที่ (ถ้ามี)
+    if payload.get("creditnote_date"):
+        head.created_at = _to_date(payload["creditnote_date"])
+        head.updated_at = datetime.now().date()
+    
+    # ลบ items เดิมทั้งหมด
+    db.query(CreditNoteItem).filter(CreditNoteItem.creditnote_number == no).delete()
+    
+    # เพิ่ม items ใหม่
+    items = payload.get("items") or []
+    for it in items:
+        db.add(CreditNoteItem(
+            creditnote_number=no,
+            grn_number=(it.get("grn_number") or "").strip(),
+            invoice_number=(it.get("invoice_number") or "").strip(),
+            cf_itemid=(it.get("cf_itemid") or "").strip(),
+            cf_itemname=(it.get("cf_itemname") or "").strip(),
+            quantity=float(it.get("quantity") or 0),
+            fine=float(it.get("fine") or 0),
+            price_after_fine=float(it.get("price_after_fine") or 0),
+        ))
+    
+    db.commit()
+    return {"ok": True, "creditnote_number": no}
+
+
+@router.delete("/api/credit-notes/{no}")
+def delete_credit_note(no: str, db: Session = Depends(get_db)):
+    """ลบใบลดหนี้"""
+    head = db.query(CreditNote).filter(CreditNote.creditnote_number == no).first()
+    if not head:
+        raise HTTPException(404, "not found")
+    
+    # ลบ items ก่อน
+    db.query(CreditNoteItem).filter(CreditNoteItem.creditnote_number == no).delete()
+    
+    # ลบ head
+    db.delete(head)
+    db.commit()
+    
+    return {"ok": True}

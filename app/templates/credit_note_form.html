@@ -1,184 +1,438 @@
 <!DOCTYPE html>
 <html lang="th">
-
-<head>
+  <head>
     <meta charset="utf-8" />
     <title>แบบฟอร์มใบลดหนี้ (Credit Note)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/static/css/credit_note.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
-</head>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+    />
+  </head>
 
-<body class="bg-gray-100">
+  <body class="bg-gray-100">
     <div class="max-w-5xl mx-auto p-4 md:p-6">
-        <div class="flex items-center justify-between mb-4">
-            <a href="/dashboard" class="text-blue-700 hover:underline">← กลับ Dashboard</a>
-            <h1 class="text-xl md:text-2xl font-bold">แบบฟอร์มใบลดหนี้ (Credit Note)</h1>
+      <div class="flex items-center justify-between mb-4">
+        <a href="/dashboard" class="text-blue-700 hover:underline"
+          >← กลับ Dashboard</a
+        >
+        <h1 class="text-xl md:text-2xl font-bold">
+          แบบฟอร์มใบลดหนี้ (Credit Note)
+        </h1>
+      </div>
+
+      <!-- ===== TABS ===== -->
+      <div id="controls" class="bg-white shadow rounded-lg p-4 md:p-6 mb-6">
+        <div class="border-b border-gray-200 mb-4">
+          <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+            <button
+              id="tab-create"
+              class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-blue-500 text-blue-600"
+            >
+              สร้าง / แก้ไขใบลดหนี้
+            </button>
+            <button
+              id="tab-search"
+              class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            >
+              ค้นหารายการ
+            </button>
+          </nav>
         </div>
 
-        <div class="bg-white shadow rounded-lg p-4 md:p-6 space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <label class="block text-sm text-gray-700">วันที่เอกสาร</label>
-                    <input type="date" id="cn_date" class="mt-1 w-full border rounded p-2" />
-                </div>
-                <div>
-                    <label class="block text-sm text-gray-700">เลขที่ใบลดหนี้</label>
-                    <input type="text" id="creditnote_number" class="mt-1 w-full border rounded p-2 bg-gray-100"
-                        readonly />
-                    <p class="text-xs text-gray-500 mt-1">รูปแบบ: SSCR{running}-{DD}{MM}/{YYYY พ.ศ.}</p>
-                </div>
-                <div class="flex items-end">
-                    <button id="btnGenNo" type="button"
-                        class="w-full md:w-auto px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
-                        สร้างเลขเอกสาร
-                    </button>
-                </div>
+        <!-- ===== PANEL: CREATE ===== -->
+        <div id="panel-create">
+          <h2 class="text-2xl font-bold mb-4 text-gray-700">สร้างใบลดหนี้</h2>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div>
+              <label class="block text-sm text-gray-700">วันที่เอกสาร</label>
+              <input
+                type="date"
+                id="cn_date"
+                class="mt-1 w-full border rounded p-2"
+              />
             </div>
-
-            <!-- ใส่คอนเทนเนอร์ items -->
-            <div id="items" class="space-y-3 md:space-y-4">
-                <div class="flex flex-wrap gap-3 md:gap-4 item-row items-end">
-                    <input name="grn_number" placeholder="เลขที่ใบรับสินค้า"
-                        class="grn_number flex-1 min-w-[120px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
-
-                    <input name="invoice_number" placeholder="เลขที่ใบกำกับ"
-                        class="invoice_number flex-1 min-w-[140px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
-
-                    <input name="product_code" placeholder="รหัสสินค้า"
-                        class="product_code w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
-
-                    <input name="description" placeholder="รายละเอียด"
-                        class="description flex-1 min-w-[140px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
-
-                    <!-- ราคา/หน่วย (จะ autofill จากรหัสสินค้า) -->
-                    <input name="unit_price" type="number" step="0.01" placeholder="ราคา/หน่วย"
-                        class="unit_price w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5"
-                        oninput="updateTotal()" />
-
-                    <input name="quantity" type="number" step="0.01" placeholder="จำนวน"
-                        class="quantity w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5"
-                        oninput="updateTotal()" />
-
-                    <input name="fine" type="number" step="0.01" placeholder="บทปรับ/หน่วย (บาท)"
-                        class="fine w-28 md:w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5"
-                        oninput="updateTotal()" />
-
-                    <!-- แสดงผลรวม VAT 7% -->
-                    <input name="old_total_vat" placeholder="มูลค่าเดิม (รวม VAT)" readonly
-                        class="old_total_vat w-40 bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5 text-right" />
-
-                    <input name="new_total_vat" placeholder="มูลค่าใหม่ (รวม VAT)" readonly
-                        class="new_total_vat w-40 bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5 text-right" />
-
-                    <!-- เก็บราคาฐาน -->
-                    <input type="hidden" class="base_price" value="0" />
-                    <button type="button" onclick="removeItem(this)"
-                        class="text-red-600 hover:text-blue-800 font-semibold"><i class="fas fa-trash"></i></button>
-                </div>
+            <div>
+              <label class="block text-sm text-gray-700">เลขที่ใบลดหนี้</label>
+              <input
+                type="text"
+                id="creditnote_number"
+                class="mt-1 w-full border rounded p-2 bg-gray-100"
+                readonly
+              />
+              <p class="text-xs text-gray-500 mt-1">
+                รูปแบบ: SSCR{running}-{DD}{MM}/{YYYY พ.ศ.}
+              </p>
             </div>
-
-            <div class="mt-2">
-                <button type="button" onclick="addItem()" class="text-blue-600 hover:text-blue-800 font-semibold">
-                    <i class="fa-solid fa-plus"></i> เพิ่มรายการ
-                </button>
+            <div class="flex items-end">
+              <button
+                id="btnGenNo"
+                type="button"
+                class="w-full md:w-auto px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+              >
+                สร้างเลขเอกสาร
+              </button>
             </div>
-        </div>
+          </div>
 
-        <!-- ===== ลูกค้า (อิง personid) ===== -->
-        <datalist id="personidList"></datalist>
-        <datalist id="customerList"></datalist>
+          <!-- ใส่คอนเทนเนอร์ items -->
+          <div id="items" class="space-y-3 md:space-y-4">
+            <div class="flex flex-wrap gap-3 md:gap-4 item-row items-end">
+              <input
+                name="grn_number"
+                placeholder="เลขที่ใบรับสินค้า"
+                class="grn_number flex-1 min-w-[120px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5"
+              />
 
-        <div class="mt-6 space-y-3">
+              <input
+                name="invoice_number"
+                placeholder="เลขที่ใบกำกับ"
+                class="invoice_number flex-1 min-w-[140px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5"
+              />
+
+              <input
+                name="product_code"
+                placeholder="รหัสสินค้า"
+                class="product_code w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5"
+              />
+
+              <input
+                name="description"
+                placeholder="รายละเอียด"
+                class="description flex-1 min-w-[140px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5"
+              />
+
+              <!-- ราคา/หน่วย (จะ autofill จากรหัสสินค้า) -->
+              <input
+                name="unit_price"
+                type="number"
+                step="0.01"
+                placeholder="ราคา/หน่วย"
+                class="unit_price w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5"
+                oninput="updateTotal()"
+              />
+
+              <input
+                name="quantity"
+                type="number"
+                step="0.01"
+                placeholder="จำนวน"
+                class="quantity w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5"
+                oninput="updateTotal()"
+              />
+
+              <input
+                name="fine"
+                type="number"
+                step="0.01"
+                placeholder="บทปรับ/หน่วย (บาท)"
+                class="fine w-28 md:w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5"
+                oninput="updateTotal()"
+              />
+
+              <!-- แสดงผลรวม VAT 7% -->
+              <input
+                name="old_total_vat"
+                placeholder="มูลค่าเดิม (รวม VAT)"
+                readonly
+                class="old_total_vat w-40 bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5 text-right"
+              />
+
+              <input
+                name="new_total_vat"
+                placeholder="มูลค่าใหม่ (รวม VAT)"
+                readonly
+                class="new_total_vat w-40 bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5 text-right"
+              />
+
+              <!-- เก็บราคาฐาน -->
+              <input type="hidden" class="base_price" value="0" />
+              <button
+                type="button"
+                onclick="removeItem(this)"
+                class="text-red-600 hover:text-blue-800 font-semibold"
+              >
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="mt-2">
+            <button
+              type="button"
+              onclick="addItem()"
+              class="text-blue-600 hover:text-blue-800 font-semibold"
+            >
+              <i class="fa-solid fa-plus"></i> เพิ่มรายการ
+            </button>
+          </div>
+
+          <!-- ===== ลูกค้า (อิง personid) ===== -->
+          <datalist id="personidList"></datalist>
+          <datalist id="customerList"></datalist>
+
+          <div class="mt-6 space-y-3">
             <h2 class="font-semibold mb-2">ข้อมูลลูกค้า</h2>
 
             <div>
-                <label for="personid" class="block mb-1 text-sm font-medium text-gray-900">รหัสลูกค้า (personid)</label>
-                <input type="text" name="personid" id="personid" list="personidList" autocomplete="off"
-                    oninput="selectCustomerByPersonid()" placeholder="เช่น PC55901001"
-                    class="bg-gray-100 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
+              <label
+                for="personid"
+                class="block mb-1 text-sm font-medium text-gray-900"
+                >รหัสลูกค้า (personid)</label
+              >
+              <input
+                type="text"
+                name="personid"
+                id="personid"
+                list="personidList"
+                autocomplete="off"
+                oninput="selectCustomerByPersonid()"
+                placeholder="เช่น PC55901001"
+                class="bg-gray-100 border border-gray-300 text-sm rounded-lg w-full p-2.5"
+              />
             </div>
 
             <div>
-                <label for="customer_name" class="block mb-1 text-sm font-medium text-gray-900">ชื่อลูกค้า</label>
-                <input type="text" name="customer_name" id="customer_name" list="customerList"
-                    oninput="selectCustomer()"
-                    class="bg-gray-100 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
+              <label
+                for="customer_name"
+                class="block mb-1 text-sm font-medium text-gray-900"
+                >ชื่อลูกค้า</label
+              >
+              <input
+                type="text"
+                name="customer_name"
+                id="customer_name"
+                list="customerList"
+                oninput="selectCustomer()"
+                class="bg-gray-100 border border-gray-300 text-sm rounded-lg w-full p-2.5"
+              />
             </div>
 
             <div>
-                <label for="customer_address" class="block mb-1 text-sm font-medium text-gray-900">ที่อยู่</label>
-                <input type="text" name="customer_address" id="customer_address"
-                    class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
+              <label
+                for="customer_address"
+                class="block mb-1 text-sm font-medium text-gray-900"
+                >ที่อยู่</label
+              >
+              <input
+                type="text"
+                name="customer_address"
+                id="customer_address"
+                class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5"
+              />
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <label for="customer_taxid"
-                        class="block mb-1 text-sm font-medium text-gray-900">เลขประจำตัวผู้เสียภาษี</label>
-                    <input type="text" name="customer_taxid" id="customer_taxid"
-                        class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
-                </div>
-                <div>
-                    <label for="tel" class="block mb-1 text-sm font-medium text-gray-900">โทรศัพท์</label>
-                    <input type="text" name="tel" id="tel"
-                        class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
-                </div>
-                <div>
-                    <label for="mobile" class="block mb-1 text-sm font-medium text-gray-900">มือถือ</label>
-                    <input type="text" name="mobile" id="mobile"
-                        class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
-                </div>
-                <div>
-                    <label for="cf_personzipcode"
-                        class="block mb-1 text-sm font-medium text-gray-900">รหัสไปรษณีย์</label>
-                    <input type="text" name="cf_personzipcode" id="cf_personzipcode"
-                        class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
-                </div>
-                <div>
-                    <label for="cf_provincename" class="block mb-1 text-sm font-medium text-gray-900">จังหวัด</label>
-                    <input type="text" name="cf_provincename" id="cf_provincename"
-                        class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
-                </div>
+              <div>
+                <label
+                  for="customer_taxid"
+                  class="block mb-1 text-sm font-medium text-gray-900"
+                  >เลขประจำตัวผู้เสียภาษี</label
+                >
+                <input
+                  type="text"
+                  name="customer_taxid"
+                  id="customer_taxid"
+                  class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5"
+                />
+              </div>
+              <div>
+                <label
+                  for="tel"
+                  class="block mb-1 text-sm font-medium text-gray-900"
+                  >โทรศัพท์</label
+                >
+                <input
+                  type="text"
+                  name="tel"
+                  id="tel"
+                  class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5"
+                />
+              </div>
+              <div>
+                <label
+                  for="mobile"
+                  class="block mb-1 text-sm font-medium text-gray-900"
+                  >มือถือ</label
+                >
+                <input
+                  type="text"
+                  name="mobile"
+                  id="mobile"
+                  class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5"
+                />
+              </div>
+              <div>
+                <label
+                  for="cf_personzipcode"
+                  class="block mb-1 text-sm font-medium text-gray-900"
+                  >รหัสไปรษณีย์</label
+                >
+                <input
+                  type="text"
+                  name="cf_personzipcode"
+                  id="cf_personzipcode"
+                  class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5"
+                />
+              </div>
+              <div>
+                <label
+                  for="cf_provincename"
+                  class="block mb-1 text-sm font-medium text-gray-900"
+                  >จังหวัด</label
+                >
+                <input
+                  type="text"
+                  name="cf_provincename"
+                  id="cf_provincename"
+                  class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5"
+                />
+              </div>
             </div>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-4 items-end mt-6">
+            <div>
+              <label class="block mb-1 text-sm font-medium text-gray-700"
+                >รวมเป็นเงิน</label
+              >
+              <div
+                class="text-right text-lg md:text-xl font-bold text-green-700"
+                id="total_amount"
+              >
+                ฿ 0.00
+              </div>
+            </div>
+            <div>
+              <label
+                for="cn_variant"
+                class="block mb-1 text-sm font-medium text-gray-700"
+              >
+                รูปแบบสำหรับ Preview
+              </label>
+              <select
+                id="cn_variant"
+                class="mt-1 w-full border rounded p-2 bg-white text-sm"
+              >
+                <option value="creditnote_original">ต้นฉบับ</option>
+                <option value="creditnote_copy">สำเนา</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mt-4 flex gap-4 flex-wrap">
+            <button
+              id="btnPreview"
+              type="button"
+              class="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-800"
+            >
+              <i class="fa-solid fa-eye"></i> Preview
+            </button>
+            <button
+              id="btnSave"
+              type="button"
+              class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              <i class="fa-solid fa-floppy-disk"></i> บันทึก
+            </button>
+            <button
+              id="btnUpdate"
+              type="button"
+              class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 hidden"
+            >
+              <i class="fa-solid fa-rotate"></i> อัปเดตใบลดหนี้
+            </button>
+            <button
+              id="btnPDF"
+              type="button"
+              class="px-4 py-2 bg-green-700 text-white rounded hover:bg-green-800"
+            >
+              <i class="fa-solid fa-file-pdf"></i> PDF
+            </button>
+            <button
+              id="btnNew"
+              type="button"
+              class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 hidden"
+            >
+              <i class="fa-solid fa-plus"></i> สร้างใหม่
+            </button>
+          </div>
         </div>
 
-
-        <div class="grid md:grid-cols-2 gap-4 items-end">
+        <!-- ===== PANEL: SEARCH ===== -->
+        <div id="panel-search" class="hidden">
+          <h2 class="text-2xl font-bold mb-4 text-gray-700">ค้นหาใบลดหนี้</h2>
+          <div class="grid md:grid-cols-3 gap-4 items-end">
             <div>
-                <label class="block mb-1 text-sm font-medium text-gray-700">รวมเป็นเงิน</label>
-                <div class="text-right text-lg md:text-xl font-bold text-green-700" id="total_amount">฿ 0.00</div>
+              <label
+                for="searchStartDate"
+                class="block text-sm font-medium text-gray-600"
+                >วันที่เริ่มต้น</label
+              >
+              <input
+                type="date"
+                id="searchStartDate"
+                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2"
+              />
             </div>
             <div>
-                <label for="cn_variant" class="block mb-1 text-sm font-medium text-gray-700">
-                    รูปแบบสำหรับ Preview
-                </label>
-                <select id="cn_variant"
-                        class="mt-1 w-full border rounded p-2 bg-white text-sm">
-                    <option value="creditnote_original">ต้นฉบับ</option>
-                    <option value="creditnote_copy">สำเนา</option>
-                </select>
+              <label
+                for="searchEndDate"
+                class="block text-sm font-medium text-gray-600"
+                >วันที่สิ้นสุด</label
+              >
+              <input
+                type="date"
+                id="searchEndDate"
+                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2"
+              />
             </div>
-            <div class="text-right space-x-2">
-                <button id="btnPreview" type="button"
-                    class="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-800">
-                    <i class="fa-solid fa-eye"></i> Preview
-                </button>
-                <button id="btnSave" type="button" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                    <i class="fa-solid fa-floppy-disk"></i> บันทึก
-                </button>
-                <button id="btnPDF" type="button" class="px-4 py-2 bg-green-700 text-white rounded hover:bg-green-800">
-                    <i class="fa-solid fa-file-pdf"></i> PDF
-                </button>
+            <div>
+              <label
+                for="searchQuery"
+                class="block text-sm font-medium text-gray-600"
+                >คำค้นหา</label
+              >
+              <input
+                type="text"
+                id="searchQuery"
+                placeholder="เลขที่ใบลดหนี้ / ชื่อลูกค้า"
+                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2"
+                autocomplete="off"
+              />
             </div>
+          </div>
+          <div class="mt-4">
+            <button
+              id="searchBtn"
+              class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
+            >
+              ค้นหา
+            </button>
+          </div>
+          <div class="mt-6 overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="bg-gray-50">
+                  <th class="p-2 text-left">วันที่</th>
+                  <th class="p-2 text-left">เลขที่ใบลดหนี้</th>
+                  <th class="p-2 text-left">ลูกค้า</th>
+                  <th class="p-2 text-right">ยอดรวม</th>
+                  <th class="p-2 text-center">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="searchResultsBody"></tbody>
+            </table>
+          </div>
         </div>
-    </div>
+      </div>
 
-    <div id="preview" class="my-6 flex justify-center hidden"></div>
+      <div id="preview" class="my-6 flex justify-center hidden"></div>
     </div>
 
     <script src="/static/js/credit_note.js"></script>
-</body>
-
+  </body>
 </html>
