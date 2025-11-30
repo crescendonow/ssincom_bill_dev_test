@@ -1,0 +1,146 @@
+{% set cn_variant = variant if variant is defined else 'creditnote_original' %}
+{% set pages = pages if pages is defined else [{'rows': rows}] %} {% set
+total_pages = total_pages if total_pages is defined else pages|length %} {% for
+page in pages %}
+<div class="A4-page">
+  <div class="credit-note">
+    <!-- แถวบนขวา: ใบลดหนี้ / ต้นฉบับ / สำเนา + เลขหน้า -->
+    <div class="cn-top-row">
+      <div class="cn-top-left"></div>
+      <div class="cn-top-right">
+        <div class="cn-doc-title">ใบลดหนี้</div>
+        <div class="cn-doc-subtitle">
+          {% if cn_variant == 'creditnote_copy' %} สำเนา {% else %} ต้นฉบับ {%
+          endif %}
+        </div>
+        <div class="cn-page-number">
+          หน้า {{ loop.index }}/{{ total_pages }}
+        </div>
+      </div>
+    </div>
+
+    <!-- ส่วนหัวหลัก -->
+    <div class="cn-header-row">
+      <div class="cn-header-cell cn-header-title col-2">สถานที่ออกเอกสาร</div>
+      <div class="cn-header-cell cn-header-title col-1">
+        วันที่ออกเอกสาร<br />{{ doc_date_be }}
+      </div>
+      <div class="cn-header-cell cn-header-title col-1">
+        เลขที่<br />{{ doc_no }}
+      </div>
+    </div>
+
+    <!-- แถวข้อมูล: ผู้ประกอบการ / ลูกค้า -->
+    <div class="cn-header-row">
+      <!-- ซ้าย: ผู้ประกอบการ -->
+      <div class="cn-header-cell cn-info-block cn-header-body-seller">
+        <div class="cn-info-title">ชื่อผู้ประกอบการ</div>
+
+        <div class="cn-info-line">
+          <span class="label">ผู้ขาย/ผู้ประกอบการ</span>: {{ seller.name }}
+        </div>
+        <div class="cn-info-line">
+          <span class="label">ที่อยู่</span>: {{ seller.addr }}
+        </div>
+        <div class="cn-info-line">
+          <span class="label">โทร.</span>: {{ seller.phone }}
+        </div>
+        <div class="cn-info-line">
+          <span class="label">สถานประกอบการ</span>: {{ seller.branch }}
+        </div>
+        <div class="cn-info-line">
+          <span class="label">เลขประจำตัวผู้เสียภาษี</span>: {{ seller.tax }}
+        </div>
+      </div>
+
+      <!-- ขวา: ลูกค้า -->
+      <div class="cn-header-cell cn-info-block cn-header-body-buyer">
+        <div class="cn-info-title">ชื่อลูกค้า</div>
+
+        <div class="cn-info-line">
+          <span class="label">ชื่อลูกค้า</span>: {{ buyer.name }}
+        </div>
+        <div class="cn-info-line">
+          <span class="label">ที่อยู่</span>: {{ buyer.addr }}
+        </div>
+        <div class="cn-info-line">
+          <span class="label">สถานประกอบการ</span>: {{ buyer.branch }}
+        </div>
+        <div class="cn-info-line">
+          <span class="label">เลขประจำตัวผู้เสียภาษี</span>: {{ buyer.tax }}
+        </div>
+      </div>
+    </div>
+
+    <!-- เนื้อหาใบลดหนี้ -->
+    <main>
+      <table class="cn-table">
+        <thead>
+          <tr>
+            <th style="width: 12%">วันที่</th>
+            <th style="width: 18%">ใบกำกับภาษีเดิมเลขที่</th>
+            <th>รายละเอียด</th>
+            <th class="num" style="width: 15%">มูลค่าสินค้า/บริการ (เดิม)</th>
+            <th class="num" style="width: 15%">มูลค่าสินค้า/บริการ (ใหม่)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {# กรณีไม่มีรายการเลย (rows ว่างและเป็นหน้าแรกหน้าเดียว) #} {% if rows
+          is defined and rows|length == 0 and loop.length == 1 %}
+          <tr>
+            <td colspan="5" style="text-align: center; padding: 20px">
+              - ไม่มีรายการ -
+            </td>
+          </tr>
+          {% else %} {% for r in page.rows %}
+          <tr>
+            <td>{{ r.date }}</td>
+            <td>{{ r.inv }}</td>
+            <td>{{ r.desc }}</td>
+            <td class="num">{{ "{:,.2f}".format(r.amt_old) }}</td>
+            <td class="num">{{ "{:,.2f}".format(r.amt_new) }}</td>
+          </tr>
+          {% endfor %} {% endif %}
+        </tbody>
+      </table>
+
+      {# แสดง summary + เหตุผล + ลายเซ็น + footnote เฉพาะ "หน้าสุดท้าย" #} {% if
+      loop.last %}
+      <table class="cn-summary">
+        <tr>
+          <td class="label">มูลค่าที่ปรับปรุงลดลง (บาท)</td>
+          <td class="num">{{ "{:,.2f}".format(sum_reduce_value) }}</td>
+        </tr>
+        <tr>
+          <td class="label">ภาษีมูลค่าเพิ่มที่ลดลง (บาท)</td>
+          <td class="num">{{ "{:,.2f}".format(sum_reduce_vat) }}</td>
+        </tr>
+        <tr>
+          <td class="label">รวมเป็นเงินปรับปรุงทั้งสิ้น</td>
+          <td class="num">{{ "{:,.2f}".format(sum_total) }}</td>
+        </tr>
+        <tr>
+          <td class="label" colspan="2">
+            มีการลดหนี้เนื่องจาก : <span>{{ reason }}</span>
+          </td>
+        </tr>
+      </table>
+
+      <div class="cn-signatures">
+        <div class="sig-col">
+          <div class="sig-line"></div>
+          <div class="sig-label">ผู้ออกเอกสาร</div>
+        </div>
+        <div class="sig-col">
+          <div class="sig-line"></div>
+          <div class="sig-label">ผู้มีอำนาจลงนาม</div>
+        </div>
+      </div>
+
+      {% if cn_variant == 'creditnote_copy' %}
+      <div class="cn-footnote">ต้นฉบับ - ให้ลูกค้าใช้เป็นใบกำกับภาษี</div>
+      {% endif %} {% endif %}
+    </main>
+  </div>
+</div>
+{% endfor %}
