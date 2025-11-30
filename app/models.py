@@ -83,6 +83,7 @@ class BillNote(Base):
     payment_duedate = Column(Date)
 
     # Customer fields snapshot
+    prename = Column(Text)
     fname = Column(Text)                 # text NULL
     personid = Column(Text)              # text NULL
     tel = Column(Text)                   # text NULL

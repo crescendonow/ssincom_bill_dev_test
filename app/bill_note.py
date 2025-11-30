@@ -85,7 +85,12 @@ class BillNoteUpdatePayload(BaseModel):
 @router.get("/api/customers/all")
 def get_all_customers(db: Session = Depends(get_db)):
     rows = (
-        db.query(models.CustomerList.idx, models.CustomerList.personid, models.CustomerList.fname)
+        db.query(
+            models.CustomerList.idx, 
+            models.CustomerList.personid, 
+            models.CustomerList.fname,
+            models.CustomerList.prename
+        )
         .order_by(models.CustomerList.fname.asc())
         .limit(5000)
         .all()
@@ -95,9 +100,10 @@ def get_all_customers(db: Session = Depends(get_db)):
             "idx": idx,
             "personid": personid or "",
             "fname": fname or "",
+            "prename": prename or "",
             "customer_name": (fname or ""),
         }
-        for (idx, personid, fname) in rows
+        for (idx, personid, fname, prename) in rows
     ]
 
 @router.get("/api/billing-notes/{bill_note_number}")
@@ -117,6 +123,7 @@ def get_billing_note_details(bill_note_number: str, db: Session = Depends(get_db
         return {
             "customer": {
                 "name": bill_note.fname,
+                "prename": bill_note.prename or "",
                 "tax_id": bill_note.cf_taxid,
                 "branch": "สำนักงานใหญ่",
                 "address": bill_note.cf_personaddress,
@@ -182,6 +189,7 @@ def get_billing_note_details(bill_note_number: str, db: Session = Depends(get_db
     return {
         "customer": {
             "name": bill_note.fname,
+            "prename": bill_note.prename or "",
             "tax_id": bill_note.cf_taxid,
             "branch": branch_info,
             "address": bill_note.cf_personaddress,
@@ -224,6 +232,7 @@ def get_invoices_for_billing_note(
         return {
             "customer": {
                 "name": customer.fname,
+                "prename": customer.prename or "",
                 "tax_id": customer.cf_taxid,
                 "branch": "สำนักงานใหญ่" if customer.cf_hq == 1 else f"สาขาที่ {customer.cf_branch}",
                 "address": customer.cf_personaddress,
@@ -242,6 +251,7 @@ def get_invoices_for_billing_note(
         return {
             "customer": {
                 "name": customer.fname,
+                "prename": customer.prename or "",
                 "tax_id": customer.cf_taxid,
                 "branch": "สำนักงานใหญ่" if customer.cf_hq == 1 else f"สาขาที่ {customer.cf_branch}",
                 "address": customer.cf_personaddress,
@@ -291,6 +301,7 @@ def get_invoices_for_billing_note(
     return {
         "customer": {
             "name": customer.fname,
+            "prename": customer.prename or "",
             "tax_id": customer.cf_taxid,
             "branch": "สำนักงานใหญ่" if customer.cf_hq == 1 else f"สาขาที่ {customer.cf_branch}",
             "address": customer.cf_personaddress,
@@ -325,6 +336,7 @@ def create_billing_note(payload: BillNotePayload, db: Session = Depends(get_db))
         billnote_number=new_bill_number,
         bill_date=bill_date_today,
         payment_duedate=payment_due,
+        prename=customer.prename,
         fname=customer.fname,
         personid=customer.personid,
         tel=customer.tel,
