@@ -100,14 +100,13 @@
             </div>
         </div>
         <div class="mt-4 flex gap-4">
-            <button id="generateBillBtn"
-                class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"> 
+            <button id="generateBillBtn" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">
                 <i class="fa-solid fa-laptop-file"></i>สร้างเอกสาร</button>
             <button id="saveBillBtn" class="bg-purple-600 text-white px-6 py-2 rounded-md hover:bg-purple-700 hidden">
                 <i class="fa-solid fa-floppy-disk"></i> บันทึกใบวางบิล</button>
             <button id="printPdfBtn" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 hidden">
                 <i class="fa-solid fa-print"></i> พิมพ์ PDF</button>
-                
+
         </div>
         <div id="loading" class="mt-2 text-gray-500 hidden">กำลังโหลดข้อมูล...</div>
     </div>
@@ -127,7 +126,7 @@
                 <div class="text-center">
                     <h2 class="text-3xl font-bold">ใบวางบิล</h2>
                     <p class="text-lg"><strong>BILLING NOTE</strong></p>
-                    
+
                     <p class="text-base">เลขประจำตัวผู้เสียภาษีอากร</p>
                     <h2 class="text-2xl font-bold">0715544000020</h2>
 
@@ -138,7 +137,7 @@
                     <div>
                         <p><strong>เลขประจำตัวผู้เสียภาษีอากร:</strong> <span class="cust-tax-id"></span> </p>
                         <p><strong>รหัส:</strong> <span class="cust-person-id"></span></p>
-                        <p><strong>ชื่อ / บริษัท:</strong> <span class="cust-name"></span> /
+                        <p><strong>ชื่อลูกค้า:</strong> <span class="cust-name"></span> /
                             <span class="cust-branch"></span>
                         </p>
                         <p><span class="cust-address"></span></p>
@@ -182,25 +181,25 @@
 
             <div class="page-ender">
                 <footer class="w-full grid grid-cols-4 gap-4 text-center text-sm p-8">
-                <div>
-                    <p class="mt-8 signature-underline">&nbsp;</p>
-                    <p><strong>(ผู้รับวางบิล)</strong></p>
-                </div>
-                <div>
-                    <p class="mt-8 signature-underline">&nbsp;</p>
-                    <p><strong>วันที่รับวางบิล</strong></p>
-                </div>
-                <div>
-                    <p class="mt-8 signature-underline">&nbsp;</p>
-                    <p><strong>(ผู้วางบิล)</strong></p>
-                </div>
-                <div>
-                    <p class="mt-8 signature-underline">
-                        <span class="signature-date"></span>
-                    </p>
-                    <p><strong>วันที่</strong></p>
-                </div>
-            </footer>
+                    <div>
+                        <p class="mt-8 signature-underline">&nbsp;</p>
+                        <p><strong>(ผู้รับวางบิล)</strong></p>
+                    </div>
+                    <div>
+                        <p class="mt-8 signature-underline">&nbsp;</p>
+                        <p><strong>วันที่รับวางบิล</strong></p>
+                    </div>
+                    <div>
+                        <p class="mt-8 signature-underline">&nbsp;</p>
+                        <p><strong>(ผู้วางบิล)</strong></p>
+                    </div>
+                    <div>
+                        <p class="mt-8 signature-underline">
+                            <span class="signature-date"></span>
+                        </p>
+                        <p><strong>วันที่</strong></p>
+                    </div>
+                </footer>
             </div>
         </div>
     </template>

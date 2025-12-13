@@ -169,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const prename = (data.customer.prename || '').trim();
             const name = (data.customer.name || '').trim();
-            const fullName = prename ? `${prename}${name}` : name;
+            const fullName = prename ? `${prename} ${name}` : name;
             pageElement.querySelector('.cust-name').textContent = fullName || '-';
 
             pageElement.querySelector('.cust-address').textContent = data.customer.address || '-';
