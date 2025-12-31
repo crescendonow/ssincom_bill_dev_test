@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, func, text, or_
+from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, func, text, or_, Numeric
 from datetime import datetime, date
 from typing import Optional
 from pathlib import Path
@@ -23,21 +23,47 @@ class CreditNote(Base):
     __table_args__ = {"schema": "credits"}
     idx = Column(Integer, primary_key=True, autoincrement=True)
     creditnote_number = Column(String, unique=True, index=True)
-    created_at = Column(Date, default=func.now())
+    created_at = Column(Date, default=date.today)
     updated_at = Column(Date, nullable=True)
 
 class CreditNoteItem(Base):
     __tablename__ = "credit_note_item"
     __table_args__ = {"schema": "credits"}
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    creditnote_number = Column(String, ForeignKey("credits.credit_note.creditnote_number"), index=True)
+
+    idx = Column(Integer, primary_key=True, autoincrement=True)  
+
+    creditnote_number = Column(
+        String,
+        ForeignKey("credits.credit_note.creditnote_number"),
+        index=True
+    )
+
     grn_number = Column(String)
     invoice_number = Column(String)
-    cf_itemid = Column(String(50))
-    cf_itemname = Column(String(1000))
-    quantity = Column(Float)
+    invoice_date = Column(Date)
+
+    sum_quantity = Column("sum_quantity", Float)
+
+    cf_itempricelevel_price = Column(Numeric)
+
     fine = Column(Float)
     price_after_fine = Column(Float)
+
+    original_amount = Column(Float)
+    new_amount = Column(Float)
+    original_vat = Column(Float)
+    new_vat = Column(Float)
+    original_total = Column(Float)
+    new_total = Column(Float)
+    fine_difference = Column(Float)
+
+    driver_id = Column(String(10))
+    first_name = Column(String(64))
+    last_name = Column(String(64))
+    number_plate = Column(String(20))
+
+    cf_itemid = Column(String(6))
+    cf_itemname = Column(String(1000))
 
 def get_db():
     db = SessionLocal()
@@ -270,7 +296,7 @@ def get_credit_note(no: str, db: Session = Depends(get_db)):
                 "invoice_number": it.invoice_number,
                 "cf_itemid": it.cf_itemid,
                 "cf_itemname": it.cf_itemname,
-                "quantity": it.quantity,
+                "sum_quantity": it.sum_quantity,
                 "fine": it.fine,
                 "price_after_fine": it.price_after_fine,
             } for it in items
@@ -339,9 +365,6 @@ def export_creditnote_pdf(payload: dict = Body(...), db: Session = Depends(get_d
         filename=tmp_pdf.name
     )
 
-
-
-@router.get("/api/credit-notes/generate-number", response_class=JSONResponse)
 @router.get("/api/credit-notes/generate-number/", response_class=JSONResponse)
 def api_generate_number(
     date: str = Query(..., description="วันที่เอกสารรูปแบบ YYYY-MM-DD"),
@@ -353,30 +376,46 @@ def api_generate_number(
 
 @router.post("/api/credit-notes")
 def create_credit_note(payload: dict = Body(...), db: Session = Depends(get_db)):
-    cn_number = (payload.get("creditnote_number") or "").strip()
-    cn_date = payload.get("creditnote_date")
-    items = payload.get("items") or []
-    if not cn_number:
-        raise HTTPException(status_code=400, detail="missing creditnote_number")
-    if db.query(CreditNote).filter(CreditNote.creditnote_number == cn_number).first():
-        raise HTTPException(status_code=409, detail="เลขเอกสารถูกใช้แล้ว")
-    head = CreditNote(creditnote_number=cn_number, created_at=_to_date(cn_date))
-    db.add(head)
-    for it in items:
-        db.add(CreditNoteItem(
+    try:
+        cn_number = (payload.get("creditnote_number") or "").strip()
+        cn_date = payload.get("creditnote_date")
+        items = payload.get("items") or []
+
+        if not cn_number:
+            raise HTTPException(400, "missing creditnote_number")
+
+        if db.query(CreditNote).filter(
+            CreditNote.creditnote_number == cn_number
+        ).first():
+            raise HTTPException(409, "เลขเอกสารถูกใช้แล้ว")
+
+        head = CreditNote(
             creditnote_number=cn_number,
-            grn_number=(it.get("grn_number") or "").strip(),
-            invoice_number=(it.get("invoice_number") or "").strip(),
-            cf_itemid=(it.get("cf_itemid") or "").strip(),
-            cf_itemname=(it.get("cf_itemname") or "").strip(),
-            quantity=float(it.get("quantity") or 0),
-            fine=float(it.get("fine") or 0),
-            price_after_fine=float(it.get("price_after_fine") or 0),
-))
+            created_at=_to_date(cn_date)
+        )
+        db.add(head)
 
-    db.commit()
-    return {"ok": True, "creditnote_number": cn_number}
+        for it in items:
+            db.add(CreditNoteItem(
+                creditnote_number=cn_number,
+                grn_number=str(it.get("grn_number") or ""),
+                invoice_number=str(it.get("invoice_number") or ""),
+                cf_itemid=str(it.get("cf_itemid") or ""),
+                cf_itemname=str(it.get("cf_itemname") or ""),
+                sum_quantity=float(it.get("quantity") or 0),
+                fine=float(it.get("fine") or 0),
+                price_after_fine=float(it.get("price_after_fine") or 0),
+            ))
 
+        db.commit()
+        return {"ok": True, "creditnote_number": cn_number}
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail=f"บันทึกไม่สำเร็จ: {str(e)}"
+        )
 # ==============================================================================
 # START: โค้ดที่แก้ไข
 # ==============================================================================
@@ -686,7 +725,7 @@ def search_credit_notes(
         customer_name = None
         
         for it in items:
-            qty = float(it.quantity or 0)
+            qty = float(it.sum_quantity or 0)
             price_after_fine = float(it.price_after_fine or 0)
             total_amount += qty * price_after_fine
         
@@ -712,9 +751,8 @@ def search_credit_notes(
     
     return output
 
-
-@router.get("/api/credit-notes/detail")
-def get_credit_note_detail(no: str = Query(...), db: Session = Depends(get_db)):
+@router.get("/api/credit-notes/{no}/detail")
+def get_credit_note_detail(no: str, db: Session = Depends(get_db)):
     """ดึงรายละเอียดใบลดหนี้สำหรับแก้ไข (รวมข้อมูลลูกค้า)"""
     head = db.query(CreditNote).filter(CreditNote.creditnote_number == no).first()
     if not head:
@@ -756,7 +794,7 @@ def get_credit_note_detail(no: str = Query(...), db: Session = Depends(get_db)):
                 "invoice_number": it.invoice_number,
                 "cf_itemid": it.cf_itemid,
                 "cf_itemname": it.cf_itemname,
-                "quantity": it.quantity,
+                "quantity": it.sum_quantity,
                 "fine": it.fine,
                 "price_after_fine": it.price_after_fine,
             } for it in items
@@ -765,8 +803,8 @@ def get_credit_note_detail(no: str = Query(...), db: Session = Depends(get_db)):
     }
 
 
-@router.put("/api/credit-notes/update")
-def update_credit_note(no: str = Query(...), payload: dict = Body(...), db: Session = Depends(get_db)):
+@router.put("/api/credit-notes/{no}")
+def update_credit_note(no: str, payload: dict = Body(...), db: Session = Depends(get_db)):
     """อัปเดตใบลดหนี้"""
     head = db.query(CreditNote).filter(CreditNote.creditnote_number == no).first()
     if not head:
@@ -789,7 +827,7 @@ def update_credit_note(no: str = Query(...), payload: dict = Body(...), db: Sess
             invoice_number=(it.get("invoice_number") or "").strip(),
             cf_itemid=(it.get("cf_itemid") or "").strip(),
             cf_itemname=(it.get("cf_itemname") or "").strip(),
-            quantity=float(it.get("quantity") or 0),
+            sum_quantity=float(it.get("sum_quantity") or 0),
             fine=float(it.get("fine") or 0),
             price_after_fine=float(it.get("price_after_fine") or 0),
         ))
@@ -798,8 +836,8 @@ def update_credit_note(no: str = Query(...), payload: dict = Body(...), db: Sess
     return {"ok": True, "creditnote_number": no}
 
 
-@router.delete("/api/credit-notes/delete")
-def delete_credit_note(no: str = Query(...), db: Session = Depends(get_db)):
+@router.delete("/api/credit-notes/{no}")
+def delete_credit_note(no: str, db: Session = Depends(get_db)):
     """ลบใบลดหนี้"""
     head = db.query(CreditNote).filter(CreditNote.creditnote_number == no).first()
     if not head:
