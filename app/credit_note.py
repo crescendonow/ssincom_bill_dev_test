@@ -43,7 +43,6 @@ class CreditNoteItem(Base):
     invoice_date = Column(Date)
 
     sum_quantity = Column("sum_quantity", Float)
-    quantity = synonym("sum_quantity")
 
     cf_itempricelevel_price = Column(Numeric)
 
@@ -829,7 +828,7 @@ def update_credit_note(no: str, payload: dict = Body(...), db: Session = Depends
             invoice_number=(it.get("invoice_number") or "").strip(),
             cf_itemid=(it.get("cf_itemid") or "").strip(),
             cf_itemname=(it.get("cf_itemname") or "").strip(),
-            quantity=float(it.get("quantity") or 0),
+            sum_quantity=float(it.get("sum_quantity") or 0),
             fine=float(it.get("fine") or 0),
             price_after_fine=float(it.get("price_after_fine") or 0),
         ))
