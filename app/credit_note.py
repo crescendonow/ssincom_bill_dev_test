@@ -752,10 +752,6 @@ def search_credit_notes(
     return output
 
 @router.get("/api/credit-notes/{no}/detail")
-def get_credit_note_detail(no: str, db: Session = Depends(get_db)):
-    return get_credit_note(no, db)
-
-@router.get("/api/credit-notes/{no}")
 def get_credit_note_detail(no: str = Query(...), db: Session = Depends(get_db)):
     """ดึงรายละเอียดใบลดหนี้สำหรับแก้ไข (รวมข้อมูลลูกค้า)"""
     head = db.query(CreditNote).filter(CreditNote.creditnote_number == no).first()
