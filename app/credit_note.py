@@ -23,7 +23,7 @@ class CreditNote(Base):
     __table_args__ = {"schema": "credits"}
     idx = Column(Integer, primary_key=True, autoincrement=True)
     creditnote_number = Column(String, unique=True, index=True)
-    created_at = Column(DateTime, default=func.now())
+    created_at = Column(Date, default=date.today)
     updated_at = Column(Date, nullable=True)
 
 class CreditNoteItem(Base):
