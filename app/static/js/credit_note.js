@@ -213,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===== LOAD FOR EDITING =====
     async function loadCreditNoteForEditing(cnNumber) {
         try {
-            const res = await fetch(`/api/credit-notes/${cnNumber}/detail`);
+            const res = await fetch(`/api/credit-notes/${encodeURIComponent(cnNumber)}`);
             if (!res.ok) { alert('ไม่สามารถโหลดข้อมูลใบลดหนี้ได้'); return; }
             const data = await res.json();
 
@@ -243,7 +243,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     row.querySelector('.invoice_number').value = item.invoice_number || '';
                     row.querySelector('.product_code').value = item.cf_itemid || '';
                     row.querySelector('.description').value = item.cf_itemname || '';
-                    row.querySelector('.quantity').value = item.quantity || 0;
+                    row.querySelector('.quantity').value = item.sum_quantity ?? item.quantity ?? 0;
+                    row.querySelector('.old_total_vat').value = to2((item.sum_quantity ?? item.quantity ?? 0) * ((item.price_after_fine || 0) * 1.07));
                     row.querySelector('.fine').value = item.fine || 0;
 
                     const basePrice = (item.price_after_fine || 0) + (item.fine || 0);
