@@ -279,7 +279,7 @@ def credit_note_preview_page(request: Request, no: str = Query(...), db: Session
     return templates.TemplateResponse("credit_note.html", ctx)
 
 # --- API JSON สำหรับ read / export ---
-@router.get("/api/credit-notes/{no}")
+@router.get("/api/credit-notes/{no:path}")
 def get_credit_note(no: str, db: Session = Depends(get_db)):
     head = db.query(CreditNote).filter(CreditNote.creditnote_number == no).first()
     if not head:
@@ -861,7 +861,7 @@ def update_credit_note(no: str = Query(...), payload: dict = Body(...), db: Sess
     return {"ok": True, "creditnote_number": no}
 
 
-@router.delete("/api/credit-notes/{no}")
+@router.delete("/api/credit-notes/{no:path}")
 def delete_credit_note(no: str, db: Session = Depends(get_db)):
     head = db.query(CreditNote).filter(CreditNote.creditnote_number == no).first()
     if not head:
