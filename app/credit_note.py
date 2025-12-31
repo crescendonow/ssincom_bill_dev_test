@@ -77,23 +77,28 @@ def _to_date(s: str) -> date:
 def _be_year(ad: int) -> int: return ad + 543
 
 def generate_creditnote_number(db: Session, doc_date: date) -> str:
-    # Pattern: SSCR{running}-{DD}{MM}/{YYYY(BE)}
-    dd = f"{doc_date.day:02d}"; mm = f"{doc_date.month:02d}"; be = _be_year(doc_date.year)
+    dd = f"{doc_date.day:02d}"
+    mm = f"{doc_date.month:02d}"
+    be = _be_year(doc_date.year)
+
+    prefix = "SSCR"
     suffix = f"-{dd}{mm}/{be}"
-    like_pat = f"%/{be}"
-    rows = db.query(CreditNote.creditnote_number).filter(CreditNote.creditnote_number.like(like_pat)).all()
-    rows = [r[0] for r in rows if r and f"/{be}" in r and f"{mm}/" in r.replace('-', '/')]
+
+    rows = (
+        db.query(CreditNote.creditnote_number)
+        .filter(CreditNote.creditnote_number.like(f"{prefix}%/{be}"))
+        .all()
+    )
+
     max_run = 0
-    for no in rows:
+    for (no,) in rows:
         try:
-            head = no.split('-', 1)[0]
-            run_str = head.replace("SSCR", "")
-            run = int(run_str)
-            if run > max_run: max_run = run
+            run = int(no.replace(prefix, "").split("-", 1)[0])
+            max_run = max(max_run, run)
         except Exception:
-            continue
-    next_run = max_run + 1
-    return f"SSCR{next_run}{suffix}"
+            pass
+
+    return f"{prefix}{max_run + 1}{suffix}"
 
 # --- PAGES ---
 @router.get("/credit_note_form.html", response_class=HTMLResponse)
