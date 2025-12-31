@@ -155,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const template = document.getElementById('bill-note-template');
         container.innerHTML = '';
 
-        const ITEMS_PER_PAGE = 12;
+        const ITEMS_PER_PAGE = 10;
         const totalPages = Math.ceil((data.invoices || []).length / ITEMS_PER_PAGE) || 1;
 
         for (let i = 0; i < totalPages; i++) {
