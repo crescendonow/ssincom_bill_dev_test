@@ -178,7 +178,7 @@ def credit_note_preview_page(request: Request, no: str = Query(...), db: Session
 
     # เดิม = base_price = price_after_fine + fine
     for it in items:
-        qty   = float(it.quantity or 0)
+        qty   = float(it.sum_quantity or 0)
         fine  = float(it.fine or 0)
         newp  = float(it.price_after_fine or 0)              # ราคาใหม่ (หลังบทปรับ)
         basep = newp + fine                                  # ราคาเดิม (ก่อนหักบทปรับ)
