@@ -195,7 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!confirm(`ต้องการลบใบลดหนี้เลขที่ ${cnNo} ใช่หรือไม่?`)) return;
 
             try {
-                const res = await fetch(`/api/credit-notes/delete?no=${encodeURIComponent(cnNo)}`, { method: 'DELETE' });
+                const res = await fetch(`/api/credit-notes/${encodeURIComponent(cnNo)}`, { method: 'DELETE' });
                 if (!res.ok) {
                     const j = await res.json().catch(() => ({}));
                     alert('ลบไม่สำเร็จ: ' + (j.detail || res.statusText));
@@ -213,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===== LOAD FOR EDITING =====
     async function loadCreditNoteForEditing(cnNumber) {
         try {
-            const res = await fetch(`/api/credit-notes/detail?no=${encodeURIComponent(cnNumber)}`);
+            const res = await fetch(`/api/credit-notes/${encodeURIComponent(cnNumber)}`);
             if (!res.ok) { alert('ไม่สามารถโหลดข้อมูลใบลดหนี้ได้'); return; }
             const data = await res.json();
 

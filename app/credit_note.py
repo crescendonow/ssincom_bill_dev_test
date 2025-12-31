@@ -284,7 +284,22 @@ def get_credit_note(no: str, db: Session = Depends(get_db)):
     head = db.query(CreditNote).filter(CreditNote.creditnote_number == no).first()
     if not head:
         raise HTTPException(404, "not found")
-    items = db.query(CreditNoteItem).filter(CreditNoteItem.creditnote_number == no).all()
+
+    items = db.query(CreditNoteItem).filter(
+        CreditNoteItem.creditnote_number == no
+    ).all()
+
+    # ดึง buyer จาก invoice แรก
+    buyer = None
+    first_inv = next((i.invoice_number for i in items if i.invoice_number), None)
+    if first_inv:
+        buyer = (
+            db.query(models.CustomerList)
+            .join(models.Invoice, models.Invoice.personid == models.CustomerList.personid)
+            .filter(models.Invoice.invoice_number == first_inv)
+            .first()
+        )
+
     return {
         "head": {
             "creditnote_number": head.creditnote_number,
@@ -300,7 +315,17 @@ def get_credit_note(no: str, db: Session = Depends(get_db)):
                 "fine": it.fine,
                 "price_after_fine": it.price_after_fine,
             } for it in items
-        ]
+        ],
+        "buyer": {
+            "personid": buyer.personid,
+            "name": buyer.fname,
+            "addr": buyer.cf_personaddress,
+            "tax": buyer.cf_taxid,
+            "tel": buyer.tel,
+            "mobile": buyer.mobile,
+            "zipcode": buyer.cf_personzipcode,
+            "prov": buyer.cf_provincename,
+        } if buyer else None
     }
 
 @router.post("/export-creditnote-pdf")
@@ -836,18 +861,16 @@ def update_credit_note(no: str = Query(...), payload: dict = Body(...), db: Sess
     return {"ok": True, "creditnote_number": no}
 
 
-@router.delete("/api/credit-notes/delete")
-def delete_credit_note(no: str = Query(...), db: Session = Depends(get_db)):
-    """ลบใบลดหนี้"""
+@router.delete("/api/credit-notes/{no}")
+def delete_credit_note(no: str, db: Session = Depends(get_db)):
     head = db.query(CreditNote).filter(CreditNote.creditnote_number == no).first()
     if not head:
         raise HTTPException(404, "not found")
-    
-    # ลบ items ก่อน
-    db.query(CreditNoteItem).filter(CreditNoteItem.creditnote_number == no).delete()
-    
-    # ลบ head
+
+    db.query(CreditNoteItem).filter(
+        CreditNoteItem.creditnote_number == no
+    ).delete()
+
     db.delete(head)
     db.commit()
-    
     return {"ok": True}
