@@ -23,7 +23,7 @@ class CreditNote(Base):
     __table_args__ = {"schema": "credits"}
     idx = Column(Integer, primary_key=True, autoincrement=True)
     creditnote_number = Column(String, unique=True, index=True)
-    created_at = Column(Date, default=func.now())
+    created_at = Column(DateTime, default=func.now())
     updated_at = Column(Date, nullable=True)
 
 class CreditNoteItem(Base):
@@ -339,9 +339,6 @@ def export_creditnote_pdf(payload: dict = Body(...), db: Session = Depends(get_d
         filename=tmp_pdf.name
     )
 
-
-
-@router.get("/api/credit-notes/generate-number", response_class=JSONResponse)
 @router.get("/api/credit-notes/generate-number/", response_class=JSONResponse)
 def api_generate_number(
     date: str = Query(..., description="วันที่เอกสารรูปแบบ YYYY-MM-DD"),
@@ -353,30 +350,46 @@ def api_generate_number(
 
 @router.post("/api/credit-notes")
 def create_credit_note(payload: dict = Body(...), db: Session = Depends(get_db)):
-    cn_number = (payload.get("creditnote_number") or "").strip()
-    cn_date = payload.get("creditnote_date")
-    items = payload.get("items") or []
-    if not cn_number:
-        raise HTTPException(status_code=400, detail="missing creditnote_number")
-    if db.query(CreditNote).filter(CreditNote.creditnote_number == cn_number).first():
-        raise HTTPException(status_code=409, detail="เลขเอกสารถูกใช้แล้ว")
-    head = CreditNote(creditnote_number=cn_number, created_at=_to_date(cn_date))
-    db.add(head)
-    for it in items:
-        db.add(CreditNoteItem(
+    try:
+        cn_number = (payload.get("creditnote_number") or "").strip()
+        cn_date = payload.get("creditnote_date")
+        items = payload.get("items") or []
+
+        if not cn_number:
+            raise HTTPException(400, "missing creditnote_number")
+
+        if db.query(CreditNote).filter(
+            CreditNote.creditnote_number == cn_number
+        ).first():
+            raise HTTPException(409, "เลขเอกสารถูกใช้แล้ว")
+
+        head = CreditNote(
             creditnote_number=cn_number,
-            grn_number=(it.get("grn_number") or "").strip(),
-            invoice_number=(it.get("invoice_number") or "").strip(),
-            cf_itemid=(it.get("cf_itemid") or "").strip(),
-            cf_itemname=(it.get("cf_itemname") or "").strip(),
-            quantity=float(it.get("quantity") or 0),
-            fine=float(it.get("fine") or 0),
-            price_after_fine=float(it.get("price_after_fine") or 0),
-))
+            created_at=_to_date(cn_date)
+        )
+        db.add(head)
 
-    db.commit()
-    return {"ok": True, "creditnote_number": cn_number}
+        for it in items:
+            db.add(CreditNoteItem(
+                creditnote_number=cn_number,
+                grn_number=str(it.get("grn_number") or ""),
+                invoice_number=str(it.get("invoice_number") or ""),
+                cf_itemid=str(it.get("cf_itemid") or ""),
+                cf_itemname=str(it.get("cf_itemname") or ""),
+                quantity=float(it.get("quantity") or 0),
+                fine=float(it.get("fine") or 0),
+                price_after_fine=float(it.get("price_after_fine") or 0),
+            ))
 
+        db.commit()
+        return {"ok": True, "creditnote_number": cn_number}
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail=f"บันทึกไม่สำเร็จ: {str(e)}"
+        )
 # ==============================================================================
 # START: โค้ดที่แก้ไข
 # ==============================================================================
