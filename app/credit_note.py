@@ -751,8 +751,8 @@ def search_credit_notes(
     
     return output
 
-@router.get("/api/credit-notes/{no}/detail")
-def get_credit_note_detail(no: str, db: Session = Depends(get_db)):
+@router.get("/api/credit-notes/detail")
+def get_credit_note_detail(no: str = Query(...), db: Session = Depends(get_db)):
     """ดึงรายละเอียดใบลดหนี้สำหรับแก้ไข (รวมข้อมูลลูกค้า)"""
     head = db.query(CreditNote).filter(CreditNote.creditnote_number == no).first()
     if not head:
@@ -803,8 +803,8 @@ def get_credit_note_detail(no: str, db: Session = Depends(get_db)):
     }
 
 
-@router.put("/api/credit-notes/{no}")
-def update_credit_note(no: str, payload: dict = Body(...), db: Session = Depends(get_db)):
+@router.put("/api/credit-notes/update")
+def update_credit_note(no: str = Query(...), payload: dict = Body(...), db: Session = Depends(get_db)):
     """อัปเดตใบลดหนี้"""
     head = db.query(CreditNote).filter(CreditNote.creditnote_number == no).first()
     if not head:
@@ -836,8 +836,8 @@ def update_credit_note(no: str, payload: dict = Body(...), db: Session = Depends
     return {"ok": True, "creditnote_number": no}
 
 
-@router.delete("/api/credit-notes/{no}")
-def delete_credit_note(no: str, db: Session = Depends(get_db)):
+@router.delete("/api/credit-notes/delete")
+def delete_credit_note(no: str = Query(...), db: Session = Depends(get_db)):
     """ลบใบลดหนี้"""
     head = db.query(CreditNote).filter(CreditNote.creditnote_number == no).first()
     if not head:

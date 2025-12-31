@@ -1,854 +1,684 @@
-# app/credit_note.py
-from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
-from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
-from sqlalchemy.orm import Session
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, func, text, or_, Numeric
-from datetime import datetime, date
-from typing import Optional
-from pathlib import Path
-import tempfile, uuid
-from math import ceil 
-from . import models  
+// /static/js/credit_note.js
 
-from .database import SessionLocal, Base
-from weasyprint import HTML, CSS
-from fastapi.templating import Jinja2Templates
+let currentEditingCreditNoteNumber = null;
 
-router = APIRouter()
-BASE_DIR = Path(__file__).resolve().parent
-templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+document.addEventListener('DOMContentLoaded', () => {
+    const cnDateEl = document.getElementById('cn_date');
+    const cnNoEl = document.getElementById('creditnote_number');
+    const btnGenNo = document.getElementById('btnGenNo');
+    const btnSave = document.getElementById('btnSave');
+    const btnUpdate = document.getElementById('btnUpdate');
+    const btnPDF = document.getElementById('btnPDF');
+    const btnPreview = document.getElementById('btnPreview');
+    const btnNew = document.getElementById('btnNew');
 
-class CreditNote(Base):
-    __tablename__ = "credit_note"
-    __table_args__ = {"schema": "credits"}
-    idx = Column(Integer, primary_key=True, autoincrement=True)
-    creditnote_number = Column(String, unique=True, index=True)
-    created_at = Column(Date, default=date.today)
-    updated_at = Column(Date, nullable=True)
+    const tabCreate = document.getElementById('tab-create');
+    const tabSearch = document.getElementById('tab-search');
+    const panelCreate = document.getElementById('panel-create');
+    const panelSearch = document.getElementById('panel-search');
+    const searchBtn = document.getElementById('searchBtn');
+    const searchResultsBody = document.getElementById('searchResultsBody');
 
-class CreditNoteItem(Base):
-    __tablename__ = "credit_note_item"
-    __table_args__ = {"schema": "credits"}
+    const todayISO = new Date().toISOString().slice(0, 10);
+    if (cnDateEl && !cnDateEl.value) cnDateEl.value = todayISO;
 
-    idx = Column(Integer, primary_key=True, autoincrement=True)  
-
-    creditnote_number = Column(
-        String,
-        ForeignKey("credits.credit_note.creditnote_number"),
-        index=True
-    )
-
-    grn_number = Column(String)
-    invoice_number = Column(String)
-    invoice_date = Column(Date)
-
-    sum_quantity = Column("sum_quantity", Float)
-
-    cf_itempricelevel_price = Column(Numeric)
-
-    fine = Column(Float)
-    price_after_fine = Column(Float)
-
-    original_amount = Column(Float)
-    new_amount = Column(Float)
-    original_vat = Column(Float)
-    new_vat = Column(Float)
-    original_total = Column(Float)
-    new_total = Column(Float)
-    fine_difference = Column(Float)
-
-    driver_id = Column(String(10))
-    first_name = Column(String(64))
-    last_name = Column(String(64))
-    number_plate = Column(String(20))
-
-    cf_itemid = Column(String(6))
-    cf_itemname = Column(String(1000))
-
-def get_db():
-    db = SessionLocal()
-    try: yield db
-    finally: db.close()
-
-def _to_date(s: str) -> date:
-    try: return date.fromisoformat(s)
-    except Exception: return datetime.now().date()
-
-def _be_year(ad: int) -> int: return ad + 543
-
-def generate_creditnote_number(db: Session, doc_date: date) -> str:
-    # Pattern: SSCR{running}-{DD}{MM}/{YYYY(BE)}
-    dd = f"{doc_date.day:02d}"; mm = f"{doc_date.month:02d}"; be = _be_year(doc_date.year)
-    suffix = f"-{dd}{mm}/{be}"
-    like_pat = f"%/{be}"
-    rows = db.query(CreditNote.creditnote_number).filter(CreditNote.creditnote_number.like(like_pat)).all()
-    rows = [r[0] for r in rows if r and f"/{be}" in r and f"{mm}/" in r.replace('-', '/')]
-    max_run = 0
-    for no in rows:
-        try:
-            head = no.split('-', 1)[0]
-            run_str = head.replace("SSCR", "")
-            run = int(run_str)
-            if run > max_run: max_run = run
-        except Exception:
-            continue
-    next_run = max_run + 1
-    return f"SSCR{next_run}{suffix}"
-
-# --- PAGES ---
-@router.get("/credit_note_form.html", response_class=HTMLResponse)
-def credit_note_form_page(request: Request):
-    return templates.TemplateResponse("credit_note_form.html", {"request": request})
-
-@router.get("/api/customers/suggest-personid")
-def api_cust_suggest_personid(q: str = Query(""), limit: int = Query(10, ge=1, le=50), db: Session = Depends(get_db)):
-    q = q.strip()
-    qs = db.query(models.CustomerList.personid).filter(models.CustomerList.personid.ilike(f"%{q}%"))\
-            .order_by(models.CustomerList.personid.asc()).limit(limit).all()
-    return {"items": [r[0] for r in qs if r[0]]}
-
-@router.get("/api/customers/suggest-name")
-def api_cust_suggest_name(q: str = Query(""), limit: int = Query(10, ge=1, le=50), db: Session = Depends(get_db)):
-    q = q.strip()
-    qs = db.query(models.CustomerList.fname).filter(models.CustomerList.fname.ilike(f"%{q}%"))\
-            .order_by(models.CustomerList.fname.asc()).limit(limit).all()
-    return {"items": [r[0] for r in qs if r[0]]}
-
-@router.get("/api/customers/by-personid")
-def api_cust_by_personid(personid: str = Query(...), db: Session = Depends(get_db)):
-    c = db.query(models.CustomerList).filter(models.CustomerList.personid == personid).first()
-    if not c:
-        raise HTTPException(status_code=404, detail="customer not found")
-    return {
-        "personid": c.personid, "fname": c.fname,
-        "tel": c.tel, "mobile": c.mobile,
-        "cf_personaddress": c.cf_personaddress,
-        "cf_personzipcode": c.cf_personzipcode,
-        "cf_provincename": c.cf_provincename,
-        "cf_taxid": c.cf_taxid,
-    }
-
-@router.get("/api/customers/by-name")
-def api_cust_by_name(name: str = Query(...), db: Session = Depends(get_db)):
-    c = db.query(models.CustomerList).filter(models.CustomerList.fname == name).first()
-    if not c:
-        raise HTTPException(status_code=404, detail="customer not found")
-    return {
-        "personid": c.personid, "fname": c.fname,
-        "tel": c.tel, "mobile": c.mobile,
-        "cf_personaddress": c.cf_personaddress,
-        "cf_personzipcode": c.cf_personzipcode,
-        "cf_provincename": c.cf_provincename,
-        "cf_taxid": c.cf_taxid,
-    }
-
-@router.get("/credit_note.html", response_class=HTMLResponse)
-def credit_note_preview_page(request: Request, no: str = Query(...), db: Session = Depends(get_db)):
-    # ดึงหัวเอกสาร + รายการ
-    head = db.query(CreditNote).filter(CreditNote.creditnote_number == no).first()
-    if not head:
-        return HTMLResponse("<div style='padding:20px'>ไม่พบเลขที่เอกสาร</div>", status_code=404)
-
-    items = db.query(CreditNoteItem).filter(CreditNoteItem.creditnote_number == no).all()
-
-    # --- map invoice_number -> วันที่ใบกำกับ (พ.ศ.) ---
-    inv_date_map: dict[str, str] = {}
-    from sqlalchemy import text  # ถ้ายังไม่ได้ import ไว้ข้างบนก็เพิ่มบรรทัดนี้
-
-    for it in items:
-        inv_no = (it.invoice_number or "").strip()
-        if not inv_no or inv_no in inv_date_map:
-            continue
-        row = db.execute(
-            text("""
-                SELECT invoice_date
-                FROM ss_invoices.invoices
-                WHERE invoice_number = :inv
-                LIMIT 1
-            """),
-            {"inv": inv_no},
-        ).first()
-        if row and row[0]:
-            d = row[0]
-            inv_date_map[inv_no] = f"{d.day:02d}/{d.month:02d}/{d.year + 543}"
-
-    # สร้างข้อมูลสำหรับรายงาน
-    rows = []
-    sum_reduce_value = 0.0
-
-    # เดิม = base_price = price_after_fine + fine
-    for it in items:
-        qty   = float(it.quantity or 0)
-        fine  = float(it.fine or 0)
-        newp  = float(it.price_after_fine or 0)              # ราคาใหม่ (หลังบทปรับ)
-        basep = newp + fine                                  # ราคาเดิม (ก่อนหักบทปรับ)
-        amt_old = basep * qty
-        amt_new = newp  * qty
-
-        inv_no = (it.invoice_number or "").strip()
-        row_date_be = inv_date_map.get(inv_no, "")
-
-        rows.append({
-            "date": row_date_be,               # << ใช้วันที่จาก invoice_date
-            "inv": inv_no,
-            "desc": it.cf_itemname or "",
-            "amt_old": amt_old,
-            "amt_new": amt_new
-        })
-        sum_reduce_value += max(0.0, (amt_old - amt_new))    # ยอดที่ลดลงจริง
-
-    vat = round(sum_reduce_value * 0.07, 2)
-    grand = round(sum_reduce_value + vat, 2)
-
-    # ---------- แบ่งหน้า: 10 แถวต่อหน้า ----------
-    from math import ceil
-    ITEMS_PER_PAGE = 10
-    total_pages = max(1, ceil(len(rows) / ITEMS_PER_PAGE)) if rows else 1
-    pages = []
-    for i in range(total_pages):
-        start = i * ITEMS_PER_PAGE
-        end = start + ITEMS_PER_PAGE
-        pages.append({"rows": rows[start:end]})
-    # -----------------------------------------------
-
-    # วันที่เอกสาร (หัวใบลดหนี้) ให้ใช้ created_at เดิม
-    d = head.created_at or datetime.now().date()
-    be_date = f"{d.day:02d}/{d.month:02d}/{d.year + 543}"
-
-    # ---------------- Buyer จาก DB ----------------
-    buyer = None
-    try:
-        from . import models
-        # ใช้ invoice แรกที่มีเลขที่
-        first_inv_no = next((it.invoice_number for it in items if it.invoice_number), None)
-        if first_inv_no:
-            Inv = models.Invoice
-            Cust = models.CustomerList
-            buyer = (
-                db.query(Cust)
-                .join(Inv, Inv.personid == Cust.personid)
-                .filter(Inv.invoice_number == first_inv_no)
-                .first()
-            )
-    except Exception:
-        buyer = None
-
-    if buyer:
-        branch_info = "สำนักงานใหญ่" if getattr(buyer, "cf_hq", 0) == 1 else (buyer.cf_branch or "")
-        buyer_ctx = {
-            "name": buyer.fname or "",
-            "addr": buyer.cf_personaddress or "",
-            "branch": branch_info,
-            "tax": buyer.cf_taxid or "",
+    // ===== TAB SWITCHING =====
+    function switchTab(target) {
+        if (target === 'create') {
+            tabCreate.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-blue-500 text-blue-600';
+            tabSearch.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300';
+            panelCreate.classList.remove('hidden');
+            panelSearch.classList.add('hidden');
+        } else {
+            tabSearch.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-blue-500 text-blue-600';
+            tabCreate.className = 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300';
+            panelSearch.classList.remove('hidden');
+            panelCreate.classList.add('hidden');
+            document.getElementById('preview').classList.add('hidden');
         }
-    else:
-        # fallback ค่าเดิม (กันกรณีหา customer ไม่เจอ)
-        buyer_ctx = {
-            "name": "—",
-            "addr": "",
-            "branch": "",
-            "tax": "",
-        }
-
-    ctx = {
-        "request": request,
-        "doc_no": head.creditnote_number,
-        "doc_date_be": be_date,
-        "rows": rows,
-        "pages": pages,
-        "total_pages": total_pages,
-        "sum_reduce_value": sum_reduce_value,
-        "sum_reduce_vat": vat,
-        "sum_total": grand,
-
-        # Seller fix
-        "seller": {
-            "name": "บริษัท เอส แอนด์ เอส อินคอม จำกัด",
-            "addr": "69 หมู่ 10 ต.พังตรุ อ.พนมทวน จ.กาญจนบุรี 71140",
-            "phone": "0888088840",
-            "branch": "สำนักงานใหญ่",
-            "tax": "0715544000020",
-        },
-
-        # Buyer จาก products.customer_list
-        "buyer": buyer_ctx,
-
-        # เหตุผล default
-        "reason": "คิดราคาสินค้าไม่ถูกต้อง",
-    }
-    return templates.TemplateResponse("credit_note.html", ctx)
-
-# --- API JSON สำหรับ read / export ---
-@router.get("/api/credit-notes/{no}")
-def get_credit_note(no: str, db: Session = Depends(get_db)):
-    head = db.query(CreditNote).filter(CreditNote.creditnote_number == no).first()
-    if not head:
-        raise HTTPException(404, "not found")
-    items = db.query(CreditNoteItem).filter(CreditNoteItem.creditnote_number == no).all()
-    return {
-        "head": {
-            "creditnote_number": head.creditnote_number,
-            "created_at": str(head.created_at or ""),
-        },
-        "items": [
-            {
-                "grn_number": it.grn_number,
-                "invoice_number": it.invoice_number,
-                "cf_itemid": it.cf_itemid,
-                "cf_itemname": it.cf_itemname,
-                "sum_quantity": it.sum_quantity,
-                "fine": it.fine,
-                "price_after_fine": it.price_after_fine,
-            } for it in items
-        ]
     }
 
-@router.post("/export-creditnote-pdf")
-def export_creditnote_pdf(payload: dict = Body(...), db: Session = Depends(get_db)):
-    """
-    สร้าง PDF ใบลดหนี้จาก payload เดียว แต่รวมทั้ง "ต้นฉบับ" และ "สำเนา"
-    เป็นไฟล์ PDF เดียวกัน (2 หน้า)
-    """
-    base_dir = BASE_DIR
-    css_path = base_dir / "static" / "css" / "credit_note.css"
+    tabCreate?.addEventListener('click', () => switchTab('create'));
+    tabSearch?.addEventListener('click', () => switchTab('search'));
 
-    # 1) สร้าง context พื้นฐานเหมือน preview (ไม่สน variant ใน payload)
-    ctx_common = _build_creditnote_context_from_payload(payload, db)
+    // ===== GENERATE NUMBER =====
+    btnGenNo?.addEventListener("click", async () => {
+        const d = cnDateEl.value;
+        if (!d) { alert("กรุณาเลือกวันที่เอกสารก่อนสร้างเลขเอกสาร"); return; }
 
-    # 2) เตรียม template
-    try:
-        template = templates.env.get_template("credit_note.html")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"template error: {e}")
-
-    # 3) render HTML สองชุด: ต้นฉบับ + สำเนา
-    try:
-        ctx_original = {**ctx_common, "variant": "creditnote_original"}
-        ctx_copy     = {**ctx_common, "variant": "creditnote_copy"}
-
-        html_original = template.render(ctx_original)
-        html_copy     = template.render(ctx_copy)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"render error: {e}")
-
-    # 4) รวมเป็น HTML เดียว ใช้ page-break คั่นกลาง
-    html_str = (
-                "<!DOCTYPE html><html><head><meta charset='utf-8' /></head><body>"
-                f"{html_original}"
-                f"{html_copy}"
-                "</body></html>"
-    )
-
-    # 5) เขียนไฟล์ PDF ด้วย WeasyPrint
-    try:
-        raw_no = (payload.get("creditnote_number") or "document").strip()
-        safe_no = (
-            raw_no.replace("/", "-")
-                  .replace("\\", "-")
-                  .replace(" ", "_")
-        )
-        tmp_pdf = Path(tempfile.gettempdir()) / f"credit_note_{safe_no}.pdf"
-
-        HTML(string=html_str, base_url=str(base_dir)).write_pdf(
-            str(tmp_pdf),
-            stylesheets=[CSS(filename=str(css_path))]
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"weasyprint error: {e}")
-
-    if not tmp_pdf.exists():
-        raise HTTPException(status_code=500, detail="PDF file not generated")
-
-    return FileResponse(
-        path=tmp_pdf,
-        media_type="application/pdf",
-        filename=tmp_pdf.name
-    )
-
-@router.get("/api/credit-notes/generate-number/", response_class=JSONResponse)
-def api_generate_number(
-    date: str = Query(..., description="วันที่เอกสารรูปแบบ YYYY-MM-DD"),
-    db: Session = Depends(get_db),
-):
-    doc_date = _to_date(date)
-    number = generate_creditnote_number(db, doc_date)
-    return {"number": number}
-
-@router.post("/api/credit-notes")
-def create_credit_note(payload: dict = Body(...), db: Session = Depends(get_db)):
-    try:
-        cn_number = (payload.get("creditnote_number") or "").strip()
-        cn_date = payload.get("creditnote_date")
-        items = payload.get("items") or []
-
-        if not cn_number:
-            raise HTTPException(400, "missing creditnote_number")
-
-        if db.query(CreditNote).filter(
-            CreditNote.creditnote_number == cn_number
-        ).first():
-            raise HTTPException(409, "เลขเอกสารถูกใช้แล้ว")
-
-        head = CreditNote(
-            creditnote_number=cn_number,
-            created_at=_to_date(cn_date)
-        )
-        db.add(head)
-
-        for it in items:
-            db.add(CreditNoteItem(
-                creditnote_number=cn_number,
-                grn_number=str(it.get("grn_number") or ""),
-                invoice_number=str(it.get("invoice_number") or ""),
-                cf_itemid=str(it.get("cf_itemid") or ""),
-                cf_itemname=str(it.get("cf_itemname") or ""),
-                sum_quantity=float(it.get("quantity") or 0),
-                fine=float(it.get("fine") or 0),
-                price_after_fine=float(it.get("price_after_fine") or 0),
-            ))
-
-        db.commit()
-        return {"ok": True, "creditnote_number": cn_number}
-
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=400,
-            detail=f"บันทึกไม่สำเร็จ: {str(e)}"
-        )
-# ==============================================================================
-# START: โค้ดที่แก้ไข
-# ==============================================================================
-from sqlalchemy import text  # ถ้ายังไม่ได้ import ด้านบนให้เพิ่ม
-
-def _build_creditnote_context_from_payload(payload: dict, db: Session) -> dict:
-    d = payload or {}
-    items = d.get("items") or []
-
-    # --- วันที่ / เลขที่เอกสาร ---
-    date_str = d.get("creditnote_date") or datetime.now().date().isoformat()
-    doc_date = _to_date(date_str)
-    doc_date_be = f"{doc_date.day:02d}/{doc_date.month:02d}/{doc_date.year + 543}"
-
-    doc_no = (d.get("creditnote_number") or "").strip() or "—"
-
-    # --- map invoice_number -> วันที่ใบกำกับ (พ.ศ.) เหมือน credit_note_preview_page ---
-    inv_date_map: dict[str, str] = {}
-
-    for it in items:
-        inv_no = (it.get("invoice_number") or "").strip()
-        if not inv_no or inv_no in inv_date_map:
-            continue
-        row = db.execute(
-            text("""
-                SELECT invoice_date
-                FROM ss_invoices.invoices
-                WHERE invoice_number = :inv
-                LIMIT 1
-            """),
-            {"inv": inv_no},
-        ).first()
-        if row and row[0]:
-            d_inv = row[0]
-            inv_date_map[inv_no] = f"{d_inv.day:02d}/{d_inv.month:02d}/{d_inv.year + 543}"
-
-    # --- คำนวณรายการ เหมือน logic เดิม ---
-    rows = []
-    sum_reduce_value = 0.0
-
-    for it in items:
-        inv_no = (it.get("invoice_number") or "").strip()
-        desc   = (it.get("cf_itemname") or "").strip()
-        qty    = float(it.get("quantity") or 0)
-        fine   = float(it.get("fine") or 0)
-        newp   = float(it.get("price_after_fine") or 0)   # ราคาใหม่/หน่วย
-        basep  = newp + fine                              # ราคาเดิม/หน่วย
-
-        amt_old = basep * qty
-        amt_new = newp  * qty
-
-        row_date_be = inv_date_map.get(inv_no, "")
-
-        rows.append({
-            "date": row_date_be,
-            "inv": inv_no,
-            "desc": desc,
-            "amt_old": amt_old,
-            "amt_new": amt_new,
-        })
-
-        sum_reduce_value += max(0.0, (amt_old - amt_new))
-
-    sum_reduce_vat = round(sum_reduce_value * 0.07, 2)
-    sum_total = round(sum_reduce_value + sum_reduce_vat, 2)
-
-    # ---------- แบ่งหน้า: 10 แถวต่อหน้า ----------
-    ITEMS_PER_PAGE = 10
-    total_pages = max(1, ceil(len(rows) / ITEMS_PER_PAGE)) if rows else 1
-    pages = []
-    for i in range(total_pages):
-        start = i * ITEMS_PER_PAGE
-        end = start + ITEMS_PER_PAGE
-        pages.append({"rows": rows[start:end]})
-    # -------------------------------------------
-
-    # --- buyer จาก payload / DB ---
-    buyer_payload = d.get("buyer") or {}
-    personid = buyer_payload.get("personid")
-
-    buyer = None
-    if personid:
-        try:
-            from . import models
-            c = db.query(models.CustomerList).filter(models.CustomerList.personid == personid).first()
-            if c:
-                branch_info = "สำนักงานใหญ่" if getattr(c, "cf_hq", 0) == 1 else (c.cf_branch or "")
-                buyer = {
-                    "name": c.fname or "",
-                    "addr": c.cf_personaddress or "",
-                    "branch": branch_info,
-                    "tax": c.cf_taxid or "",
-                }
-        except Exception:
-            buyer = None
-
-    if not buyer:
-        # fallback ใช้ค่าที่มาจากฟอร์ม
-        buyer = {
-            "name":   buyer_payload.get("name")   or "",
-            "addr":   buyer_payload.get("addr")   or "",
-            "branch": buyer_payload.get("branch") or "",
-            "tax":    buyer_payload.get("tax")    or "",
-        }
-
-    # --- seller fixed เดิม ---
-    seller = {
-        "name":   "บริษัท เอส แอนด์ เอส อินคอม จำกัด",
-        "addr":   "69 หมู่ 10 ต.พังตรุ อ.พนมทวน จ.กาญจนบุรี 71140",
-        "phone":  "0888088840",
-        "branch": "สำนักงานใหญ่",
-        "tax":    "0715544000020",
-    }
-
-    ctx = {
-        "doc_no": doc_no,
-        "doc_date_be": doc_date_be,
-        "rows": rows,
-        "pages": pages,               # ✅ ใช้ใน template
-        "total_pages": total_pages,   # ✅ ใช้ใน template
-        "sum_reduce_value": sum_reduce_value,
-        "sum_reduce_vat": sum_reduce_vat,
-        "sum_total": sum_total,
-        "seller": seller,
-        "buyer": buyer,
-        "reason": d.get("reason") or "คิดราคาสินค้าไม่ถูกต้อง",
-        "variant": d.get("variant") or "creditnote_original",
-    }
-    return ctx
-
-@router.post("/api/credit-notes/preview", response_class=HTMLResponse)
-def preview_credit_note(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
-    """
-    Preview จาก payload โดยใช้ template credit_note.html จริง
-    """
-    ctx = _build_creditnote_context_from_payload(payload, db)
-    ctx["request"] = request
-    return templates.TemplateResponse("credit_note.html", ctx)
-
-# ==============================================================================
-# END: โค้ดที่แก้ไข
-# ==============================================================================
-
-# -------- GRN APIs --------
-@router.get("/api/grn/suggest")
-def suggest_grn(q: str = Query(""), limit: int = Query(10, ge=1, le=50), db: Session = Depends(get_db)):
-    sql = text("""
-        SELECT DISTINCT grn_number
-        FROM ss_invoices.invoices
-        WHERE grn_number ILIKE :pat
-        ORDER BY grn_number
-        LIMIT :lim
-    """)
-    pat = f"%{q.strip()}%" if q else "%"
-    rows = db.execute(sql, {"pat": pat, "lim": limit}).fetchall()
-    return {"items": [r[0] for r in rows if r[0]]}
-
-@router.get("/api/grn/summary")
-def grn_summary(grn: str = Query(..., min_length=1), db: Session = Depends(get_db)):
-    sql = text("""
-        WITH inv_first AS (
-          SELECT invoice_number, personid
-          FROM ss_invoices.invoices
-          WHERE grn_number = :grn
-          ORDER BY invoice_number
-          LIMIT 1
-        ),
-        src AS (
-          SELECT it.cf_itemid, it.cf_itemname, it.quantity
-          FROM ss_invoices.invoices AS inv
-          JOIN ss_invoices.invoice_items AS it
-            ON inv.idx::text = it.invoice_number
-          WHERE inv.grn_number = :grn
-        )
-        SELECT
-          (SELECT invoice_number FROM inv_first) AS invoice_number_first,
-          (SELECT personid FROM inv_first) AS personid_first,
-          (SELECT ARRAY_AGG(DISTINCT cf_itemid) FROM src) AS product_codes,
-          (SELECT ARRAY_AGG(DISTINCT cf_itemname) FROM src) AS descriptions,
-          (SELECT COALESCE(SUM(quantity),0) FROM src) AS quantity_sum
-    """)
-    row = db.execute(sql, {"grn": grn}).first()
-    if not row:
-        return {
-            "invoice_number": None,
-            "personid": None,
-            "product_codes": [],
-            "descriptions": [],
-            "quantity_sum": 0,
-            "buyer": None
-        }
-
-    invoice_number = row[0]
-    personid = row[1]
-    product_codes = row[2] or []
-    descriptions = row[3] or []
-    quantity_sum = float(row[4] or 0)
-
-    # (ออปชัน) map personid -> ข้อมูลลูกค้า (ปรับ model ให้ตรงตารางของคุณ)
-    buyer = None
-    try:
-        from . import models
-        c = db.query(models.CustomerList).filter(models.CustomerList.personid == personid).first()
-        if c:
-            buyer = {
-                "personid": c.personid,
-                "name": c.fname,
-                "addr": c.cf_personaddress,
-                "tax": c.cf_taxid,
-                "tel": c.tel,
-                "mobile": c.mobile,
-                "zipcode": c.cf_personzipcode,
-                "prov": c.cf_provincename,
+        try {
+            const url = `/api/credit-notes/generate-number/?date=${encodeURIComponent(d)}`;
+            const res = await fetch(url);
+            if (!res.ok) {
+                const text = await res.text();
+                console.error("generate-number error", res.status, text);
+                alert("ไม่สามารถสร้างเลขเอกสารได้\nรหัสผิดพลาด: " + res.status);
+                return;
             }
-    except Exception:
-        buyer = None
+            const data = await res.json();
+            cnNoEl.value = data.number || "";
+        } catch (err) {
+            console.error("fetch /generate-number failed:", err);
+            alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+        }
+    });
 
-    return {
-        "invoice_number": invoice_number,
-        "personid": personid,
-        "product_codes": product_codes,
-        "descriptions": descriptions,
-        "quantity_sum": quantity_sum,
-        "buyer": buyer
+    // ===== SAVE =====
+    btnSave?.addEventListener('click', async () => {
+        const payload = buildPayload();
+        if (!payload.creditnote_number) { alert('กรุณาสร้างเลขที่ใบลดหนี้ก่อนบันทึก'); return; }
+        if (!payload.items.length) { alert('กรุณาเพิ่มรายการอย่างน้อย 1 รายการ'); return; }
+        const res = await fetch('/api/credit-notes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) { alert(data.detail || 'บันทึกไม่สำเร็จ'); return; }
+        alert(`บันทึกสำเร็จ เลขที่เอกสาร: ${data.creditnote_number}`);
+        btnSave.classList.add('hidden');
+    });
+
+    // ===== UPDATE =====
+    btnUpdate?.addEventListener('click', async () => {
+        if (!currentEditingCreditNoteNumber) return;
+        const payload = buildPayload();
+        payload.creditnote_number = currentEditingCreditNoteNumber;
+
+        const res = await fetch(`/api/credit-notes/update?no=${encodeURIComponent(currentEditingCreditNoteNumber)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) { alert(data.detail || 'อัปเดตไม่สำเร็จ'); return; }
+        alert('อัปเดตใบลดหนี้สำเร็จ!');
+    });
+
+    // ===== PREVIEW =====
+    btnPreview?.addEventListener('click', async () => {
+        const payload = buildPayload();
+        const res = await fetch('/api/credit-notes/preview', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const html = await res.text();
+        const view = document.getElementById('preview');
+        view.classList.remove('hidden');
+        view.innerHTML = html;
+    });
+
+    // ===== PDF =====
+    btnPDF?.addEventListener('click', async () => {
+        const payload = buildPayload();
+        const res = await fetch('/export-creditnote-pdf', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const t = await res.text();
+            alert(t || 'สร้าง PDF ไม่สำเร็จ');
+            return;
+        }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `credit_note_${payload.creditnote_number || 'document'}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    });
+
+    // ===== NEW =====
+    btnNew?.addEventListener('click', () => {
+        resetForm();
+    });
+
+    // ===== SEARCH =====
+    searchBtn?.addEventListener('click', searchCreditNotes);
+
+    async function searchCreditNotes() {
+        const start = document.getElementById('searchStartDate').value;
+        const end = document.getElementById('searchEndDate').value;
+        const q = document.getElementById('searchQuery').value;
+        const params = new URLSearchParams({ start, end, q });
+
+        try {
+            const res = await fetch(`/api/search-credit-notes?${params.toString()}`);
+            const results = await res.json();
+
+            searchResultsBody.innerHTML = '';
+            if (results.length === 0) {
+                searchResultsBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">ไม่พบข้อมูล</td></tr>';
+                return;
+            }
+
+            results.forEach(cn => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b';
+                tr.innerHTML = `
+                    <td class="p-2">${formatDate(cn.created_at)}</td>
+                    <td class="p-2">${cn.creditnote_number}</td>
+                    <td class="p-2">${cn.customer_name || '-'}</td>
+                    <td class="p-2 text-right">${Number(cn.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                    <td class="p-2 text-center">
+                        <button class="btn-view-edit text-blue-600 hover:underline text-sm" data-cn-number="${cn.creditnote_number}">ดู/แก้ไข</button>
+                        <button class="btn-delete text-red-600 hover:underline text-sm ml-2" data-cn-number="${cn.creditnote_number}">ลบ</button>
+                    </td>
+                `;
+                searchResultsBody.appendChild(tr);
+            });
+        } catch (err) {
+            console.error(err);
+            alert('เกิดข้อผิดพลาดในการค้นหา');
+        }
     }
-@router.get("/api/products/price")
-def api_product_price(
-    code: str = Query(..., min_length=1),
-    grn: str | None = Query(None),
-    db: Session = Depends(get_db)
-):
-    """
-    คืนราคา/หน่วย (cf_itempricelevel_price) ของรหัสสินค้า (cf_itemid)
-    แหล่งข้อมูล: ss_invoices.invoice_items โดย join ss_invoices.invoices
-    - ถ้าระบุ grn: เอาราคาจาก invoice ของ GRN นั้นก่อน (ใบล่าสุด)
-    - ถ้าไม่พบ: fallback เป็นราคาล่าสุดของรหัสนั้นจากทุกใบ
-    """
-    # 1) พยายามเอาราคาจาก GRN เดียวกัน (ถ้ามีส่งมา)
-    if grn:
-        sql_grn = text("""
-            SELECT it.cf_itempricelevel_price
-            FROM ss_invoices.invoices AS inv
-            JOIN ss_invoices.invoice_items AS it
-              ON inv.idx::text = it.invoice_number
-            WHERE inv.grn_number = :grn
-              AND it.cf_itemid = :code
-            ORDER BY inv.invoice_date DESC NULLS LAST, inv.invoice_number DESC
-            LIMIT 1
-        """)
-        row = db.execute(sql_grn, {"grn": grn, "code": code}).first()
-        if row and row[0] is not None:
-            return {"code": code, "price": float(row[0])}
 
-    # 2) fallback: ราคาล่าสุดของรหัสสินค้านี้ (ดูจากวันที่/เลขที่)
-    sql_last = text("""
-        SELECT it.cf_itempricelevel_price
-        FROM ss_invoices.invoices AS inv
-        JOIN ss_invoices.invoice_items AS it
-          ON inv.idx::text = it.invoice_number
-        WHERE it.cf_itemid = :code
-        ORDER BY inv.invoice_date DESC NULLS LAST, inv.invoice_number DESC
-        LIMIT 1
-    """)
-    row2 = db.execute(sql_last, {"code": code}).first()
-    return {
-        "code": code,
-        "price": float(row2[0]) if row2 and row2[0] is not None else 0.0
-    }
+    // ===== SEARCH RESULTS CLICK HANDLER =====
+    searchResultsBody?.addEventListener('click', async (e) => {
+        const viewBtn = e.target.closest('.btn-view-edit');
+        const delBtn = e.target.closest('.btn-delete');
 
+        if (viewBtn) {
+            const cnNo = viewBtn.getAttribute('data-cn-number');
+            if (cnNo) await loadCreditNoteForEditing(cnNo);
+            return;
+        }
 
-# ====================================================
-# SEARCH / DETAIL / UPDATE / DELETE APIs
-# ====================================================
+        if (delBtn) {
+            const cnNo = delBtn.getAttribute('data-cn-number');
+            if (!cnNo) return;
+            if (!confirm(`ต้องการลบใบลดหนี้เลขที่ ${cnNo} ใช่หรือไม่?`)) return;
 
-@router.get("/api/search-credit-notes")
-def search_credit_notes(
-    start: Optional[str] = Query(None),
-    end: Optional[str] = Query(None),
-    q: Optional[str] = Query(None),
-    db: Session = Depends(get_db)
-):
-    """ค้นหาใบลดหนี้ตามช่วงวันที่และคำค้นหา"""
-    query = db.query(CreditNote)
-    
-    if start:
-        d_start = _to_date(start)
-        if d_start:
-            query = query.filter(CreditNote.created_at >= d_start)
-    if end:
-        d_end = _to_date(end)
-        if d_end:
-            query = query.filter(CreditNote.created_at <= d_end)
-    if q and q.strip():
-        search_term = f"%{q.strip()}%"
-        query = query.filter(CreditNote.creditnote_number.ilike(search_term))
-    
-    results = query.order_by(CreditNote.created_at.desc(), CreditNote.creditnote_number.desc()).limit(100).all()
-    
-    # สร้างผลลัพธ์พร้อมข้อมูลลูกค้าและยอดรวม
-    output = []
-    for cn in results:
-        # ดึงรายการ items
-        items = db.query(CreditNoteItem).filter(CreditNoteItem.creditnote_number == cn.creditnote_number).all()
-        
-        # คำนวณยอดรวม
-        total_amount = 0.0
-        customer_name = None
-        
-        for it in items:
-            qty = float(it.sum_quantity or 0)
-            price_after_fine = float(it.price_after_fine or 0)
-            total_amount += qty * price_after_fine
-        
-        # หาชื่อลูกค้าจาก invoice แรก
-        if items:
-            first_inv = items[0].invoice_number
-            if first_inv:
-                inv_row = db.execute(
-                    text("SELECT personid FROM ss_invoices.invoices WHERE invoice_number = :inv LIMIT 1"),
-                    {"inv": first_inv}
-                ).first()
-                if inv_row and inv_row[0]:
-                    cust = db.query(models.CustomerList).filter(models.CustomerList.personid == inv_row[0]).first()
-                    if cust:
-                        customer_name = cust.fname
-        
-        output.append({
-            "creditnote_number": cn.creditnote_number,
-            "created_at": str(cn.created_at) if cn.created_at else None,
-            "customer_name": customer_name,
-            "total_amount": round(total_amount, 2),
-        })
-    
-    return output
+            try {
+                const res = await fetch(`/api/credit-notes/delete?no=${encodeURIComponent(cnNo)}`, { method: 'DELETE' });
+                if (!res.ok) {
+                    const j = await res.json().catch(() => ({}));
+                    alert('ลบไม่สำเร็จ: ' + (j.detail || res.statusText));
+                    return;
+                }
+                alert('ลบสำเร็จ');
+                searchCreditNotes();
+            } catch (err) {
+                console.error(err);
+                alert('เกิดข้อผิดพลาดในการลบ: ' + err.message);
+            }
+        }
+    });
 
+    // ===== LOAD FOR EDITING =====
+    async function loadCreditNoteForEditing(cnNumber) {
+        try {
+            const res = await fetch(`/api/credit-notes/detail?no=${encodeURIComponent(cnNumber)}`);
+            if (!res.ok) { alert('ไม่สามารถโหลดข้อมูลใบลดหนี้ได้'); return; }
+            const data = await res.json();
 
-@router.get("/api/credit-notes/detail")
-def get_credit_note_detail(no: str = Query(...), db: Session = Depends(get_db)):
-    """ดึงรายละเอียดใบลดหนี้สำหรับแก้ไข (รวมข้อมูลลูกค้า)"""
-    head = db.query(CreditNote).filter(CreditNote.creditnote_number == no).first()
-    if not head:
-        raise HTTPException(404, "not found")
-    
-    items = db.query(CreditNoteItem).filter(CreditNoteItem.creditnote_number == no).all()
-    
-    # หาข้อมูลลูกค้าจาก invoice แรก
-    buyer = None
-    if items:
-        first_inv = items[0].invoice_number
-        if first_inv:
-            inv_row = db.execute(
-                text("SELECT personid FROM ss_invoices.invoices WHERE invoice_number = :inv LIMIT 1"),
-                {"inv": first_inv}
-            ).first()
-            if inv_row and inv_row[0]:
-                cust = db.query(models.CustomerList).filter(models.CustomerList.personid == inv_row[0]).first()
-                if cust:
-                    buyer = {
-                        "personid": cust.personid,
-                        "name": cust.fname,
-                        "addr": cust.cf_personaddress,
-                        "tax": cust.cf_taxid,
-                        "tel": cust.tel,
-                        "mobile": cust.mobile,
-                        "zipcode": cust.cf_personzipcode,
-                        "prov": cust.cf_provincename,
+            currentEditingCreditNoteNumber = cnNumber;
+
+            // Fill header
+            cnNoEl.value = data.head.creditnote_number;
+            cnDateEl.value = data.head.created_at || todayISO;
+
+            // Clear existing items
+            const itemsContainer = document.getElementById('items');
+            itemsContainer.innerHTML = '';
+
+            // Add items
+            if (data.items && data.items.length > 0) {
+                data.items.forEach((item, idx) => {
+                    if (idx === 0) {
+                        // Use existing first row structure
+                        addItem();
+                    } else {
+                        addItem();
                     }
-    
-    return {
-        "head": {
-            "creditnote_number": head.creditnote_number,
-            "created_at": str(head.created_at) if head.created_at else None,
-        },
-        "items": [
-            {
-                "grn_number": it.grn_number,
-                "invoice_number": it.invoice_number,
-                "cf_itemid": it.cf_itemid,
-                "cf_itemname": it.cf_itemname,
-                "quantity": it.sum_quantity,
-                "fine": it.fine,
-                "price_after_fine": it.price_after_fine,
-            } for it in items
-        ],
-        "buyer": buyer,
+                    const rows = itemsContainer.querySelectorAll('.item-row');
+                    const row = rows[rows.length - 1];
+
+                    row.querySelector('.grn_number').value = item.grn_number || '';
+                    row.querySelector('.invoice_number').value = item.invoice_number || '';
+                    row.querySelector('.product_code').value = item.cf_itemid || '';
+                    row.querySelector('.description').value = item.cf_itemname || '';
+                    row.querySelector('.quantity').value = item.sum_quantity ?? item.quantity ?? 0;
+                    row.querySelector('.old_total_vat').value = to2((item.sum_quantity ?? item.quantity ?? 0) * ((item.price_after_fine || 0) * 1.07));
+                    row.querySelector('.fine').value = item.fine || 0;
+
+                    const basePrice = (item.price_after_fine || 0) + (item.fine || 0);
+                    row.querySelector('.base_price').value = basePrice;
+                    row.querySelector('.unit_price').value = basePrice;
+                });
+            }
+
+            // Fill customer info
+            if (data.buyer) {
+                document.getElementById('personid').value = data.buyer.personid || '';
+                document.getElementById('customer_name').value = data.buyer.name || '';
+                document.getElementById('customer_address').value = data.buyer.addr || '';
+                document.getElementById('customer_taxid').value = data.buyer.tax || '';
+                document.getElementById('tel').value = data.buyer.tel || '';
+                document.getElementById('mobile').value = data.buyer.mobile || '';
+                document.getElementById('cf_personzipcode').value = data.buyer.zipcode || '';
+                document.getElementById('cf_provincename').value = data.buyer.prov || '';
+            }
+
+            // Show update button, hide save
+            btnSave.classList.add('hidden');
+            btnUpdate.classList.remove('hidden');
+            btnNew.classList.remove('hidden');
+
+            updateTotal();
+            switchTab('create');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        } catch (err) {
+            console.error(err);
+            alert('เกิดข้อผิดพลาด: ' + err.message);
+        }
     }
 
+    // ===== RESET FORM =====
+    function resetForm() {
+        currentEditingCreditNoteNumber = null;
+        cnNoEl.value = '';
+        cnDateEl.value = todayISO;
 
-@router.put("/api/credit-notes/{no}")
-def update_credit_note(no: str, payload: dict = Body(...), db: Session = Depends(get_db)):
-    """อัปเดตใบลดหนี้"""
-    head = db.query(CreditNote).filter(CreditNote.creditnote_number == no).first()
-    if not head:
-        raise HTTPException(404, "not found")
-    
-    # อัปเดตวันที่ (ถ้ามี)
-    if payload.get("creditnote_date"):
-        head.created_at = _to_date(payload["creditnote_date"])
-        head.updated_at = datetime.now().date()
-    
-    # ลบ items เดิมทั้งหมด
-    db.query(CreditNoteItem).filter(CreditNoteItem.creditnote_number == no).delete()
-    
-    # เพิ่ม items ใหม่
-    items = payload.get("items") or []
-    for it in items:
-        db.add(CreditNoteItem(
-            creditnote_number=no,
-            grn_number=(it.get("grn_number") or "").strip(),
-            invoice_number=(it.get("invoice_number") or "").strip(),
-            cf_itemid=(it.get("cf_itemid") or "").strip(),
-            cf_itemname=(it.get("cf_itemname") or "").strip(),
-            sum_quantity=float(it.get("sum_quantity") or 0),
-            fine=float(it.get("fine") or 0),
-            price_after_fine=float(it.get("price_after_fine") or 0),
-        ))
-    
-    db.commit()
-    return {"ok": True, "creditnote_number": no}
+        // Clear items - keep one empty row
+        const itemsContainer = document.getElementById('items');
+        itemsContainer.innerHTML = `
+            <div class="flex flex-wrap gap-3 md:gap-4 item-row items-end">
+                <input name="grn_number" placeholder="เลขที่ใบรับสินค้า"
+                    class="grn_number flex-1 min-w-[120px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
+                <input name="invoice_number" placeholder="เลขที่ใบกำกับ"
+                    class="invoice_number flex-1 min-w-[140px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
+                <input name="product_code" placeholder="รหัสสินค้า"
+                    class="product_code w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
+                <input name="description" placeholder="รายละเอียด"
+                    class="description flex-1 min-w-[140px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
+                <input name="unit_price" type="number" step="0.01" placeholder="ราคา/หน่วย"
+                    class="unit_price w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" oninput="updateTotal()" />
+                <input name="quantity" type="number" step="0.01" placeholder="จำนวน"
+                    class="quantity w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" oninput="updateTotal()" />
+                <input name="fine" type="number" step="0.01" placeholder="บทปรับ/หน่วย (บาท)"
+                    class="fine w-28 md:w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" oninput="updateTotal()" />
+                <input name="old_total_vat" placeholder="มูลค่าเดิม (รวม VAT)" readonly
+                    class="old_total_vat w-40 bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5 text-right" />
+                <input name="new_total_vat" placeholder="มูลค่าใหม่ (รวม VAT)" readonly
+                    class="new_total_vat w-40 bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5 text-right" />
+                <input type="hidden" class="base_price" value="0" />
+                <button type="button" onclick="removeItem(this)"
+                    class="text-red-600 hover:text-blue-800 font-semibold"><i class="fas fa-trash"></i></button>
+            </div>
+        `;
 
+        // Clear customer
+        document.getElementById('personid').value = '';
+        document.getElementById('customer_name').value = '';
+        document.getElementById('customer_address').value = '';
+        document.getElementById('customer_taxid').value = '';
+        document.getElementById('tel').value = '';
+        document.getElementById('mobile').value = '';
+        document.getElementById('cf_personzipcode').value = '';
+        document.getElementById('cf_provincename').value = '';
 
-@router.delete("/api/credit-notes/{no}")
-def delete_credit_note(no: str, db: Session = Depends(get_db)):
-    """ลบใบลดหนี้"""
-    head = db.query(CreditNote).filter(CreditNote.creditnote_number == no).first()
-    if not head:
-        raise HTTPException(404, "not found")
-    
-    # ลบ items ก่อน
-    db.query(CreditNoteItem).filter(CreditNoteItem.creditnote_number == no).delete()
-    
-    # ลบ head
-    db.delete(head)
-    db.commit()
-    
-    return {"ok": True}
+        // Show save, hide update
+        btnSave.classList.remove('hidden');
+        btnUpdate.classList.add('hidden');
+        btnNew.classList.add('hidden');
+
+        updateTotal();
+        wireAutocompleteForAllRows();
+    }
+
+    // Wire autocomplete on load
+    wireAutocompleteForAllRows();
+});
+
+// ===== HELPER: Format date =====
+function formatDate(iso) {
+    if (!iso) return '-';
+    const d = new Date(iso);
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${String((d.getFullYear() + 543)).slice(-2)}`;
+}
+
+// ===== ADD ITEM =====
+function addItem() {
+    const wrap = document.getElementById('items');
+    if (!wrap) return;
+
+    const div = document.createElement('div');
+    div.className = "flex flex-wrap gap-3 md:gap-4 item-row items-end";
+    div.innerHTML = `
+    <input name="grn_number" placeholder="เลขที่ใบรับสินค้า"
+      class="grn_number flex-1 min-w-[120px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
+
+    <input name="invoice_number" placeholder="เลขที่ใบกำกับ"
+      class="invoice_number flex-1 min-w-[140px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
+
+    <input name="product_code" placeholder="รหัสสินค้า"
+      class="product_code w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
+
+    <input name="description" placeholder="รายละเอียด"
+      class="description flex-1 min-w-[140px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
+
+    <!-- ราคา/หน่วย (จะ autofill จากรหัสสินค้า) -->
+    <input name="unit_price" type="number" step="0.01" placeholder="ราคา/หน่วย"
+      class="unit_price w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" oninput="updateTotal()" />
+
+    <input name="quantity" type="number" step="0.01" placeholder="จำนวน"
+      class="quantity w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" oninput="updateTotal()" />
+
+    <input name="fine" type="number" step="0.01" placeholder="บทปรับ/หน่วย (บาท)"
+      class="fine w-28 md:w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" oninput="updateTotal()" />
+
+    <!-- แสดงผลรวม VAT 7% -->
+    <input name="old_total_vat" placeholder="มูลค่าเดิม (รวม VAT)" readonly
+      class="old_total_vat w-40 bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5 text-right" />
+
+    <input name="new_total_vat" placeholder="มูลค่าใหม่ (รวม VAT)" readonly
+      class="new_total_vat w-40 bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5 text-right" />
+
+    <!-- เก็บราคาฐาน -->
+    <input type="hidden" class="base_price" value="0" />
+
+    <button type="button" onclick="removeItem(this)" class="text-red-600 hover:text-red-800 font-semibold px-2"><i
+                            class="fas fa-trash"></i></button>
+  `;
+
+    wrap.appendChild(div);
+
+    // ผูก autocomplete + summary + ดึงราคา + คำนวณ
+    wireRow(div);
+    updateTotal();
+}
+window.addItem = addItem;
+
+// ผูก autocomplete + lookup ให้ทุกแถวที่มีอยู่ตอนโหลดหน้า
+function wireAutocompleteForAllRows() {
+    document.querySelectorAll('#items .item-row').forEach(row => {
+        wireRow(row);
+    });
+}
+
+function removeItem(btn) { btn.closest('.item-row')?.remove(); updateTotal(); }
+window.removeItem = removeItem;
+
+// ===== buildPayload: แนบข้อมูลลูกค้า + variant =====
+function buildPayload() {
+    const d = document.getElementById('cn_date')?.value || new Date().toISOString().slice(0, 10);
+    const cn = document.getElementById('creditnote_number')?.value || '';
+    const items = [];
+
+    document.querySelectorAll('#items .item-row').forEach(row => {
+        const grn = row.querySelector('.grn_number')?.value || '';
+        const inv = row.querySelector('.invoice_number')?.value || '';
+        const code = row.querySelector('.product_code')?.value || '';
+        const name = row.querySelector('.description')?.value || '';
+        const q = parseFloat(row.querySelector('.quantity')?.value || 0);
+        const fine = parseFloat(row.querySelector('.fine')?.value || 0);
+
+        const base = parseFloat(
+            row.querySelector('.base_price')?.value ||
+            row.querySelector('.unit_price')?.value || 0
+        );
+        const price_after_fine = (base - (isNaN(fine) ? 0 : fine));
+
+        if (grn || inv || code || name) {
+            items.push({
+                grn_number: grn,
+                invoice_number: inv,
+                cf_itemid: code,
+                cf_itemname: name,
+                quantity: q,
+                fine: fine,
+                price_after_fine: price_after_fine
+            });
+        }
+    });
+
+    // เก็บหัวลูกค้า
+    const buyer = {
+        name: document.getElementById('customer_name')?.value || '',
+        addr: document.getElementById('customer_address')?.value || '',
+        tax: document.getElementById('customer_taxid')?.value || '',
+        tel: document.getElementById('tel')?.value || '',
+        mobile: document.getElementById('mobile')?.value || '',
+        zipcode: document.getElementById('cf_personzipcode')?.value || '',
+        prov: document.getElementById('cf_provincename')?.value || '',
+        personid: document.getElementById('personid')?.value || '',
+    };
+
+    // รูปแบบสำหรับ Preview
+    const variant = document.getElementById('cn_variant')?.value || 'creditnote_original';
+
+    return { creditnote_date: d, creditnote_number: cn, items, buyer, variant };
+}
+
+// ===== Helper ราคา/จำนวน/VAT =====
+const VAT_RATE = 0.07;
+function to2(n) { return (isNaN(n) ? 0 : n).toFixed(2); }
+
+async function setBasePriceFromCode(row) {
+    const codeInput = row.querySelector('.product_code');
+    if (!codeInput) return;
+    const code = (codeInput.value || '').trim();
+    if (!code) return;
+
+    const grn = (row.querySelector('.grn_number')?.value || '').trim();
+    const url = `/api/products/price?code=${encodeURIComponent(code)}${grn ? `&grn=${encodeURIComponent(grn)}` : ''}`;
+
+    try {
+        const res = await fetch(url, { method: 'GET' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const price = parseFloat(data?.price || 0);
+
+        row.querySelector('.base_price').value = isNaN(price) ? 0 : price;
+        const unitEl = row.querySelector('.unit_price');
+        if (unitEl && !unitEl.value) unitEl.value = (isNaN(price) ? 0 : price).toFixed(2);
+
+        updateTotal();
+    } catch (e) {
+        console.error('fetch price error:', e);
+    }
+}
+
+function wireProductPriceLookup(row) {
+    const codeInput = row.querySelector('.product_code');
+    const unitInput = row.querySelector('.unit_price');
+
+    codeInput?.addEventListener('change', () => setBasePriceFromCode(row));
+    codeInput?.addEventListener('blur', () => setBasePriceFromCode(row));
+
+    // เมื่อกรอก/แก้ unit_price ให้ sync ไป base_price
+    unitInput?.addEventListener('input', () => {
+        const v = parseFloat(unitInput.value || 0);
+        row.querySelector('.base_price').value = isNaN(v) ? 0 : v;
+        updateTotal();
+    });
+}
+
+// ===== wireRow ให้ผูก lookup เพิ่มเติม =====
+function wireRow(row) {
+    const grnInput = row.querySelector('.grn_number');
+    const invoiceInput = row.querySelector('.invoice_number');
+    const codeInput = row.querySelector('.product_code');
+    const descInput = row.querySelector('.description');
+    const qtyInput = row.querySelector('.quantity');
+
+    const dlGRN = document.createElement('datalist');
+    const dlCode = document.createElement('datalist');
+    const dlDesc = document.createElement('datalist');
+    dlGRN.id = `dl-grn-${crypto.randomUUID()}`;
+    dlCode.id = `dl-code-${crypto.randomUUID()}`;
+    dlDesc.id = `dl-desc-${crypto.randomUUID()}`;
+    document.body.append(dlGRN, dlCode, dlDesc);
+
+    grnInput?.setAttribute('list', dlGRN.id);
+    codeInput?.setAttribute('list', dlCode.id);
+    descInput?.setAttribute('list', dlDesc.id);
+
+    // suggest GRN
+    let t = null;
+    grnInput?.addEventListener('input', () => {
+        clearTimeout(t);
+        const q = grnInput.value.trim();
+        t = setTimeout(async () => {
+            const r = await fetch(`/api/grn/suggest?q=${encodeURIComponent(q)}`);
+            const d = await r.json().catch(() => ({ items: [] }));
+            dlGRN.innerHTML = (d.items || []).map(v => `<option value="${v}">`).join('');
+        }, 180);
+    });
+
+    // เมื่อเลือก/blur -> ดึงสรุป
+    const ctx = { invoiceInput, codeInput, descInput, qtyInput, dlCode, dlDesc };
+    grnInput?.addEventListener('change', () => fetchAndFillGRNSummary(grnInput.value, ctx));
+    grnInput?.addEventListener('blur', () => fetchAndFillGRNSummary(grnInput.value, ctx));
+
+    // lookup price จากรหัสสินค้า (ถ้าผู้ใช้เปลี่ยนเอง)
+    wireProductPriceLookup(row);
+}
+
+async function fetchAndFillGRNSummary(grn, ctx) {
+    const { invoiceInput, codeInput, descInput, qtyInput, dlCode, dlDesc } = ctx;
+    if (!grn) return;
+
+    const res = await fetch(`/api/grn/summary?grn=${encodeURIComponent(grn)}`);
+    const data = await res.json().catch(() => null);
+    if (!data) return;
+
+    // 1) ใบกำกับใบแรก
+    if (invoiceInput && data.invoice_number) {
+        invoiceInput.value = data.invoice_number;
+        invoiceInput.readOnly = true;
+    }
+
+    // 2) เติม datalist + auto เลือกค่าแรก
+    if (Array.isArray(data.product_codes)) {
+        dlCode.innerHTML = data.product_codes.map(v => `<option value="${v}">`).join('');
+        if (codeInput && !codeInput.value && data.product_codes.length) codeInput.value = data.product_codes[0];
+        if (codeInput) codeInput.readOnly = true;
+    }
+    if (Array.isArray(data.descriptions)) {
+        dlDesc.innerHTML = data.descriptions.map(v => `<option value="${v}">`).join('');
+        if (descInput && !descInput.value && data.descriptions.length) descInput.value = data.descriptions[0];
+        if (descInput) descInput.readOnly = true;
+    }
+
+    // 3) จำนวนรวมจาก invoice_items
+    if (qtyInput) {
+        qtyInput.value = Number(data.quantity_sum || 0).toFixed(2);
+        qtyInput.readOnly = true;
+    }
+
+    // 4) ดึงราคาหน่วยอัตโนมัติจาก code
+    const row = qtyInput?.closest('.item-row');
+    if (row) {
+        await setBasePriceFromCode(row);
+        const unitEl = row.querySelector('.unit_price');
+        if (unitEl) unitEl.readOnly = true;
+
+        const grnEl = row.querySelector('.grn_number');
+        if (grnEl) grnEl.readOnly = true;
+    }
+
+    // 5) เติมลูกค้าจาก personid ของ invoice แรก
+    if (data.personid) {
+        const pidEl = document.getElementById('personid');
+        if (pidEl) {
+            pidEl.value = data.personid;
+            pidEl.dispatchEvent(new Event('input'));
+            await selectCustomerByPersonid();
+        }
+    }
+
+    updateTotal();
+}
+
+// ===== คำนวณผลรวม + มูลค่าเดิม/ใหม่ (รวม VAT) ต่อแถว =====
+function updateTotal() {
+    let sum = 0;
+    document.querySelectorAll('#items .item-row').forEach(row => {
+        const base = parseFloat(row.querySelector('.base_price')?.value || row.querySelector('.unit_price')?.value || 0);
+        const fine = parseFloat(row.querySelector('.fine')?.value || 0);
+        const qty = parseFloat(row.querySelector('.quantity')?.value || 0);
+
+        // ราคาใหม่ต่อหน่วย = base - fine (ไม่ต่ำกว่า 0)
+        let newUnit = base - (isNaN(fine) ? 0 : fine);
+        if (newUnit < 0) newUnit = 0;
+
+        // (1) มูลค่าเดิมรวม VAT = qty * base * (1+VAT)
+        const oldTotalVat = (qty * base) * (1 + VAT_RATE);
+        // (2) มูลค่าใหม่รวม VAT = qty * newUnit * (1+VAT)
+        const newTotalVat = (qty * newUnit) * (1 + VAT_RATE);
+
+        // แสดงผลแถว (ปัดทศนิยม 2)
+        const oldEl = row.querySelector('.old_total_vat');
+        const newEl = row.querySelector('.new_total_vat');
+        if (oldEl) oldEl.value = to2(oldTotalVat);
+        if (newEl) newEl.value = to2(newTotalVat);
+
+        // รวมไว้ให้ผู้ใช้เห็นด้านบน (รวมเฉพาะ "ราคาใหม่" เหมือนยอดชำระจริง)
+        sum += (qty * newUnit);
+    });
+
+    const el = document.getElementById('total_amount');
+    if (el) el.textContent = '฿ ' + (sum).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+window.updateTotal = updateTotal;
+
+// ===== ลูกค้า (ORM API) =====
+async function loadPersonidSuggest(q) {
+    const res = await fetch(`/api/customers/suggest-personid?q=${encodeURIComponent(q || '')}`);
+    const data = await res.json().catch(() => ({ items: [] }));
+    const dl = document.getElementById('personidList');
+    if (dl) dl.innerHTML = (data.items || []).map(v => `<option value="${v}">`).join('');
+}
+async function loadCustomerNameSuggest(q) {
+    const res = await fetch(`/api/customers/suggest-name?q=${encodeURIComponent(q || '')}`);
+    const data = await res.json().catch(() => ({ items: [] }));
+    const dl = document.getElementById('customerList');
+    if (dl) dl.innerHTML = (data.items || []).map(v => `<option value="${v}">`).join('');
+}
+
+// เรียกเมื่อพิมพ์ personid
+async function selectCustomerByPersonid() {
+    const pid = (document.getElementById('personid')?.value || '').trim();
+    loadPersonidSuggest(pid);
+    if (!pid) return;
+    const res = await fetch(`/api/customers/by-personid?personid=${encodeURIComponent(pid)}`);
+    const c = await res.json().catch(() => null);
+    if (!c) return;
+
+    // เติมฟิลด์
+    (document.getElementById('customer_name') || {}).value = c.fname || '';
+    (document.getElementById('customer_address') || {}).value = c.cf_personaddress || '';
+    (document.getElementById('customer_taxid') || {}).value = c.cf_taxid || '';
+    (document.getElementById('tel') || {}).value = c.tel || '';
+    (document.getElementById('mobile') || {}).value = c.mobile || '';
+    (document.getElementById('cf_personzipcode') || {}).value = c.cf_personzipcode || '';
+    (document.getElementById('cf_provincename') || {}).value = c.cf_provincename || '';
+}
+window.selectCustomerByPersonid = selectCustomerByPersonid;
+
+// เรียกเมื่อพิมพ์ชื่อลูกค้า
+async function selectCustomer() {
+    const name = (document.getElementById('customer_name')?.value || '').trim();
+    loadCustomerNameSuggest(name);
+    if (!name) return;
+    const res = await fetch(`/api/customers/by-name?name=${encodeURIComponent(name)}`);
+    const c = await res.json().catch(() => null);
+    if (!c) return;
+
+    (document.getElementById('personid') || {}).value = c.personid || '';
+    (document.getElementById('customer_address') || {}).value = c.cf_personaddress || '';
+    (document.getElementById('customer_taxid') || {}).value = c.cf_taxid || '';
+    (document.getElementById('tel') || {}).value = c.tel || '';
+    (document.getElementById('mobile') || {}).value = c.mobile || '';
+    (document.getElementById('cf_personzipcode') || {}).value = c.cf_personzipcode || '';
+    (document.getElementById('cf_provincename') || {}).value = c.cf_provincename || '';
+}
+window.selectCustomer = selectCustomer;
