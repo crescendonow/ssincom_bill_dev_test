@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const payload = buildPayload();
         payload.creditnote_number = currentEditingCreditNoteNumber;
 
-        const res = await fetch(`/api/credit-notes/${currentEditingCreditNoteNumber}`, {
+        const res = await fetch(`/api/credit-notes/update?no=${encodeURIComponent(currentEditingCreditNoteNumber)}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -195,7 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!confirm(`ต้องการลบใบลดหนี้เลขที่ ${cnNo} ใช่หรือไม่?`)) return;
 
             try {
-                const res = await fetch(`/api/credit-notes/${cnNo}`, { method: 'DELETE' });
+                const res = await fetch(`/api/credit-notes/delete?no=${encodeURIComponent(cnNo)}`, { method: 'DELETE' });
                 if (!res.ok) {
                     const j = await res.json().catch(() => ({}));
                     alert('ลบไม่สำเร็จ: ' + (j.detail || res.statusText));
@@ -213,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===== LOAD FOR EDITING =====
     async function loadCreditNoteForEditing(cnNumber) {
         try {
-            const res = await fetch(`/api/credit-notes/${encodeURIComponent(cnNumber)}`);
+            const res = await fetch(`/api/credit-notes/detail?no=${encodeURIComponent(cnNumber)}`);
             if (!res.ok) { alert('ไม่สามารถโหลดข้อมูลใบลดหนี้ได้'); return; }
             const data = await res.json();
 
@@ -243,8 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     row.querySelector('.invoice_number').value = item.invoice_number || '';
                     row.querySelector('.product_code').value = item.cf_itemid || '';
                     row.querySelector('.description').value = item.cf_itemname || '';
-                    row.querySelector('.quantity').value = item.sum_quantity ?? item.quantity ?? 0;
-                    row.querySelector('.old_total_vat').value = to2((item.sum_quantity ?? item.quantity ?? 0) * ((item.price_after_fine || 0) * 1.07));
+                    row.querySelector('.quantity').value = item.quantity || 0;
                     row.querySelector('.fine').value = item.fine || 0;
 
                     const basePrice = (item.price_after_fine || 0) + (item.fine || 0);
