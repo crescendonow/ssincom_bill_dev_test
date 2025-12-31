@@ -296,7 +296,7 @@ def get_credit_note(no: str, db: Session = Depends(get_db)):
                 "invoice_number": it.invoice_number,
                 "cf_itemid": it.cf_itemid,
                 "cf_itemname": it.cf_itemname,
-                "quantity": it.quantity,
+                "sum_quantity": it.sum_quantity,
                 "fine": it.fine,
                 "price_after_fine": it.price_after_fine,
             } for it in items

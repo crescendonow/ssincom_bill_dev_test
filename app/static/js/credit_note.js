@@ -213,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===== LOAD FOR EDITING =====
     async function loadCreditNoteForEditing(cnNumber) {
         try {
-            const res = await fetch(`/api/credit-notes/detail?no=${encodeURIComponent(cnNumber)}`);
+            const res = await fetch(`/api/credit-notes/${encodeURIComponent(cnNumber)}`);
             if (!res.ok) { alert('ไม่สามารถโหลดข้อมูลใบลดหนี้ได้'); return; }
             const data = await res.json();
 
