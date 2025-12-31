@@ -29,15 +29,42 @@ class CreditNote(Base):
 class CreditNoteItem(Base):
     __tablename__ = "credit_note_item"
     __table_args__ = {"schema": "credits"}
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    creditnote_number = Column(String, ForeignKey("credits.credit_note.creditnote_number"), index=True)
+
+    idx = Column(Integer, primary_key=True, autoincrement=True)  
+
+    creditnote_number = Column(
+        String,
+        ForeignKey("credits.credit_note.creditnote_number"),
+        index=True
+    )
+
     grn_number = Column(String)
     invoice_number = Column(String)
-    cf_itemid = Column(String(50))
-    cf_itemname = Column(String(1000))
-    quantity = Column(Float)
+    invoice_date = Column(Date)
+
+    sum_quantity = Column("sum_quantity", Float)
+    quantity = synonym("sum_quantity")
+
+    cf_itempricelevel_price = Column(Numeric)
+
     fine = Column(Float)
     price_after_fine = Column(Float)
+
+    original_amount = Column(Float)
+    new_amount = Column(Float)
+    original_vat = Column(Float)
+    new_vat = Column(Float)
+    original_total = Column(Float)
+    new_total = Column(Float)
+    fine_difference = Column(Float)
+
+    driver_id = Column(String(10))
+    first_name = Column(String(64))
+    last_name = Column(String(64))
+    number_plate = Column(String(20))
+
+    cf_itemid = Column(String(6))
+    cf_itemname = Column(String(1000))
 
 def get_db():
     db = SessionLocal()
@@ -376,7 +403,7 @@ def create_credit_note(payload: dict = Body(...), db: Session = Depends(get_db))
                 invoice_number=str(it.get("invoice_number") or ""),
                 cf_itemid=str(it.get("cf_itemid") or ""),
                 cf_itemname=str(it.get("cf_itemname") or ""),
-                quantity=float(it.get("quantity") or 0),
+                sum_quantity=float(it.get("quantity") or 0),
                 fine=float(it.get("fine") or 0),
                 price_after_fine=float(it.get("price_after_fine") or 0),
             ))
@@ -699,7 +726,7 @@ def search_credit_notes(
         customer_name = None
         
         for it in items:
-            qty = float(it.quantity or 0)
+            qty = float(it.sum_quantity or 0)
             price_after_fine = float(it.price_after_fine or 0)
             total_amount += qty * price_after_fine
         
@@ -769,7 +796,7 @@ def get_credit_note_detail(no: str, db: Session = Depends(get_db)):
                 "invoice_number": it.invoice_number,
                 "cf_itemid": it.cf_itemid,
                 "cf_itemname": it.cf_itemname,
-                "quantity": it.quantity,
+                "quantity": it.sum_quantity,
                 "fine": it.fine,
                 "price_after_fine": it.price_after_fine,
             } for it in items
