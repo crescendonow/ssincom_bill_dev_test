@@ -122,7 +122,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const trSum = document.createElement("tr");
         trSum.className = "font-bold bg-gray-50";
         trSum.innerHTML = `
-      <td colspan="6" class="text-right">รวม</td>
+      <td colspan="7" class="text-right">รวม</td>
       <td class="text-right">${fmtNum(totalTon)}</td>
       <td class="text-right">${fmtNum(totalBefore)}</td>
       <td class="text-right">${fmtNum(totalVat)}</td>

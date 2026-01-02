@@ -40,11 +40,9 @@ def saletax_list(
     cust = models.CustomerList
 
     qty_in_ton = func.sum(
-        case(
-            (itm.cf_unitname == "ตัน", func.coalesce(itm.quantity, 0)),
-            (itm.cf_unitname.in_(["กิโลกรัม", "kg", "KG"]),
-             func.coalesce(itm.quantity, 0) / 1000.0),
-            else_=0
+    case(
+        (itm.quantity >= 1000, func.coalesce(itm.quantity, 0) / 1000.0),
+        else_=func.coalesce(itm.quantity, 0)
         )
     ).label("sum_qty")
 
