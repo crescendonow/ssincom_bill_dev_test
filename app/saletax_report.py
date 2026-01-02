@@ -39,6 +39,7 @@ def saletax_list(
     itm = models.InvoiceItem
     cust = models.CustomerList
 
+    sum_qty = func.sum(func.coalesce(itm.quantity, 0)).label("sum_qty")
     sum_amount = func.sum(
     func.coalesce(itm.amount, func.coalesce(itm.quantity, 0) * func.coalesce(itm.cf_itempricelevel_price, 0))
     )
@@ -53,6 +54,7 @@ def saletax_list(
     cust.cf_hq.label("hq"),
     cust.cf_branch.label("branch"),
     sum_amount.label("before_vat"),
+    sum_qty
 ).outerjoin(
     itm,
     or_(itm.invoice_number == inv.invoice_number,
@@ -99,6 +101,7 @@ def saletax_list(
             "cf_hq": hq,
             "cf_branch": branch,
             "branch_text": branch_text,
+            "sum_qty": float(sum_qty or 0),
             "before_vat": round(before, 2),
             "vat": round(vat, 2),
             "grand": round(grand, 2),

@@ -107,12 +107,12 @@ document.addEventListener("DOMContentLoaded", () => {
             tr.innerHTML = `
         <td class="text-center">${i + 1}</td>
         <td class="text-center">${fmtThaiDate(r.invoice_date)}</td>
-        <td class="text-center">-</td>
         <td class="text-center">${r.invoice_number || "-"}</td>
         <td class="text-center">${r.personid || "-"}</td>
         <td>${r.company || "-"}</td>
         <td class="text-center">${r.cf_taxid || "-"}</td>
         <td class="text-center">${branch}</td>
+        <td class="text-center">${fmtNum(r.sum_qty || 0)}</td>
         <td class="text-right">${fmtNum(r.before_vat)}</td>
         <td class="text-right">${fmtNum(vat)}</td>
         <td class="text-right">${fmtNum(grand)}</td>`;
@@ -123,6 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
         trSum.className = "font-bold bg-gray-50";
         trSum.innerHTML = `
       <td colspan="8" class="text-right">รวม</td>
+      <td class="text-right">${fmtNum(totalTon)}</td>
       <td class="text-right">${fmtNum(totalBefore)}</td>
       <td class="text-right">${fmtNum(totalVat)}</td>
       <td class="text-right">${fmtNum(totalGrand)}</td>`;
@@ -145,10 +146,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         const header = [
-            "ลำดับ", "วันเดือนปี", "เล่มที่", "เลขที่ใบกำกับ", "รหัสลูกค้า",
-            "ชื่อผู้ขายสินค้า/บริการ", "เลขประจำตัวผู้เสียภาษี", "สถานประกอบการ",
+            "ลำดับ", "วันเดือนปี", "เลขที่ใบกำกับ",
+            "รหัสลูกค้า", "ชื่อผู้ขายสินค้า/บริการ",
+            "เลขประจำตัวผู้เสียภาษี", "สถานประกอบการ",
+            "จำนวนตัน",
             "มูลค่าสินค้า/บริการ", "VAT", "รวม"
         ];
+
 
         const data = [header];
         rows.forEach((r, i) => {
@@ -161,12 +165,12 @@ document.addEventListener("DOMContentLoaded", () => {
             data.push([
                 i + 1,
                 fmtThaiDate(r.invoice_date), // เป็น string ไทยอ่านง่าย
-                "-",
                 r.invoice_number || "-",
                 r.personid || "-",
                 r.company || "-",
                 r.cf_taxid || "-",
                 branch,
+                Number(r.sum_qty || 0),
                 before, vat, grand
             ]);
         });

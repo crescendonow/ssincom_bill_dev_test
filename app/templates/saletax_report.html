@@ -1,118 +1,183 @@
 <!DOCTYPE html>
 <html lang="th">
-
-<head>
+  <head>
     <meta charset="UTF-8" />
     <title>รายงานภาษีขาย</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/static/css/saletax_report.css">
+    <link rel="stylesheet" href="/static/css/saletax_report.css" />
     <!-- flatpickr core + theme -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
+    />
     <!-- monthSelect plugin -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
-</head>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+    />
+  </head>
 
-<body class="bg-gray-50 min-h-screen">
-
+  <body class="bg-gray-50 min-h-screen">
     <!-- ปุ่ม -->
     <div class="max-w-6xl mx-auto px-4 pt-8 flex items-center justify-between">
-        <a href="/dashboard" class="inline-flex items-center gap-2 text-blue-700 hover:underline">
-            ← กลับ Dashboard
-        </a>
-        <div class="flex gap-3">
-            <button id="btnPrint" class="px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700">
-                <i class="fa-solid fa-print"></i> พิมพ์ PDF
-            </button>
-            <button id="btnExcel" class="px-4 py-2 rounded-md bg-white text-gray-700 border hover:bg-gray-50">
-                <i class="fa-solid fa-file-export"></i> ส่งออก Excel
-            </button>
-        </div>
+      <a
+        href="/dashboard"
+        class="inline-flex items-center gap-2 text-blue-700 hover:underline"
+      >
+        ← กลับ Dashboard
+      </a>
+      <div class="flex gap-3">
+        <button
+          id="btnPrint"
+          class="px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700"
+        >
+          <i class="fa-solid fa-print"></i> พิมพ์ PDF
+        </button>
+        <button
+          id="btnExcel"
+          class="px-4 py-2 rounded-md bg-white text-gray-700 border hover:bg-gray-50"
+        >
+          <i class="fa-solid fa-file-export"></i> ส่งออก Excel
+        </button>
+      </div>
     </div>
 
     <!-- ตัวกรองช่วงเวลา -->
     <div class="max-w-6xl mx-auto px-4 pt-4">
-        <div class="bg-white rounded-xl shadow p-4 mb-4 flex flex-wrap items-center gap-4">
-            <div class="inline-flex rounded bg-gray-100" role="group">
-                <button class="gran-btn px-4 py-2 text-sm rounded-l bg-blue-600 text-white"
-                    data-type="day">รายวัน</button>
-                <button class="gran-btn px-4 py-2 text-sm" data-type="month">รายเดือน</button>
-                <button class="gran-btn px-4 py-2 text-sm rounded-r" data-type="year">รายปี</button>
-            </div>
-
-            <div id="filter-day" class="flex items-center gap-2">
-                <span>จาก</span><input id="dayFrom" type="text" class="border rounded px-2 py-1 w-40">
-                <span>ถึง</span><input id="dayTo" type="text" class="border rounded px-2 py-1 w-40">
-            </div>
-            <div id="filter-month" class="hidden items-center gap-2">
-                <span>เดือน</span><input id="monthPick" type="text" class="border rounded px-2 py-1 w-40"
-                    placeholder="เลือกเดือน">
-            </div>
-            <div id="filter-year" class="hidden items-center gap-2">
-                <span>ปี</span><input id="yearPick" type="text" class="border rounded px-2 py-1 w-28"
-                    placeholder="เลือกปี">
-            </div>
-
-            <button id="btnGenerate" class="ml-auto bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                <i class="fa-solid fa-table-list"></i> สร้างรายงาน
-            </button>
+      <div
+        class="bg-white rounded-xl shadow p-4 mb-4 flex flex-wrap items-center gap-4"
+      >
+        <div class="inline-flex rounded bg-gray-100" role="group">
+          <button
+            class="gran-btn px-4 py-2 text-sm rounded-l bg-blue-600 text-white"
+            data-type="day"
+          >
+            รายวัน
+          </button>
+          <button class="gran-btn px-4 py-2 text-sm" data-type="month">
+            รายเดือน
+          </button>
+          <button class="gran-btn px-4 py-2 text-sm rounded-r" data-type="year">
+            รายปี
+          </button>
         </div>
+
+        <div id="filter-day" class="flex items-center gap-2">
+          <span>จาก</span
+          ><input
+            id="dayFrom"
+            type="text"
+            class="border rounded px-2 py-1 w-40"
+          />
+          <span>ถึง</span
+          ><input
+            id="dayTo"
+            type="text"
+            class="border rounded px-2 py-1 w-40"
+          />
+        </div>
+        <div id="filter-month" class="hidden items-center gap-2">
+          <span>เดือน</span
+          ><input
+            id="monthPick"
+            type="text"
+            class="border rounded px-2 py-1 w-40"
+            placeholder="เลือกเดือน"
+          />
+        </div>
+        <div id="filter-year" class="hidden items-center gap-2">
+          <span>ปี</span
+          ><input
+            id="yearPick"
+            type="text"
+            class="border rounded px-2 py-1 w-28"
+            placeholder="เลือกปี"
+          />
+        </div>
+
+        <button
+          id="btnGenerate"
+          class="ml-auto bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          <i class="fa-solid fa-table-list"></i> สร้างรายงาน
+        </button>
+      </div>
     </div>
 
     <!-- KPI -->
     <div class="max-w-6xl mx-auto px-4 pt-2">
-        <div class="bg-white rounded-xl shadow p-4 mb-4 flex justify-between items-center">
-            <div id="subtitle" class="text-sm text-gray-500">—</div>
-            <div class="grid grid-cols-3 gap-3">
-                <div class="kpi kpi-purple">
-                    <div class="kpi-title">จำนวนใบกำกับ</div>
-                    <div id="kCount" class="kpi-value">0</div>
-                </div>
-                <div class="kpi">
-                    <div class="kpi-title">ก่อน VAT</div>
-                    <div id="kBefore" class="kpi-value">0.00</div>
-                </div>
-                <div class="kpi">
-                    <div class="kpi-title">รวมสุทธิ</div>
-                    <div id="kGrand" class="kpi-value">0.00</div>
-                </div>
-            </div>
+      <div
+        class="bg-white rounded-xl shadow p-4 mb-4 flex justify-between items-center"
+      >
+        <div id="subtitle" class="text-sm text-gray-500">—</div>
+        <div class="grid grid-cols-3 gap-3">
+          <div class="kpi kpi-purple">
+            <div class="kpi-title">จำนวนใบกำกับ</div>
+            <div id="kCount" class="kpi-value">0</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-title">ก่อน VAT</div>
+            <div id="kBefore" class="kpi-value">0.00</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-title">รวมสุทธิ</div>
+            <div id="kGrand" class="kpi-value">0.00</div>
+          </div>
         </div>
+      </div>
     </div>
 
     <!-- ส่วนตาราง (เฉพาะส่วนพิมพ์) -->
-    <div id="print-area" class="max-w-6xl mx-auto px-4 bg-white rounded-lg shadow p-6 mt-4">
-        <div class="report-title-block text-center mb-6 print-only">
-            <h1 class="text-2xl font-bold">รายงานภาษีขาย</h1>
-            <p>เดือน <span class="month-year">—</span></p>
-            <p>ชื่อผู้ประกอบการ &nbsp;บริษัท เอส แอนด์ เอส อินคอม จำกัด &nbsp;
-                เลขที่ประจำตัวผู้เสียภาษี 0715544000020</p>
-            <p>ชื่อสถานประกอบการ &nbsp;บริษัท เอส แอนด์ เอส อินคอม จำกัด &nbsp;
-                สำนักงานใหญ่ &nbsp;โทรศัพท์ &nbsp;0-3558-9274</p>
-        </div>
+    <div
+      id="print-area"
+      class="max-w-6xl mx-auto px-4 bg-white rounded-lg shadow p-6 mt-4"
+    >
+      <div class="report-title-block text-center mb-6 print-only">
+        <h1 class="text-2xl font-bold">รายงานภาษีขาย</h1>
+        <p>เดือน <span class="month-year">—</span></p>
+        <p>
+          ชื่อผู้ประกอบการ &nbsp;บริษัท เอส แอนด์ เอส อินคอม จำกัด &nbsp;
+          เลขที่ประจำตัวผู้เสียภาษี 0715544000020
+        </p>
+        <p>
+          ชื่อสถานประกอบการ &nbsp;บริษัท เอส แอนด์ เอส อินคอม จำกัด &nbsp;
+          สำนักงานใหญ่ &nbsp;โทรศัพท์ &nbsp;0-3558-9274
+        </p>
+      </div>
 
-        <div class="overflow-x-auto">
-            <table id="sale-tax-table" class="w-full text-sm border-collapse border border-gray-300">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="p-2 border text-center">ลำดับ</th>
-                        <th class="p-2 border text-center">วันเดือนปี</th>
-                        <th class="p-2 border text-center">เล่มที่</th>
-                        <th class="p-2 border text-center">เลขที่ใบกำกับ</th>
-                        <th class="p-2 border text-center">รหัสลูกค้า</th>
-                        <th class="p-2 border text-left">ชื่อผู้ขายสินค้า/บริการ</th>
-                        <th class="p-2 border text-center">เลขประจำตัวผู้เสียภาษี</th>
-                        <th class="p-2 border text-center">สถานประกอบการ</th>
-                        <th class="p-2 border text-right">มูลค่าสินค้า/บริการ</th>
-                        <th class="p-2 border text-right">VAT</th>
-                        <th class="p-2 border text-right">รวม</th>
-                    </tr>
-                </thead>
-                <tbody id="reportBody"></tbody>
-            </table>
-        </div>
+      <div class="overflow-x-auto">
+        <table
+          id="sale-tax-table"
+          class="w-full text-sm border-collapse border border-gray-300"
+        >
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="p-2 border text-center">ลำดับ</th>
+              <th class="p-2 border text-center">วันเดือนปี</th>
+              <th class="p-2 border text-center">เลขที่ใบกำกับ</th>
+              <th class="p-2 border text-center">รหัสลูกค้า</th>
+              <th class="p-2 border text-left">ชื่อผู้ขายสินค้า/บริการ</th>
+              <th class="p-2 border text-center">เลขประจำตัวผู้เสียภาษี</th>
+              <th class="p-2 border text-center">สถานประกอบการ</th>
+              <th class="p-2 border text-center">จำนวนตัน</th>
+              <th class="p-2 border text-right">มูลค่าสินค้า/บริการ</th>
+              <th class="p-2 border text-right">VAT</th>
+              <th class="p-2 border text-right">รวม</th>
+            </tr>
+          </thead>
+
+          <tbody id="reportBody"></tbody>
+        </table>
+      </div>
     </div>
 
     <!-- flatpickr scripts -->
@@ -121,6 +186,5 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="/static/js/saletax_report.js"></script>
-</body>
-
+  </body>
 </html>
