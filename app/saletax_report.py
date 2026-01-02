@@ -1,7 +1,7 @@
 # /app/saletax_report.py
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func, or_, cast, String
+from sqlalchemy import func, or_, cast, String, case
 from typing import Optional, List
 from datetime import date, datetime
 
@@ -40,15 +40,14 @@ def saletax_list(
     cust = models.CustomerList
 
     qty_in_ton = func.sum(
-    func.case(
-        [
-            (itm.cf_unitname == "ตัน", func.coalesce(itm.quantity, 0)),
-            (itm.cf_unitname.in_(["กิโลกรัม", "kg", "KG"]),
-             func.coalesce(itm.quantity, 0) / 1000.0),
-        ],
+    case(
+        (itm.cf_unitname == "ตัน", func.coalesce(itm.quantity, 0)),
+        (itm.cf_unitname.in_(["กิโลกรัม", "kg", "KG"]),
+         func.coalesce(itm.quantity, 0) / 1000.0),
         else_=0
     )
 ).label("sum_qty")
+
 
     sum_amount = func.sum(
     func.coalesce(itm.amount, func.coalesce(itm.quantity, 0) * func.coalesce(itm.cf_itempricelevel_price, 0))
@@ -93,8 +92,8 @@ def saletax_list(
     ).order_by(inv.invoice_date.asc(), inv.invoice_number.asc())
 
     rows = []
-    for idx, inv_no, inv_date, company, personid, tax_id, hq, branch, sum_qty, before in q.all():
-            qty = float(sum_qty or 0.0)
+for idx, inv_no, inv_date, company, personid, tax_id, hq, branch, sum_qty, before in q.all():
+    qty = float(sum_qty or 0.0)
     before = float(before or 0.0)
 
     vat = before * VAT_RATE
@@ -116,11 +115,12 @@ def saletax_list(
         "cf_hq": hq,
         "cf_branch": branch,
         "branch_text": branch_text,
-        "sum_qty": round(qty, 3),      # ✅ จำนวนตันจาก quantity
+        "sum_qty": round(qty, 3),
         "before_vat": round(before, 2),
         "vat": round(vat, 2),
         "grand": round(grand, 2),
     })
+
     return rows
 
 # -------- สรุปยอดต่อช่วง (ไม่แยก/แยกบริษัท) --------
