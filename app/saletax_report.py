@@ -40,86 +40,91 @@ def saletax_list(
     cust = models.CustomerList
 
     qty_in_ton = func.sum(
-    case(
-        (itm.cf_unitname == "ตัน", func.coalesce(itm.quantity, 0)),
-        (itm.cf_unitname.in_(["กิโลกรัม", "kg", "KG"]),
-         func.coalesce(itm.quantity, 0) / 1000.0),
-        else_=0
-    )
-).label("sum_qty")
-
+        case(
+            (itm.cf_unitname == "ตัน", func.coalesce(itm.quantity, 0)),
+            (itm.cf_unitname.in_(["กิโลกรัม", "kg", "KG"]),
+             func.coalesce(itm.quantity, 0) / 1000.0),
+            else_=0
+        )
+    ).label("sum_qty")
 
     sum_amount = func.sum(
-    func.coalesce(itm.amount, func.coalesce(itm.quantity, 0) * func.coalesce(itm.cf_itempricelevel_price, 0))
+        func.coalesce(
+            itm.amount,
+            func.coalesce(itm.quantity, 0) * func.coalesce(itm.cf_itempricelevel_price, 0)
+        )
     )
+
     q = db.query(
-    inv.idx,
-    inv.invoice_number,
-    inv.invoice_date,
-    inv.fname.label("company"),
-    inv.personid,
-    func.coalesce(inv.cf_taxid, cust.cf_taxid).label("tax_id"),
-    cust.cf_hq.label("hq"),
-    cust.cf_branch.label("branch"),
-    qty_in_ton,                             
-    sum_amount.label("before_vat")       
-).outerjoin(
-    itm,
-    or_(
-        itm.invoice_number == inv.invoice_number,
-        itm.invoice_number == cast(inv.idx, String)
+        inv.idx,
+        inv.invoice_number,
+        inv.invoice_date,
+        inv.fname.label("company"),
+        inv.personid,
+        func.coalesce(inv.cf_taxid, cust.cf_taxid).label("tax_id"),
+        cust.cf_hq.label("hq"),
+        cust.cf_branch.label("branch"),
+        qty_in_ton,
+        sum_amount.label("before_vat")
+    ).outerjoin(
+        itm,
+        or_(
+            itm.invoice_number == inv.invoice_number,
+            itm.invoice_number == cast(inv.idx, String)
+        )
+    ).outerjoin(
+        cust,
+        cust.personid == inv.personid
     )
-).outerjoin(
-    cust,
-    cust.personid == inv.personid
-)
 
-
-    # ---- เงื่อนไขช่วงเวลาเหมือนเดิม ----
+    # ---- เงื่อนไขช่วงเวลา ----
     if month and len(month) == 7:
         q = q.filter(func.to_char(inv.invoice_date, 'YYYY-MM') == month)
     elif year:
         q = q.filter(func.extract('year', inv.invoice_date) == year)
     else:
         d1, d2 = _to_date(start), _to_date(end)
-        if d1: q = q.filter(inv.invoice_date >= d1)
-        if d2: q = q.filter(inv.invoice_date <= d2)
+        if d1:
+            q = q.filter(inv.invoice_date >= d1)
+        if d2:
+            q = q.filter(inv.invoice_date <= d2)
 
-    # group by ให้ครบทุก non-aggregate
     q = q.group_by(
-        inv.idx, inv.invoice_number, inv.invoice_date, inv.fname, inv.personid,
-        func.coalesce(inv.cf_taxid, cust.cf_taxid), cust.cf_hq, cust.cf_branch
+        inv.idx, inv.invoice_number, inv.invoice_date,
+        inv.fname, inv.personid,
+        func.coalesce(inv.cf_taxid, cust.cf_taxid),
+        cust.cf_hq, cust.cf_branch
     ).order_by(inv.invoice_date.asc(), inv.invoice_number.asc())
 
     rows = []
-for idx, inv_no, inv_date, company, personid, tax_id, hq, branch, sum_qty, before in q.all():
-    qty = float(sum_qty or 0.0)
-    before = float(before or 0.0)
+    for idx, inv_no, inv_date, company, personid, tax_id, hq, branch, sum_qty, before in q.all():
+        qty = float(sum_qty or 0.0)
+        before = float(before or 0.0)
 
-    vat = before * VAT_RATE
-    grand = before + vat
+        vat = before * VAT_RATE
+        grand = before + vat
 
-    branch_text = (
-        "สำนักงานใหญ่"
-        if (hq == 1 or hq == "1")
-        else (f"สาขาที่ {branch}" if branch else "-")
-    )
+        branch_text = (
+            "สำนักงานใหญ่"
+            if (hq == 1 or hq == "1")
+            else (f"สาขาที่ {branch}" if branch else "-")
+        )
 
-    rows.append({
-        "idx": idx,
-        "invoice_number": inv_no,
-        "invoice_date": inv_date.isoformat() if inv_date else None,
-        "company": company,
-        "personid": personid,
-        "cf_taxid": tax_id,
-        "cf_hq": hq,
-        "cf_branch": branch,
-        "branch_text": branch_text,
-        "sum_qty": round(qty, 3),
-        "before_vat": round(before, 2),
-        "vat": round(vat, 2),
-        "grand": round(grand, 2),
-    })
+        rows.append({
+            "idx": idx,
+            "invoice_number": inv_no,
+            "invoice_date": inv_date.isoformat() if inv_date else None,
+            "company": company,
+            "personid": personid,
+            "cf_taxid": tax_id,
+            "cf_hq": hq,
+            "cf_branch": branch,
+            "branch_text": branch_text,
+            "sum_qty": round(qty, 3),
+            "before_vat": round(before, 2),
+            "vat": round(vat, 2),
+            "grand": round(grand, 2),
+        })
 
     return rows
 
