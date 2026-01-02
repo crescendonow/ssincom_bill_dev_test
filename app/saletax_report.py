@@ -39,7 +39,17 @@ def saletax_list(
     itm = models.InvoiceItem
     cust = models.CustomerList
 
-    sum_qty = func.sum(func.coalesce(itm.quantity, 0)).label("sum_qty")
+    qty_in_ton = func.sum(
+    func.case(
+        [
+            (itm.cf_unitname == "ตัน", func.coalesce(itm.quantity, 0)),
+            (itm.cf_unitname.in_(["กิโลกรัม", "kg", "KG"]),
+             func.coalesce(itm.quantity, 0) / 1000.0),
+        ],
+        else_=0
+    )
+).label("sum_qty")
+
     sum_amount = func.sum(
     func.coalesce(itm.amount, func.coalesce(itm.quantity, 0) * func.coalesce(itm.cf_itempricelevel_price, 0))
     )
@@ -52,7 +62,7 @@ def saletax_list(
     func.coalesce(inv.cf_taxid, cust.cf_taxid).label("tax_id"),
     cust.cf_hq.label("hq"),
     cust.cf_branch.label("branch"),
-    sum_qty,                             
+    qty_in_ton,                             
     sum_amount.label("before_vat")       
 ).outerjoin(
     itm,

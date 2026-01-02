@@ -122,7 +122,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const trSum = document.createElement("tr");
         trSum.className = "font-bold bg-gray-50";
         trSum.innerHTML = `
-      <td colspan="8" class="text-right">รวม</td>
+      <td colspan="6" class="text-right">รวม</td>
       <td class="text-right">${fmtNum(totalTon)}</td>
       <td class="text-right">${fmtNum(totalBefore)}</td>
       <td class="text-right">${fmtNum(totalVat)}</td>
@@ -135,6 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
         $("#kGrand").textContent = fmtNum(totalGrand);
         $(".month-year").textContent = thaiMonthYear();
         $("#subtitle").textContent = `${thaiMonthYear()} (${data.length} รายการ)`;
+        $("#kTon").textContent = Number(totalTon || 0).toLocaleString("en-US", { minimumFractionDigits: 3 });
     }
 
     function exportExcel() {
