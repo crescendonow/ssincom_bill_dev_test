@@ -81,7 +81,8 @@ def saletax_list(
     ).order_by(inv.invoice_date.asc(), inv.invoice_number.asc())
 
     rows = []
-    for idx, inv_no, inv_date, company, personid, tax_id, hq, branch, before in q.all():
+    for idx, inv_no, inv_date, company, personid, tax_id, hq, branch, sum_qty, before in q.all():
+        qty = float(sum_qty or 0.0)
         before = float(before or 0.0)
         vat = before * VAT_RATE
         grand = before + vat
@@ -101,7 +102,7 @@ def saletax_list(
             "cf_hq": hq,
             "cf_branch": branch,
             "branch_text": branch_text,
-            "sum_qty": float(sum_qty or 0),
+            "sum_qty": qty,   
             "before_vat": round(before, 2),
             "vat": round(vat, 2),
             "grand": round(grand, 2),
