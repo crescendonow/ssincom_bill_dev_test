@@ -95,12 +95,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function render(data) {
         const tb = $("#reportBody"); tb.innerHTML = "";
-        let totalBefore = 0, totalVat = 0, totalGrand = 0;
+        let totalBefore = 0, totalTon = 0, totalVat = 0, totalGrand = 0;
 
         data.forEach((r, i) => {
             const vat = r.vat ?? r.before_vat * 0.07;
             const grand = r.grand ?? r.before_vat + vat;
-            totalBefore += r.before_vat; totalVat += vat; totalGrand += grand;
+            totalBefore += r.before_vat; totalTon += r.sum_qty; totalVat += vat; totalGrand += grand;
             const branch = r.cf_hq == 1 ? "สำนักงานใหญ่" : (r.cf_branch ? `สาขาที่ ${r.cf_branch}` : "-");
 
             const tr = document.createElement("tr");
