@@ -49,20 +49,22 @@ def saletax_list(
     inv.invoice_date,
     inv.fname.label("company"),
     inv.personid,
-    # ใช้ tax id จาก Invoice ถ้าไม่มีให้ fallback เป็นของ Customer
     func.coalesce(inv.cf_taxid, cust.cf_taxid).label("tax_id"),
     cust.cf_hq.label("hq"),
     cust.cf_branch.label("branch"),
-    sum_amount.label("before_vat"),
-    sum_qty
+    sum_qty,                             
+    sum_amount.label("before_vat")       
 ).outerjoin(
     itm,
-    or_(itm.invoice_number == inv.invoice_number,
-        itm.invoice_number == cast(inv.idx, String))
+    or_(
+        itm.invoice_number == inv.invoice_number,
+        itm.invoice_number == cast(inv.idx, String)
+    )
 ).outerjoin(
     cust,
     cust.personid == inv.personid
 )
+
 
     # ---- เงื่อนไขช่วงเวลาเหมือนเดิม ----
     if month and len(month) == 7:
@@ -82,31 +84,33 @@ def saletax_list(
 
     rows = []
     for idx, inv_no, inv_date, company, personid, tax_id, hq, branch, sum_qty, before in q.all():
-        qty = float(sum_qty or 0.0)
-        before = float(before or 0.0)
-        vat = before * VAT_RATE
-        grand = before + vat
-        # แปลงสถานประกอบการตามรูปแบบรายงาน
-        if hq is None and not branch:
-            branch_text = "-"
-        else:
-            branch_text = "สำนักงานใหญ่" if (hq == 1 or hq == "1") else (f"สาขาที่ {branch}" if branch else "-")
+            qty = float(sum_qty or 0.0)
+    before = float(before or 0.0)
 
-        rows.append({
-            "idx": idx,
-            "invoice_number": inv_no,
-            "invoice_date": inv_date.isoformat() if inv_date else None,
-            "company": company,
-            "personid": personid,
-            "cf_taxid": tax_id,
-            "cf_hq": hq,
-            "cf_branch": branch,
-            "branch_text": branch_text,
-            "sum_qty": qty,   
-            "before_vat": round(before, 2),
-            "vat": round(vat, 2),
-            "grand": round(grand, 2),
-        })
+    vat = before * VAT_RATE
+    grand = before + vat
+
+    branch_text = (
+        "สำนักงานใหญ่"
+        if (hq == 1 or hq == "1")
+        else (f"สาขาที่ {branch}" if branch else "-")
+    )
+
+    rows.append({
+        "idx": idx,
+        "invoice_number": inv_no,
+        "invoice_date": inv_date.isoformat() if inv_date else None,
+        "company": company,
+        "personid": personid,
+        "cf_taxid": tax_id,
+        "cf_hq": hq,
+        "cf_branch": branch,
+        "branch_text": branch_text,
+        "sum_qty": round(qty, 3),      # ✅ จำนวนตันจาก quantity
+        "before_vat": round(before, 2),
+        "vat": round(vat, 2),
+        "grand": round(grand, 2),
+    })
     return rows
 
 # -------- สรุปยอดต่อช่วง (ไม่แยก/แยกบริษัท) --------
