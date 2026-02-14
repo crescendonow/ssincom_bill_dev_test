@@ -133,6 +133,7 @@ def api_invoice_summary(
 # ====================================================
 # 2) รายการใบกำกับ (หัวบิล + ยอดรวมต่อใบ)
 # ====================================================
+# ====================================================
 @router.get("/api/invoices")
 def api_invoices_list(
     start: Optional[str] = Query(None, description="YYYY-MM-DD"),
@@ -142,8 +143,8 @@ def api_invoices_list(
 ):
     inv = models.Invoice
     itm = models.InvoiceItem
+    drv = models.Driver
 
-    # รวมยอดด้วย invoice_number (ของฝั่ง items)
     sub_amount = func.sum(
         func.coalesce(
             itm.amount,
@@ -159,7 +160,6 @@ def api_invoices_list(
         .subquery()
     )
 
-    # ผูก sub กับหัวบิลด้วย OR (เลขบิล หรือ idx เป็นข้อความ)
     q = (
         db.query(
             inv.idx,
@@ -168,6 +168,7 @@ def api_invoices_list(
             inv.fname,
             inv.po_number,
             func.coalesce(sub.c.amount, 0).label("amount"),
+            drv.driver_name,
         )
         .outerjoin(
             sub,
@@ -176,6 +177,7 @@ def api_invoices_list(
                 sub.c.inv_no == cast(inv.idx, String),
             ),
         )
+        .outerjoin(drv, inv.driver_id == drv.driver_id)
     )
 
     d1 = _to_date(start)
@@ -195,8 +197,51 @@ def api_invoices_list(
 
     q = q.order_by(inv.invoice_date.desc(), inv.idx.desc())
 
+    results = q.all()
+    inv_ids = [row[0] for row in results]
+    inv_number_map: Dict[int, str] = {row[0]: row[2] for row in results}
+
+    # Batch-load items for all invoices
+    items_by_inv: Dict[int, List[Dict[str, Any]]] = {idx: [] for idx in inv_ids}
+    if inv_ids:
+        all_inv_numbers = set()
+        all_idx_strings = set()
+        for _idx in inv_ids:
+            inv_no = inv_number_map.get(_idx)
+            if inv_no:
+                all_inv_numbers.add(inv_no)
+            all_idx_strings.add(str(_idx))
+
+        lookup_values = all_inv_numbers | all_idx_strings
+        item_rows = (
+            db.query(itm)
+            .filter(itm.invoice_number.in_(lookup_values))
+            .order_by(itm.idx.asc())
+            .all()
+        )
+
+        inv_no_to_idx: Dict[str, int] = {}
+        for _idx in inv_ids:
+            inv_no = inv_number_map.get(_idx)
+            if inv_no and inv_no not in inv_no_to_idx:
+                inv_no_to_idx[inv_no] = _idx
+            idx_str = str(_idx)
+            if idx_str not in inv_no_to_idx:
+                inv_no_to_idx[idx_str] = _idx
+
+        for r in item_rows:
+            parent_idx = inv_no_to_idx.get(r.invoice_number)
+            if parent_idx is not None and parent_idx in items_by_inv:
+                items_by_inv[parent_idx].append({
+                    "cf_itemid": r.cf_itemid,
+                    "cf_itemname": r.cf_itemname,
+                    "quantity": _money(r.quantity),
+                    "unit_price": _money(r.cf_itempricelevel_price),
+                    "amount": _money(r.amount if r.amount is not None else _money(r.quantity) * _money(r.cf_itempricelevel_price)),
+                })
+
     out: List[Dict[str, Any]] = []
-    for idx, invoice_date, invoice_number, fname, po_number, amount in q.all():
+    for idx, invoice_date, invoice_number, fname, po_number, amount, driver_name in results:
         amount = _money(amount)
         discount = 0.0
         before_vat = amount - discount
@@ -211,6 +256,8 @@ def api_invoices_list(
             "amount": round(amount, 2),
             "vat": round(vat, 2),
             "grand": round(grand, 2),
+            "driver_name": driver_name,
+            "items": items_by_inv.get(idx, []),
         })
     return out
 

@@ -166,6 +166,14 @@ class Car(Base):
 
 # ------------------ Dictionaries (schema: public) ------------------
 
+class Driver(Base):
+    __tablename__ = "drivers"
+    __table_args__ = {"schema": "products"}
+
+    driver_id = Column(String(10), primary_key=True)
+    driver_name = Column(String)
+
+
 class CarBrand(Base):
     __tablename__ = "car_brand"
     __table_args__ = {"schema": "public"}

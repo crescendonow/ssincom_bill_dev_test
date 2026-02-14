@@ -68,6 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // All invoices actions
     document.getElementById("btnAllApply").addEventListener("click", () => { state.allPage = 1; loadAllInvoices(); });
     document.getElementById("btnExportAllExcel").addEventListener("click", exportAllToExcel);
+    document.getElementById("btnExportAllCsv").addEventListener("click", exportAllToCsv);
     document.getElementById("allPrevPage").addEventListener("click", () => { if (state.allPage > 1) { state.allPage--; renderAllTable(); } });
     document.getElementById("allNextPage").addEventListener("click", () => { state.allPage++; renderAllTable(true); });
 
@@ -92,50 +93,137 @@ function exportAllToExcel() {
         return;
     }
 
-    // 1. กำหนดหัวข้อคอลัมน์ให้ตรงกับที่แสดงบนหน้าเว็บ
     const headers = [
         "วันที่",
         "เลขที่",
         "ลูกค้า",
         "PO",
+        "รหัสสินค้า",
+        "รายละเอียด",
+        "จำนวน",
+        "ราคา/หน่วย",
+        "พนักงานขับรถ",
         "ยอดก่อนส่วนลด",
         "VAT",
         "สุทธิ"
     ];
 
-    // 2. เตรียมข้อมูลแต่ละแถวให้ตรงกับหัวข้อ
-    const dataForExport = state.allRows.map(r => ({
-        "วันที่": r.invoice_date ?? "-",
-        "เลขที่": r.invoice_number ?? "-",
-        "ลูกค้า": r.fname ?? "-",
-        "PO": r.po_number ?? "-",
-        "ยอดก่อนส่วนลด": Number(r.amount) || 0,
-        "VAT": Number(r.vat) || 0,
-        "สุทธิ": Number(r.grand) || 0
-    }));
+    const dataForExport = [];
+    for (const r of state.allRows) {
+        const items = r.items || [];
+        if (items.length === 0) {
+            dataForExport.push({
+                "วันที่": r.invoice_date ?? "-",
+                "เลขที่": r.invoice_number ?? "-",
+                "ลูกค้า": r.fname ?? "-",
+                "PO": r.po_number ?? "-",
+                "รหัสสินค้า": "",
+                "รายละเอียด": "",
+                "จำนวน": "",
+                "ราคา/หน่วย": "",
+                "พนักงานขับรถ": r.driver_name ?? "-",
+                "ยอดก่อนส่วนลด": Number(r.amount) || 0,
+                "VAT": Number(r.vat) || 0,
+                "สุทธิ": Number(r.grand) || 0
+            });
+        } else {
+            for (let i = 0; i < items.length; i++) {
+                const it = items[i];
+                dataForExport.push({
+                    "วันที่": i === 0 ? (r.invoice_date ?? "-") : "",
+                    "เลขที่": i === 0 ? (r.invoice_number ?? "-") : "",
+                    "ลูกค้า": i === 0 ? (r.fname ?? "-") : "",
+                    "PO": i === 0 ? (r.po_number ?? "-") : "",
+                    "รหัสสินค้า": it.cf_itemid ?? "",
+                    "รายละเอียด": it.cf_itemname ?? "",
+                    "จำนวน": Number(it.quantity) || 0,
+                    "ราคา/หน่วย": Number(it.unit_price) || 0,
+                    "พนักงานขับรถ": i === 0 ? (r.driver_name ?? "-") : "",
+                    "ยอดก่อนส่วนลด": i === 0 ? (Number(r.amount) || 0) : "",
+                    "VAT": i === 0 ? (Number(r.vat) || 0) : "",
+                    "สุทธิ": i === 0 ? (Number(r.grand) || 0) : ""
+                });
+            }
+        }
+    }
 
-    // 3. สร้าง Worksheet จากข้อมูล
     const ws = XLSX.utils.json_to_sheet(dataForExport, { header: headers });
 
-    // 4. (Optional) ปรับความกว้างของคอลัมน์ให้อ่านง่ายขึ้น
     ws['!cols'] = [
-        { wch: 12 }, // วันที่
-        { wch: 15 }, // เลขที่
-        { wch: 40 }, // ลูกค้า
-        { wch: 15 }, // PO
-        { wch: 18 }, // ยอดก่อนส่วนลด
-        { wch: 15 }, // VAT
-        { wch: 18 }  // สุทธิ
+        { wch: 12 },  // วันที่
+        { wch: 15 },  // เลขที่
+        { wch: 40 },  // ลูกค้า
+        { wch: 15 },  // PO
+        { wch: 12 },  // รหัสสินค้า
+        { wch: 40 },  // รายละเอียด
+        { wch: 10 },  // จำนวน
+        { wch: 12 },  // ราคา/หน่วย
+        { wch: 20 },  // พนักงานขับรถ
+        { wch: 18 },  // ยอดก่อนส่วนลด
+        { wch: 15 },  // VAT
+        { wch: 18 }   // สุทธิ
     ];
 
-    // 5. สร้าง Workbook และเพิ่ม Worksheet เข้าไป
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "รายการใบกำกับภาษี");
 
-    // 6. สร้างไฟล์ Excel และให้ผู้ใช้ดาวน์โหลด
     const f_start = document.getElementById("allFrom")?.value || 'start';
     const f_end = document.getElementById("allTo")?.value || 'end';
     XLSX.writeFile(wb, `Invoices_${f_start}_to_${f_end}.xlsx`);
+}
+
+function exportAllToCsv() {
+    if (!state.allRows.length) {
+        alert("ไม่มีข้อมูลสำหรับส่งออก");
+        return;
+    }
+
+    const headers = ["วันที่","เลขที่","ลูกค้า","PO","รหัสสินค้า","รายละเอียด","จำนวน","ราคา/หน่วย","พนักงานขับรถ","ยอดก่อนส่วนลด","VAT","สุทธิ"];
+    const csvEscape = (v) => {
+        const s = String(v ?? "");
+        return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const lines = [headers.map(csvEscape).join(",")];
+
+    for (const r of state.allRows) {
+        const items = r.items || [];
+        if (items.length === 0) {
+            lines.push([
+                r.invoice_date ?? "", r.invoice_number ?? "", r.fname ?? "", r.po_number ?? "",
+                "", "", "", "",
+                r.driver_name ?? "",
+                Number(r.amount) || 0, Number(r.vat) || 0, Number(r.grand) || 0
+            ].map(csvEscape).join(","));
+        } else {
+            for (let i = 0; i < items.length; i++) {
+                const it = items[i];
+                lines.push([
+                    i === 0 ? (r.invoice_date ?? "") : "",
+                    i === 0 ? (r.invoice_number ?? "") : "",
+                    i === 0 ? (r.fname ?? "") : "",
+                    i === 0 ? (r.po_number ?? "") : "",
+                    it.cf_itemid ?? "",
+                    it.cf_itemname ?? "",
+                    Number(it.quantity) || 0,
+                    Number(it.unit_price) || 0,
+                    i === 0 ? (r.driver_name ?? "") : "",
+                    i === 0 ? (Number(r.amount) || 0) : "",
+                    i === 0 ? (Number(r.vat) || 0) : "",
+                    i === 0 ? (Number(r.grand) || 0) : ""
+                ].map(csvEscape).join(","));
+            }
+        }
+    }
+
+    const bom = "\uFEFF";
+    const blob = new Blob([bom + lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    const f_start = document.getElementById("allFrom")?.value || 'start';
+    const f_end = document.getElementById("allTo")?.value || 'end';
+    a.download = `Invoices_${f_start}_to_${f_end}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
 }
 
 function switchTab(which) {
@@ -312,20 +400,30 @@ function renderAllTable(isNextAttempt = false) {
 
     if (!rows.length) {
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td class="px-3 py-2 text-center text-gray-500 border-b" colspan="8">ไม่พบข้อมูล</td>`;
+        tr.innerHTML = `<td class="px-3 py-2 text-center text-gray-500 border-b" colspan="13">ไม่พบข้อมูล</td>`;
         body.appendChild(tr);
     } else {
         for (const r of rows) {
+            const items = r.items || [];
+            const rowspan = Math.max(items.length, 1);
+
+            // First row — includes all shared cells with rowspan + first item
+            const firstItem = items[0] || {};
             const tr = document.createElement("tr");
             tr.innerHTML = `
-        <td class="px-3 py-2 text-sm border-b">${r.invoice_date ?? "-"}</td>
-        <td class="px-3 py-2 text-sm border-b">${r.invoice_number ?? "-"}</td>
-        <td class="px-3 py-2 text-sm border-b">${r.fname ?? "-"}</td>
-        <td class="px-3 py-2 text-sm border-b hidden md:table-cell">${r.po_number ?? "-"}</td>
-        <td class="px-3 py-2 text-sm text-right border-b hidden sm:table-cell">${fmtNum(r.amount)}</td>
-        <td class="px-3 py-2 text-sm text-right border-b hidden lg:table-cell">${fmtNum(r.vat)}</td>
-        <td class="px-3 py-2 text-sm text-right border-b">${fmtNum(r.grand)}</td>
-        <td class="px-3 py-2 text-sm text-center border-b">
+        <td class="px-3 py-2 text-sm border-b" rowspan="${rowspan}">${r.invoice_date ?? "-"}</td>
+        <td class="px-3 py-2 text-sm border-b" rowspan="${rowspan}">${r.invoice_number ?? "-"}</td>
+        <td class="px-3 py-2 text-sm border-b" rowspan="${rowspan}">${r.fname ?? "-"}</td>
+        <td class="px-3 py-2 text-sm border-b hidden md:table-cell" rowspan="${rowspan}">${r.po_number ?? "-"}</td>
+        <td class="px-3 py-2 text-sm border-b">${firstItem.cf_itemid ?? "-"}</td>
+        <td class="px-3 py-2 text-sm border-b">${firstItem.cf_itemname ?? "-"}</td>
+        <td class="px-3 py-2 text-sm text-right border-b">${items.length ? fmtNum(firstItem.quantity) : "-"}</td>
+        <td class="px-3 py-2 text-sm text-right border-b">${items.length ? fmtNum(firstItem.unit_price) : "-"}</td>
+        <td class="px-3 py-2 text-sm border-b" rowspan="${rowspan}">${r.driver_name ?? "-"}</td>
+        <td class="px-3 py-2 text-sm text-right border-b hidden sm:table-cell" rowspan="${rowspan}">${fmtNum(r.amount)}</td>
+        <td class="px-3 py-2 text-sm text-right border-b hidden lg:table-cell" rowspan="${rowspan}">${fmtNum(r.vat)}</td>
+        <td class="px-3 py-2 text-sm text-right border-b" rowspan="${rowspan}">${fmtNum(r.grand)}</td>
+        <td class="px-3 py-2 text-sm text-center border-b" rowspan="${rowspan}">
           <div class="inline-flex gap-2">
             <button class="px-3 py-1 rounded bg-white border hover:bg-green-50" data-edit="${r.idx}">ดู/แก้ไข</button>
             <button class="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700" data-items="${r.idx}">สินค้า</button>
@@ -333,6 +431,18 @@ function renderAllTable(isNextAttempt = false) {
         </td>
       `;
             body.appendChild(tr);
+
+            // Additional rows for 2nd, 3rd, ... items (only item columns)
+            for (let i = 1; i < items.length; i++) {
+                const subTr = document.createElement("tr");
+                subTr.innerHTML = `
+            <td class="px-3 py-2 text-sm border-b">${items[i].cf_itemid ?? "-"}</td>
+            <td class="px-3 py-2 text-sm border-b">${items[i].cf_itemname ?? "-"}</td>
+            <td class="px-3 py-2 text-sm text-right border-b">${fmtNum(items[i].quantity)}</td>
+            <td class="px-3 py-2 text-sm text-right border-b">${fmtNum(items[i].unit_price)}</td>
+          `;
+                body.appendChild(subTr);
+            }
         }
     }
 
