@@ -40,7 +40,7 @@ function renderTable(rows, page, page_size, total) {
 
   if (!rows || rows.length === 0) {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td colspan="6" class="px-3 py-3 border text-center text-gray-500">ไม่พบข้อมูล</td>`;
+    tr.innerHTML = `<td colspan="7" class="px-3 py-3 border text-center text-gray-500">ไม่พบข้อมูล</td>`;
     tbody.appendChild(tr);
   } else {
     rows.forEach(r => {
@@ -56,6 +56,7 @@ function renderTable(rows, page, page_size, total) {
         <td class="px-3 py-2 border cell-first">${escapeHtml(r.first_name || '')}</td>
         <td class="px-3 py-2 border cell-last">${escapeHtml(r.last_name || '')}</td>
         <td class="px-3 py-2 border cell-cid">${escapeHtml(r.citizen_id || '')}</td>
+        <td class="px-3 py-2 border cell-plates">${escapeHtml(r.car_plates || '-')}</td>
         <td class="px-3 py-2 border cell-actions">
           <button class="btn-edit bg-white border px-2 py-1 rounded hover:bg-gray-50">แก้ไข</button>
           <button class="btn-delete bg-white border px-2 py-1 rounded hover:bg-gray-50 ml-2 text-red-700">ลบ</button>

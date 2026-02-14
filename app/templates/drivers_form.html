@@ -34,9 +34,8 @@
             </div>
         </div>
 
-        <!-- Panel: Tab 1 (ย้ายของเดิมมาไว้ที่นี่ทั้งหมด) -->
+        <!-- Panel: Tab 1 -->
         <div id="tab-t1">
-            <!-- ===== ของเดิม: กล่องฟอร์มเพิ่มพนักงาน ===== -->
             <div class="bg-white rounded-lg p-6 shadow mb-8">
                 <h2 class="text-lg font-bold mb-4">เพิ่มพนักงานขับรถ</h2>
                 <form id="driverForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -74,7 +73,6 @@
                 </form>
             </div>
 
-            <!-- ===== ของเดิม: กล่องตารางรายการ ===== -->
             <div class="bg-white rounded-lg p-6 shadow">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-lg font-bold">รายการพนักงานขับรถ</h2>
@@ -96,6 +94,7 @@
                                 <th class="px-3 py-2 border text-left">ชื่อ</th>
                                 <th class="px-3 py-2 border text-left">นามสกุล</th>
                                 <th class="px-3 py-2 border text-left">เลขบัตรประชาชน</th>
+                                <th class="px-3 py-2 border text-left">ทะเบียนรถ</th>
                                 <th class="px-3 py-2 border text-left w-40">การทำงาน</th>
                             </tr>
                         </thead>
@@ -119,14 +118,12 @@
         <div id="tab-t2" class="hidden">
             <div class="bg-white rounded-lg p-4 shadow mb-6">
                 <div class="flex flex-wrap items-center gap-3">
-                    <!-- เลือกคนขับ -->
                     <label class="text-sm text-gray-600">พนักงานขับรถ</label>
                     <input id="sum_driver" type="text" list="driversSuggest2"
                         placeholder="พิมพ์รหัส/บัตร/ชื่อ/สกุล แล้วเลือก" class="border rounded px-2 py-1 w-72" />
                     <datalist id="driversSuggest2"></datalist>
                     <input type="hidden" id="sum_driver_id" />
 
-                    <!-- ปุ่มเลือกระดับสรุป -->
                     <div class="inline-flex rounded-md shadow-sm" role="group">
                         <button type="button" data-gran="day"
                             class="btn-gran px-4 py-2 text-sm font-medium border rounded-l-md bg-blue-600 text-white">รายวัน</button>
@@ -136,7 +133,6 @@
                             class="btn-gran px-4 py-2 text-sm font-medium border rounded-r-md bg-white hover:bg-gray-50">รายปี</button>
                     </div>
 
-                    <!-- ฟิลเตอร์รายวัน -->
                     <div id="filter-day" class="flex items-center gap-2">
                         <label class="text-sm text-gray-600">วันที่</label>
                         <input id="dayFrom_dv" type="date" class="border rounded px-2 py-1">
@@ -144,13 +140,11 @@
                         <input id="dayTo_dv" type="date" class="border rounded px-2 py-1">
                     </div>
 
-                    <!-- ฟิลเตอร์รายเดือน -->
                     <div id="filter-month" class="hidden items-center gap-2">
                         <label class="text-sm text-gray-600">เดือน</label>
                         <input id="monthPick_dv" type="month" class="border rounded px-2 py-1">
                     </div>
 
-                    <!-- ฟิลเตอร์รายปี -->
                     <div id="filter-year" class="hidden items-center gap-2">
                         <label class="text-sm text-gray-600">ปี</label>
                         <input id="yearPick_dv" type="number" class="border rounded px-2 py-1 w-28" step="1" min="2000"
