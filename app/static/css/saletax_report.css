@@ -8,14 +8,15 @@ body {
 .kpi{background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;
      padding:12px;text-align:right;}
 .kpi .kpi-title{font-size:11px;color:#6b7280;}
-.kpi .kpi-value{font-size:20px;font-weight:800;color:#111827;}
+.kpi .kpi-value{font-size:18px;font-weight:800;color:#111827;}
 .kpi-purple{background:#faf5ff;border-color:#e9d5ff;}
 .kpi-purple .kpi-title{color:#7c3aed;}
 .kpi-purple .kpi-value{color:#6d28d9;}
 
 /* ตาราง */
+#sale-tax-table{font-size:11px;}
 #sale-tax-table th,#sale-tax-table td{
-  border:1px solid #d1d5db;padding:6px 8px;}
+  border:1px solid #d1d5db;padding:4px 6px;line-height:1.3;}
 #sale-tax-table th{background:#f9fafb;font-weight:600;text-align:center;}
 .text-right{text-align:right;}
 .text-center{text-align:center;}
@@ -39,3 +40,5 @@ body {
 @media screen{
   .print-only{display:none;}
 }
+#pagination-controls{print-color-adjust:exact;}
+@media print{#pagination-controls{display:none!important;}}
