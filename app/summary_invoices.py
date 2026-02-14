@@ -168,7 +168,7 @@ def api_invoices_list(
             inv.fname,
             inv.po_number,
             func.coalesce(sub.c.amount, 0).label("amount"),
-            drv.driver_name,
+            func.concat(func.coalesce(drv.first_name, ''), ' ', func.coalesce(drv.last_name, '')).label("driver_name"),
         )
         .outerjoin(
             sub,
