@@ -168,7 +168,7 @@ class Car(Base):
 
 class Driver(Base):
     __tablename__ = "drivers"
-    __table_args__ = {"schema": "products", "extend_existing": True}
+    __table_args__ = {"schema": "products"}
 
     driver_id = Column(String(10), primary_key=True)
     citizen_id = Column(String(13))

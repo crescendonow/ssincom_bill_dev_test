@@ -4,24 +4,16 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, Column, String
-from .database import SessionLocal, Base
+from .database import SessionLocal
+from . import models
+from .models import Driver
 
 from datetime import date
 from sqlalchemy import func
-from . import models  # ต้องมี models.Invoice และ models.InvoiceItem อยู่แล้ว
 
 VAT_RATE = 0.07
 
 router = APIRouter()
-
-class Driver(Base):
-    __tablename__ = "drivers"
-    __table_args__ = {"schema": "products"}
-    driver_id = Column(String(8), primary_key=True, index=True)  # D0001
-    citizen_id = Column(String(13), unique=True, index=True, nullable=False)
-    prefix = Column(String(16))
-    first_name = Column(String(64), nullable=False)
-    last_name = Column(String(64), nullable=False)
 
 def get_db():
     db = SessionLocal()
@@ -315,4 +307,3 @@ def driver_invoices(
             "car_numberplate": car_numberplate or "",
         })
     return out
-
