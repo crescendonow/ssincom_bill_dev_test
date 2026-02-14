@@ -103,6 +103,11 @@ document.addEventListener("DOMContentLoaded", () => {
             totalBefore += r.before_vat; totalTon += r.sum_qty; totalVat += vat; totalGrand += grand;
             const branch = r.cf_hq == 1 ? "สำนักงานใหญ่" : (r.cf_branch ? `สาขาที่ ${r.cf_branch}` : "-");
 
+            const items = r.items || [];
+            const itemIds = items.map(it => it.cf_itemid || "").filter(Boolean).join(", ") || "-";
+            const itemNames = items.map(it => it.cf_itemname || "").filter(Boolean).join(", ") || "-";
+            const driverName = r.driver_name || "-";
+
             const tr = document.createElement("tr");
             tr.innerHTML = `
         <td class="text-center">${i + 1}</td>
@@ -112,6 +117,9 @@ document.addEventListener("DOMContentLoaded", () => {
         <td>${r.company || "-"}</td>
         <td class="text-center">${r.cf_taxid || "-"}</td>
         <td class="text-center">${branch}</td>
+        <td class="text-center">${driverName}</td>
+        <td class="text-center">${itemIds}</td>
+        <td>${itemNames}</td>
         <td class="text-center">${fmtNum(r.sum_qty || 0)}</td>
         <td class="text-right">${fmtNum(r.before_vat)}</td>
         <td class="text-right">${fmtNum(vat)}</td>
@@ -122,7 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const trSum = document.createElement("tr");
         trSum.className = "font-bold bg-gray-50";
         trSum.innerHTML = `
-      <td colspan="7" class="text-right">รวม</td>
+      <td colspan="10" class="text-right">รวม</td>
       <td class="text-right">${fmtNum(totalTon)}</td>
       <td class="text-right">${fmtNum(totalBefore)}</td>
       <td class="text-right">${fmtNum(totalVat)}</td>
@@ -150,6 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
             "ลำดับ", "วันเดือนปี", "เลขที่ใบกำกับ",
             "รหัสลูกค้า", "ชื่อผู้ขายสินค้า/บริการ",
             "เลขประจำตัวผู้เสียภาษี", "สถานประกอบการ",
+            "พนักงานขับรถ", "รหัสสินค้า", "รายการสินค้า",
             "จำนวนตัน",
             "มูลค่าสินค้า/บริการ", "VAT", "รวม"
         ];
@@ -163,14 +172,22 @@ document.addEventListener("DOMContentLoaded", () => {
             const branch = (r.cf_hq == 1) ? "สำนักงานใหญ่"
                 : (r.cf_branch ? `สาขาที่ ${r.cf_branch}` : "-");
 
+            const items = r.items || [];
+            const itemIds = items.map(it => it.cf_itemid || "").filter(Boolean).join(", ") || "-";
+            const itemNames = items.map(it => it.cf_itemname || "").filter(Boolean).join(", ") || "-";
+            const driverName = r.driver_name || "-";
+
             data.push([
                 i + 1,
-                fmtThaiDate(r.invoice_date), // เป็น string ไทยอ่านง่าย
+                fmtThaiDate(r.invoice_date),
                 r.invoice_number || "-",
                 r.personid || "-",
                 r.company || "-",
                 r.cf_taxid || "-",
                 branch,
+                driverName,
+                itemIds,
+                itemNames,
                 Number(r.sum_qty || 0),
                 before, vat, grand
             ]);
@@ -181,13 +198,14 @@ document.addEventListener("DOMContentLoaded", () => {
         // ความกว้างคอลัมน์
         ws['!cols'] = [
             { wch: 8 }, { wch: 14 }, { wch: 10 }, { wch: 16 }, { wch: 14 },
-            { wch: 36 }, { wch: 20 }, { wch: 14 }, { wch: 16 }, { wch: 12 }, { wch: 16 }
+            { wch: 36 }, { wch: 20 }, { wch: 20 }, { wch: 12 }, { wch: 40 },
+            { wch: 14 }, { wch: 16 }, { wch: 12 }, { wch: 16 }
         ];
 
         // จัดรูปแบบตัวเลขให้คอลัมน์เงิน
         const range = XLSX.utils.decode_range(ws['!ref']);
         for (let R = 1; R <= range.e.r; R++) {
-            [8, 9, 10].forEach(C => {
+            [11, 12, 13].forEach(C => {
                 const addr = XLSX.utils.encode_cell({ r: R, c: C });
                 const cell = ws[addr];
                 if (cell && typeof cell.v === 'number') {

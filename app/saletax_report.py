@@ -38,6 +38,7 @@ def saletax_list(
     inv = models.Invoice
     itm = models.InvoiceItem
     cust = models.CustomerList
+    drv = models.Driver
 
     qty_in_ton = func.sum(
     case(
@@ -63,7 +64,12 @@ def saletax_list(
         cust.cf_hq.label("hq"),
         cust.cf_branch.label("branch"),
         qty_in_ton,
-        sum_amount.label("before_vat")
+        sum_amount.label("before_vat"),
+        func.concat(
+            func.coalesce(drv.prefix, ''), ' ',
+            func.coalesce(drv.first_name, ''), ' ',
+            func.coalesce(drv.last_name, '')
+        ).label("driver_name"),
     ).outerjoin(
         itm,
         or_(
@@ -73,9 +79,11 @@ def saletax_list(
     ).outerjoin(
         cust,
         cust.personid == inv.personid
+    ).outerjoin(
+        drv,
+        inv.driver_id == drv.driver_id
     )
 
-    # ---- เงื่อนไขช่วงเวลา ----
     if month and len(month) == 7:
         q = q.filter(func.to_char(inv.invoice_date, 'YYYY-MM') == month)
     elif year:
@@ -91,22 +99,67 @@ def saletax_list(
         inv.idx, inv.invoice_number, inv.invoice_date,
         inv.fname, inv.personid,
         func.coalesce(inv.cf_taxid, cust.cf_taxid),
-        cust.cf_hq, cust.cf_branch
+        cust.cf_hq, cust.cf_branch,
+        drv.prefix, drv.first_name, drv.last_name
     ).order_by(inv.invoice_date.asc(), inv.invoice_number.asc())
 
+    results = q.all()
+
+    # Batch-load items
+    inv_ids = [r[0] for r in results]
+    inv_number_map = {r[0]: r[1] for r in results}
+
+    items_by_inv = {idx: [] for idx in inv_ids}
+    if inv_ids:
+        all_inv_numbers = set()
+        all_idx_strings = set()
+        for _idx in inv_ids:
+            inv_no = inv_number_map.get(_idx)
+            if inv_no:
+                all_inv_numbers.add(inv_no)
+            all_idx_strings.add(str(_idx))
+
+        lookup_values = all_inv_numbers | all_idx_strings
+        item_rows = (
+            db.query(itm)
+            .filter(itm.invoice_number.in_(lookup_values))
+            .order_by(itm.idx.asc())
+            .all()
+        )
+
+        inv_no_to_idx = {}
+        for _idx in inv_ids:
+            inv_no = inv_number_map.get(_idx)
+            if inv_no and inv_no not in inv_no_to_idx:
+                inv_no_to_idx[inv_no] = _idx
+            idx_str = str(_idx)
+            if idx_str not in inv_no_to_idx:
+                inv_no_to_idx[idx_str] = _idx
+
+        for r in item_rows:
+            parent_idx = inv_no_to_idx.get(r.invoice_number)
+            if parent_idx is not None and parent_idx in items_by_inv:
+                items_by_inv[parent_idx].append({
+                    "cf_itemid": r.cf_itemid,
+                    "cf_itemname": r.cf_itemname,
+                })
+
     rows = []
-    for idx, inv_no, inv_date, company, personid, tax_id, hq, branch, sum_qty, before in q.all():
+    for idx, inv_no, inv_date, company, personid, tax_id, hq, branch, sum_qty, before, driver_name in results:
         qty = float(sum_qty or 0.0)
         before = float(before or 0.0)
-
         vat = before * VAT_RATE
         grand = before + vat
 
         branch_text = (
-            "สำนักงานใหญ่"
+            "\u0e2a\u0e33\u0e19\u0e31\u0e01\u0e07\u0e32\u0e19\u0e43\u0e2b\u0e0d\u0e48"
             if (hq == 1 or hq == "1")
-            else (f"สาขาที่ {branch}" if branch else "-")
+            else (f"\u0e2a\u0e32\u0e02\u0e32\u0e17\u0e35\u0e48 {branch}" if branch else "-")
         )
+
+        drv_name = (driver_name or "").strip()
+        if not drv_name or drv_name.replace(" ", "") == "":
+            drv_name = "-"
 
         rows.append({
             "idx": idx,
@@ -122,6 +175,8 @@ def saletax_list(
             "before_vat": round(before, 2),
             "vat": round(vat, 2),
             "grand": round(grand, 2),
+            "driver_name": drv_name,
+            "items": items_by_inv.get(idx, []),
         })
 
     return rows
