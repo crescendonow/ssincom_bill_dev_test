@@ -626,7 +626,7 @@ def grn_summary(grn: str = Query(..., min_length=1), db: Session = Depends(get_d
           (SELECT personid FROM inv_first) AS personid_first,
           (SELECT ARRAY_AGG(DISTINCT cf_itemid) FROM src) AS product_codes,
           (SELECT ARRAY_AGG(DISTINCT cf_itemname) FROM src) AS descriptions,
-          (SELECT COALESCE(SUM(quantity),0) FROM src) AS quantity_sum
+          (SELECT COALESCE(SUM(sum_quantity),0) FROM src) AS quantity_sum
     """)
     row = db.execute(sql, {"grn": grn}).first()
     if not row:
