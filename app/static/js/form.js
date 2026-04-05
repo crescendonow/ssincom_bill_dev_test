@@ -52,6 +52,8 @@ function fillInvoiceForm(h) {
   setVal("due_date", h.due_date);
   setVal("car_numberplate", h.car_numberplate);
   setVal("cf_branch", h.cf_branch);
+  setVal("driver_id", h.driver_id);
+  setVal("driver_search", h.driver_id);
   computeAndFillDueDate();
 }
 
@@ -96,10 +98,36 @@ async function searchDrivers(q, page = 1, pageSize = 20) {
   if (!input || !list || !hid) return;
 
   const deb = (fn, t = 250) => { let h; return (...a) => { clearTimeout(h); h = setTimeout(() => fn(...a), t) } };
+  const DRIVER_ID_RE = /^D\d+$/i;
+
+  function resolveDriverId(raw) {
+    const label = (raw || '').trim();
+    if (!label) return '';
+
+    const matchedOption = Array.from(list.options || []).find(opt => (opt.value || '').trim() === label);
+    if (matchedOption?.dataset?.driverId) return matchedOption.dataset.driverId.trim();
+
+    const token = label.split('|')[0]?.trim() || '';
+    if (DRIVER_ID_RE.test(token)) return token.toUpperCase();
+    if (DRIVER_ID_RE.test(label)) return label.toUpperCase();
+    return '';
+  }
+
+  function syncDriverId() {
+    hid.value = resolveDriverId(input.value);
+    if (!input.value.trim()) {
+      if (msg) msg.textContent = '';
+      return '';
+    }
+    if (!hid.value && msg) msg.textContent = 'กรุณาเลือกคนขับจากรายการ หรือกรอก Driver ID ที่ถูกต้อง';
+    return hid.value;
+  }
 
   async function suggest() {
     const q = (input.value || '').trim();
-    list.innerHTML = ''; hid.value = ''; if (msg) msg.textContent = '';
+    list.innerHTML = '';
+    syncDriverId();
+    if (msg && hid.value) msg.textContent = '';
     const { items, total } = await searchDrivers(q);
     (items || []).forEach(d => {
       const label = `${d.driver_id} | ${d.citizen_id} | ${(d.prefix || '').trim()}${d.prefix ? ' ' : ''}${(d.first_name || '').trim()} ${(d.last_name || '').trim()}`;
@@ -112,7 +140,10 @@ async function searchDrivers(q, page = 1, pageSize = 20) {
   }
 
   input.addEventListener('input', deb(suggest, 250));
-  input.addEventListener('change', () => {
+  input.addEventListener('change', syncDriverId);
+  input.addEventListener('blur', syncDriverId);
+  window.syncDriverIdField = syncDriverId;
+  (() => {
     const label = (input.value || '').trim();
     // driver_id จะเป็น token แรกก่อน " | "
     const m = label.match(/^([^|]+)/);
@@ -463,6 +494,7 @@ function previewInvoice(evt) {
   if (!popup) { alert("Safari บล็อคหน้าต่างใหม่ กรุณาอนุญาต pop-up"); return; }
 
   computeAndFillDueDate();
+  if (typeof window.syncDriverIdField === "function") window.syncDriverIdField();
   const formEl = document.getElementById("invoice_form");
   const fd = new FormData(formEl);
   let dateStr = fd.get("invoice_date");
@@ -508,6 +540,7 @@ function previewInvoice(evt) {
 window.previewInvoice = previewInvoice;
 
 async function saveInvoice() {
+  if (typeof window.syncDriverIdField === "function") window.syncDriverIdField();
   const formEl = document.getElementById("invoice_form");
   const fd = new FormData(formEl);
   const _d = fd.get("invoice_date");
@@ -524,6 +557,7 @@ window.saveInvoice = saveInvoice;
 
 function buildUpdatePayload() {
   const v = id => document.getElementById(id)?.value ?? '';
+  if (typeof window.syncDriverIdField === "function") window.syncDriverIdField();
   computeAndFillDueDate();
   const payload = {
     invoice_number: v('invoice_number'),

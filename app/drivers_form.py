@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, Column, String
+from sqlalchemy.exc import IntegrityError
 from .database import SessionLocal
 from . import models
 from .models import Driver
@@ -31,10 +32,15 @@ class DriverIn(BaseModel):
     @field_validator("citizen_id")
     @classmethod
     def validate_citizen_id(cls, v: str) -> str:
-        v = "".join(ch for ch in v if ch.isdigit())
+        v = "".join(ch for ch in (v or "").strip() if ch.isdigit())
         if len(v) != 13:
             raise ValueError("citizen_id ต้องมี 13 หลัก")
         return v
+
+    @field_validator("prefix", "first_name", "last_name")
+    @classmethod
+    def strip_text(cls, v: Optional[str]) -> str:
+        return (v or "").strip()
 
 class DriverOut(BaseModel):
     driver_id: str
@@ -130,8 +136,12 @@ def create_driver(data: DriverIn, db: Session = Depends(get_db)):
         first_name = data.first_name,
         last_name = data.last_name
     )
-    db.add(driver)
-    db.commit()
+    try:
+        db.add(driver)
+        db.commit()
+    except IntegrityError as e:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=f"save driver failed: {e.orig}")
     db.refresh(driver)
     return DriverOut(
         driver_id=driver.driver_id,
@@ -156,7 +166,11 @@ def update_driver(driver_id: str, data: DriverIn, db: Session = Depends(get_db))
     driver.last_name = data.last_name
     driver.citizen_id = data.citizen_id
 
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as e:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=f"update driver failed: {e.orig}")
     db.refresh(driver)
     return DriverOut(
         driver_id=driver.driver_id,

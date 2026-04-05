@@ -14,6 +14,21 @@ function setFormMsg(msg, isError = false) {
   el.textContent = msg || '';
   el.className = 'text-sm ml-2 ' + (isError ? 'text-red-600' : 'text-green-600');
 }
+async function parseApiError(res, fallback) {
+  let detail = fallback;
+  try {
+    const data = await res.clone().json();
+    if (typeof data?.detail === 'string') detail = data.detail;
+    else if (Array.isArray(data?.detail)) detail = data.detail.map(x => x?.msg || JSON.stringify(x)).join(', ');
+    else if (data?.message) detail = data.message;
+  } catch {
+    try {
+      const text = (await res.text()).trim();
+      if (text) detail = text;
+    } catch { }
+  }
+  return detail;
+}
 
 /* ========== Drivers table CRUD ========== */
 async function loadDrivers(isNextAttempt = false) {
@@ -87,7 +102,7 @@ async function onCreateSubmit(e) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prefix, first_name, last_name, citizen_id })
     });
-    if (!res.ok) throw new Error(await res.text() || 'บันทึกไม่สำเร็จ');
+    if (!res.ok) throw new Error(await parseApiError(res, 'save driver failed'));
     setFormMsg('บันทึกสำเร็จ ✅');
     resetForm(); currentPage = 1; loadDrivers();
   } catch (err) {
@@ -137,7 +152,7 @@ async function onSaveRow(tr) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (!res.ok) throw new Error(await res.text() || 'บันทึกไม่สำเร็จ');
+    if (!res.ok) throw new Error(await parseApiError(res, 'update driver failed'));
 
     tr.dataset.prefix = data.prefix;
     tr.dataset.first = data.first_name;
@@ -152,7 +167,7 @@ async function onDeleteRow(tr) {
   if (!confirm('ยืนยันการลบรายการนี้?')) return;
   try {
     const res = await fetch(`${ENDPOINT_DRIVERS}/${encodeURIComponent(tr.dataset.id)}`, { method: 'DELETE' });
-    if (!(res.ok || res.status === 204)) throw new Error('ลบไม่สำเร็จ');
+    if (!(res.ok || res.status === 204)) throw new Error(await parseApiError(res, 'delete driver failed'));
     if (editingId === tr.dataset.id) editingId = null;
     loadDrivers();
   } catch (err) { console.error(err); alert('เกิดข้อผิดพลาดระหว่างลบ'); }

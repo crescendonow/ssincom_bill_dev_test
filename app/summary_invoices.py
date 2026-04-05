@@ -341,6 +341,7 @@ def api_invoice_detail(invoice_id: int, db: Session = Depends(get_db)):
         "fmlpaymentcreditday": inv.fmlpaymentcreditday,
         "due_date": _iso(inv.due_date),
         "car_numberplate": inv.car_numberplate,
+        "driver_id": inv.driver_id,
     }
     return {"invoice": invoice, "items": items}
 
@@ -359,11 +360,15 @@ def api_invoice_update(invoice_id: int, payload: Dict[str, Any] = Body(...), db:
     head_fields = [
         "invoice_number", "invoice_date", "grn_number", "dn_number", "po_number",
         "fname", "personid", "tel", "mobile", "cf_personaddress", "cf_personzipcode",
-        "cf_provincename", "cf_taxid", "fmlpaymentcreditday", "due_date", "car_numberplate"
+        "cf_provincename", "cf_taxid", "fmlpaymentcreditday", "due_date", "car_numberplate",
+        "driver_id"
     ]
     for k in head_fields:
         if k in payload:
-            setattr(inv, k, payload[k])
+            val = payload[k]
+            if k == "driver_id" and isinstance(val, str):
+                val = val.strip() or None
+            setattr(inv, k, val)
 
     new_inv_no = inv.invoice_number or old_inv_no
 

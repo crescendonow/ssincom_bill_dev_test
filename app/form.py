@@ -30,6 +30,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, File
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func, cast, Integer, Date
+from sqlalchemy.exc import IntegrityError
 
 from .database import SessionLocal
 from . import models
@@ -199,6 +200,8 @@ def submit(
     d = _parse_ymd(invoice_date)
     due = _parse_ymd(due_date) or (d + timedelta(days=fmlpaymentcreditday) if d and fmlpaymentcreditday else None)
 
+    normalized_driver_id = (driver_id or "").strip() or None
+
     inv = models.Invoice(
         invoice_number=invoice_number,
         invoice_date=d,
@@ -216,27 +219,31 @@ def submit(
         fmlpaymentcreditday=fmlpaymentcreditday,
         due_date=due,
         car_numberplate=car_numberplate,
-        driver_id=(driver_id or None), 
+        driver_id=normalized_driver_id,
     )
-    db.add(inv)
-    db.flush()
+    try:
+        db.add(inv)
+        db.flush()
 
-    for i in range(len(product_code)):
-        qty   = float(quantity[i] or 0)
-        price = float(unit_price[i] or 0)
-        db.add(models.InvoiceItem(
-            invoice_number=inv.idx,
-            personid=personid,
-            cf_itemid=product_code[i],
-            cf_itemname=description[i],
-            cf_unitname=None,
-            cf_itempricelevel_price=price,
-            cf_items_ordinary=i+1,
-            quantity=qty,
-            amount=qty*price
-        ))
+        for i in range(len(product_code)):
+            qty   = float(quantity[i] or 0)
+            price = float(unit_price[i] or 0)
+            db.add(models.InvoiceItem(
+                invoice_number=inv.idx,
+                personid=personid,
+                cf_itemid=product_code[i],
+                cf_itemname=description[i],
+                cf_unitname=None,
+                cf_itempricelevel_price=price,
+                cf_items_ordinary=i+1,
+                quantity=qty,
+                amount=qty*price
+            ))
 
-    db.commit()
+        db.commit()
+    except IntegrityError as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"save invoice failed: {e.orig}")
     db.refresh(inv)
     return {"message": "saved", "invoice_idx": inv.idx, "invoice_number": inv.invoice_number}
 
@@ -285,6 +292,7 @@ def api_invoice_detail(inv_id: int, db: Session = Depends(get_db)):
         "due_date": inv.due_date.isoformat() if inv.due_date else None,
         "car_numberplate": inv.car_numberplate,
         "cf_branch": inv.cf_branch,
+        "driver_id": inv.driver_id,
     }
 
     rows = db.query(models.InvoiceItem)\
@@ -332,6 +340,7 @@ class InvoiceUpdate(BaseModel):
     due_date: Optional[str] = None
     car_numberplate: Optional[str] = None
     cf_branch: Optional[str] = None
+    driver_id: Optional[str] = None
     items: Optional[list[InvoiceItemIn]] = None
 
 @router.put("/api/invoices/{inv_id}")
@@ -345,10 +354,12 @@ def api_update_invoice(inv_id: int, payload: InvoiceUpdate, db: Session = Depend
         "cf_personaddress","cf_personzipcode","cf_provincename","cf_taxid",
         "po_number","grn_number","dn_number",
         "fmlpaymentcreditday","car_numberplate",
-        "cf_branch",
+        "cf_branch","driver_id",
     ]:
         val = getattr(payload, field)
         if val is not None:
+            if field == "driver_id" and isinstance(val, str):
+                val = val.strip() or None
             setattr(inv, field, val)
 
     d = _parse_ymd(payload.invoice_date) if payload.invoice_date is not None else None

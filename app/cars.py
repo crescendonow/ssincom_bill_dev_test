@@ -1,9 +1,10 @@
 # app/cars.py
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Body
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
 
 from .database import SessionLocal
 from . import models
@@ -22,6 +23,22 @@ class CarIn(BaseModel):
     number_plate: str
     car_brand: Optional[str] = None
     province: Optional[str] = None
+
+    @field_validator("number_plate")
+    @classmethod
+    def validate_number_plate(cls, v: str) -> str:
+        v = (v or "").strip()
+        if not v:
+            raise ValueError("number_plate is required")
+        return v
+
+    @field_validator("car_brand", "province")
+    @classmethod
+    def strip_optional_text(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        v = v.strip()
+        return v or None
 
 class CarOut(BaseModel):
     idx: int
@@ -77,7 +94,13 @@ def create_car(data: CarIn, db: Session = Depends(get_db)):
     if exists:
         raise HTTPException(status_code=409, detail="duplicate number_plate")
     car = models.Car(number_plate=data.number_plate, car_brand=data.car_brand, province=data.province)
-    db.add(car); db.commit(); db.refresh(car)
+    try:
+        db.add(car)
+        db.commit()
+    except IntegrityError as e:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=f"save car failed: {e.orig}")
+    db.refresh(car)
     return CarOut(idx=car.idx, number_plate=car.number_plate, car_brand=car.car_brand, province=car.province)
 
 # --------- Update -----------
@@ -91,7 +114,12 @@ def update_car(idx: int, data: CarIn, db: Session = Depends(get_db)):
     car.number_plate = data.number_plate
     car.car_brand = data.car_brand
     car.province = data.province
-    db.commit(); db.refresh(car)
+    try:
+        db.commit()
+    except IntegrityError as e:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=f"update car failed: {e.orig}")
+    db.refresh(car)
     return CarOut(idx=car.idx, number_plate=car.number_plate, car_brand=car.car_brand, province=car.province)
 
 # --------- Delete -----------

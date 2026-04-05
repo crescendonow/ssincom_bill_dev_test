@@ -22,6 +22,21 @@ function setFormMsg(msg, isError = false) {
   el.textContent = msg || '';
   el.className = 'text-sm ml-2 ' + (isError ? 'text-red-600' : 'text-green-600');
 }
+async function parseApiError(res, fallback) {
+  let detail = fallback;
+  try {
+    const data = await res.clone().json();
+    if (typeof data?.detail === 'string') detail = data.detail;
+    else if (Array.isArray(data?.detail)) detail = data.detail.map(x => x?.msg || JSON.stringify(x)).join(', ');
+    else if (data?.message) detail = data.message;
+  } catch {
+    try {
+      const text = (await res.text()).trim();
+      if (text) detail = text;
+    } catch { }
+  }
+  return detail;
+}
 
 // ====== Search box autocomplete (ทะเบียน/ยี่ห้อ/จังหวัด) ======
 async function suggestSearch() {
@@ -159,7 +174,7 @@ async function onCreateSubmit(e) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ number_plate, car_brand, province })
     });
-    if (!res.ok) throw new Error(await res.text() || 'บันทึกไม่สำเร็จ');
+    if (!res.ok) throw new Error(await parseApiError(res, 'save car failed'));
     setFormMsg('บันทึกสำเร็จ ✅');
     resetForm(); currentPage = 1; loadCars();
   } catch (err) {
@@ -220,7 +235,7 @@ async function onSaveRow(tr) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ number_plate: np, car_brand: br, province: pv })
     });
-    if (!res.ok) throw new Error(await res.text() || 'บันทึกไม่สำเร็จ');
+    if (!res.ok) throw new Error(await parseApiError(res, 'update car failed'));
 
     // update dataset + cheange to view mode
     tr.dataset.plate = np; tr.dataset.brand = br; tr.dataset.province = pv;
@@ -236,7 +251,7 @@ async function onDeleteRow(tr) {
   if (!confirm('ยืนยันการลบรายการนี้?')) return;
   try {
     const res = await fetch(`${ENDPOINT_CARS}/${idx}`, { method: 'DELETE' });
-    if (!(res.ok || res.status === 204)) throw new Error('ลบไม่สำเร็จ');
+    if (!(res.ok || res.status === 204)) throw new Error(await parseApiError(res, 'delete car failed'));
     if (editingIdx === idx) editingIdx = null;
     loadCars();
   } catch (err) { console.error(err); alert('เกิดข้อผิดพลาดระหว่างลบ'); }
