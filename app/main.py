@@ -36,7 +36,7 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 @app.get("/login", response_class=HTMLResponse)
 def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse(request, "login.html", {"request": request})
 
 @app.post("/login")
 async def do_login(request: Request, username: str = Form(...), password: str = Form(...), next: str = Form("/dashboard")):
@@ -60,7 +60,7 @@ async def dashboard(request: Request):
     if not request.session.get("user"):
         # พาไปล็อกอินก่อน
         return RedirectResponse(url="/login", status_code=303)
-    return templates.TemplateResponse("dashboard.html", {"request": request, "user": request.session.get("user")})
+    return templates.TemplateResponse(request, "dashboard.html", {"request": request, "user": request.session.get("user")})
 
 # install router 
 app.include_router(form_router)
@@ -77,7 +77,7 @@ app.include_router(credit_router)
 @app.get("/summary_invoices.html", response_class=HTMLResponse)
 def summary_invoices_page(request: Request):
     try:
-        return templates.TemplateResponse("summary_invoices.html", {"request": request})
+        return templates.TemplateResponse(request, "summary_invoices.html", {"request": request})
     except TemplateNotFound:
         return HTMLResponse("<h3>templates/summary_invoices.html not found</h3>", status_code=200)
 
@@ -85,7 +85,7 @@ def summary_invoices_page(request: Request):
 @app.get("/car_numberplate.html", response_class=HTMLResponse)
 def car_numberplate_page(request: Request):
     try:
-        return templates.TemplateResponse("car_numberplate.html", {"request": request})
+        return templates.TemplateResponse(request, "car_numberplate.html", {"request": request})
     except TemplateNotFound:
         return HTMLResponse("<h3>templates/car_numberplate.html not found</h3>", status_code=200)
 
@@ -93,21 +93,21 @@ def car_numberplate_page(request: Request):
 @app.get("/customers", response_class=HTMLResponse)
 def customers_page(request: Request):
     try:
-        return templates.TemplateResponse("customer_form.html", {"request": request})
+        return templates.TemplateResponse(request, "customer_form.html", {"request": request})
     except TemplateNotFound:
         return HTMLResponse("<h3>templates/customer_form.html not found</h3>", status_code=200)
 
 # จัดการพนักงานขับรถ
 @app.get("/drivers.html", response_class=HTMLResponse)
 def drivers_page(request: Request):
-    return templates.TemplateResponse("drivers_form.html", {"request": request})
+    return templates.TemplateResponse(request, "drivers_form.html", {"request": request})
 
 # หน้า: จัดการสินค้า (ถ้ามี products.html)
 @app.get("/products", response_class=HTMLResponse)
 @app.get("/products.html", response_class=HTMLResponse)
 def products_page(request: Request):
     try:
-        return templates.TemplateResponse("product_form.html", {"request": request})
+        return templates.TemplateResponse(request, "product_form.html", {"request": request})
     except TemplateNotFound:
         return HTMLResponse("<h3>templates/product_form.html not found</h3>", status_code=200)
 
@@ -115,7 +115,7 @@ def products_page(request: Request):
 @app.get("/bill_note.html", response_class=HTMLResponse)
 def bill_note_page(request: Request):
     try:
-        return templates.TemplateResponse("bill_note.html", {"request": request})
+        return templates.TemplateResponse(request, "bill_note.html", {"request": request})
     except TemplateNotFound:
         raise HTTPException(status_code=404, detail="Template not found")
 
@@ -123,7 +123,7 @@ def bill_note_page(request: Request):
 @app.get("/saletax_report.html", response_class=HTMLResponse)
 def saletax_report_page(request: Request):
     try:
-        return templates.TemplateResponse("saletax_report.html", {"request": request})
+        return templates.TemplateResponse(request, "saletax_report.html", {"request": request})
     except TemplateNotFound:
         return HTMLResponse("<h3>templates/saletax_report.html not found</h3>", status_code=200)
 

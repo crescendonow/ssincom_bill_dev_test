@@ -154,7 +154,7 @@ def _parse_ymd(s: Optional[str]) -> Optional[date]:
 @router.get("/form", response_class=HTMLResponse)
 @router.get("/form.html", response_class=HTMLResponse)
 def form_page(request: Request):
-    return templates.TemplateResponse("form.html", {"request": request})
+    return templates.TemplateResponse(request, "form.html", {"request": request})
 
 # ---------- API: ตรวจเลขซ้ำ ----------
 @router.get("/api/invoices/check-number")
@@ -395,6 +395,7 @@ def api_update_invoice(inv_id: int, payload: InvoiceUpdate, db: Session = Depend
 @router.post("/preview", response_class=HTMLResponse)
 def preview(request: Request, payload: dict = Body(...)):
     return templates.TemplateResponse(
+        request,
         "invoice.html",
         {
             "request": request,
@@ -456,6 +457,7 @@ def export_merged_pdf(request: Request, payload: dict = Body(...)):
 
             # 1) เรนเดอร์ HTML เดียวกับ preview
             html_resp = templates.TemplateResponse(
+                request,
                 "invoice.html",
                 {
                     "request": request,

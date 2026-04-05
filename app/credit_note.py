@@ -103,7 +103,7 @@ def generate_creditnote_number(db: Session, doc_date: date) -> str:
 # --- PAGES ---
 @router.get("/credit_note_form.html", response_class=HTMLResponse)
 def credit_note_form_page(request: Request):
-    return templates.TemplateResponse("credit_note_form.html", {"request": request})
+    return templates.TemplateResponse(request, "credit_note_form.html", {"request": request})
 
 @router.get("/api/customers/suggest-personid")
 def api_cust_suggest_personid(q: str = Query(""), limit: int = Query(10, ge=1, le=50), db: Session = Depends(get_db)):
@@ -281,7 +281,7 @@ def credit_note_preview_page(request: Request, no: str = Query(...), db: Session
         # เหตุผล default
         "reason": "คิดราคาสินค้าไม่ถูกต้อง",
     }
-    return templates.TemplateResponse("credit_note.html", ctx)
+    return templates.TemplateResponse(request, "credit_note.html", ctx)
 
 @router.get("/api/credit-notes/generate-number/", response_class=JSONResponse)
 def api_generate_number(
@@ -584,7 +584,7 @@ def preview_credit_note(request: Request, payload: dict = Body(...), db: Session
     """
     ctx = _build_creditnote_context_from_payload(payload, db)
     ctx["request"] = request
-    return templates.TemplateResponse("credit_note.html", ctx)
+    return templates.TemplateResponse(request, "credit_note.html", ctx)
 
 # ==============================================================================
 # END: โค้ดที่แก้ไข
