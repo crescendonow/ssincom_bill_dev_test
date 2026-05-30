@@ -5,30 +5,53 @@
   <title>ทะเบียนรถ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8'
+            }
+          }
+        }
+      }
+    }
+  </script>
   <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
 </head>
-<body class="bg-gradient-to-b from-blue-500 to-blue-200 min-h-screen font-sans text-gray-800">
-  <div class="max-w-5xl mx-auto px-6 py-8">
+<body class="bg-slate-50 min-h-screen text-slate-800">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-3xl font-bold text-white">ทะเบียนรถ</h1>
-      <a href="/" class="bg-white text-blue-700 px-4 py-2 rounded hover:bg-gray-100">← กลับหน้า Dashboard</a>
+      <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 flex items-center gap-2">
+        <i class="fa-solid fa-car text-brand-600"></i> ทะเบียนรถ
+      </h1>
+      <a href="/" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-600 bg-white hover:bg-slate-50 hover:shadow-sm border border-slate-200 smooth-transition font-medium">
+        <i class="fa-solid fa-arrow-left"></i> กลับหน้า Dashboard
+      </a>
     </div>
 
     <!-- form save car numberplate -->
-    <div class="bg-white rounded-lg p-6 shadow mb-8">
-      <h2 class="text-lg font-bold mb-4">เพิ่มทะเบียนรถ</h2>
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-8 mb-8 relative overflow-hidden">
+      <div class="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
+        <div class="w-10 h-10 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center text-xl">
+          <i class="fa-solid fa-plus"></i>
+        </div>
+        <h2 class="text-xl font-bold text-slate-800">เพิ่มทะเบียนรถ</h2>
+      </div>
 
       <form id="carForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label for="number_plate" class="block text-sm text-gray-600 mb-1">เลขทะเบียนรถ <span class="text-red-500">*</span></label>
           <input id="number_plate" type="text" placeholder="เช่น 1กก 1234"
-                 class="w-full border rounded px-3 py-2 focus:outline-none focus:ring" required />
+                 class="form-input" required />
         </div>
 
         <div>
           <label for="car_brand" class="block text-sm text-gray-600 mb-1">ยี่ห้อรถยนต์</label>
           <input id="car_brand" type="text" list="brand_datalist" placeholder="พิมพ์เพื่อค้นหา…"
-                 class="w-full border rounded px-3 py-2 focus:outline-none focus:ring" />
+                 class="form-input" />
           <datalist id="brand_datalist"></datalist>
           <p id="brandMsg" class="text-xs text-gray-400 mt-1"></p>
         </div>
@@ -36,48 +59,53 @@
         <div>
           <label for="province" class="block text-sm text-gray-600 mb-1">จังหวัดที่จดทะเบียน</label>
           <input id="province" type="text" list="province_datalist" placeholder="พิมพ์เพื่อค้นหา…"
-                 class="w-full border rounded px-3 py-2 focus:outline-none focus:ring" />
+                 class="form-input" />
           <datalist id="province_datalist"></datalist>
           <p id="provMsg" class="text-xs text-gray-400 mt-1"></p>
         </div>
 
-        <div class="md:col-span-3 flex items-center gap-2">
-          <button id="btnSave" type="submit" class="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700">บันทึก</button>
-          <button id="btnReset" type="button" class="bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200">ล้างค่า</button>
+        <div class="md:col-span-3 flex items-center gap-2 mt-4 pt-4 border-t border-slate-100">
+          <button id="btnSave" type="submit" class="bg-brand-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-brand-700 shadow-sm smooth-transition hover-scale flex items-center gap-2"><i class="fa-solid fa-floppy-disk"></i> บันทึก</button>
+          <button id="btnReset" type="button" class="border border-slate-300 text-slate-700 px-5 py-2.5 rounded-lg font-medium hover:bg-slate-50 smooth-transition flex items-center gap-2"><i class="fa-solid fa-window-restore"></i> ล้างค่า</button>
           <span id="formMsg" class="text-sm ml-2"></span>
         </div>
       </form>
     </div>
 
     <!-- list car table -->
-    <div class="bg-white rounded-lg p-6 shadow">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-bold">รายการทะเบียนรถ</h2>
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-8">
+      <div class="flex items-center justify-between mb-6 border-b border-slate-100 pb-4">
+        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-list text-brand-600"></i> รายการทะเบียนรถ</h2>
         <div class="flex items-center gap-2">
-          <input id="searchText" type="text" placeholder="ค้นหา (ทะเบียน / ยี่ห้อ / จังหวัด)"
-                 class="border rounded px-3 py-2 focus:outline-none focus:ring w-64"
-                 list="search_datalist" />
+          <div class="relative w-full sm:w-72">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </div>
+            <input id="searchText" type="text" placeholder="ค้นหา (ทะเบียน / ยี่ห้อ / จังหวัด)"
+                   class="form-input pl-10"
+                   list="search_datalist" />
+          </div>
           <datalist id="search_datalist"></datalist>
 
           <!-- button search -->
-          <button id="btnSearch" class="bg-white border px-4 py-2 rounded hover:bg-gray-50">ค้นหา</button>
+          <button id="btnSearch" class="bg-brand-600 text-white font-medium px-4 py-2.5 rounded-lg hover:bg-brand-700 shadow-sm smooth-transition hover-scale hidden sm:block">ค้นหา</button>
 
-          <button id="btnReload" class="bg-white border px-4 py-2 rounded hover:bg-gray-50">รีเฟรช</button>
+          <button id="btnReload" class="bg-white border border-slate-300 text-slate-700 font-medium px-4 py-2.5 rounded-lg hover:bg-slate-50 smooth-transition"><i class="fa-solid fa-rotate-right"></i> รีเฟรช</button>
         </div>
       </div>
 
-      <div class="overflow-x-auto">
-        <table class="min-w-full border">
-          <thead class="bg-gray-50">
+      <div class="overflow-x-auto rounded-xl border border-slate-200">
+        <table class="min-w-full text-sm text-left">
+          <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
             <tr>
-              <th class="px-3 py-2 border text-left w-24">#</th>
-              <th class="px-3 py-2 border text-left">เลขทะเบียนรถ</th>
-              <th class="px-3 py-2 border text-left">ยี่ห้อรถยนต์</th>
-              <th class="px-3 py-2 border text-left">จังหวัด</th>
-              <th class="px-3 py-2 border text-left w-36">การทำงาน</th>
+              <th class="px-3 py-3 font-semibold w-24 text-center">#</th>
+              <th class="px-3 py-3 font-semibold">เลขทะเบียนรถ</th>
+              <th class="px-3 py-3 font-semibold">ยี่ห้อรถยนต์</th>
+              <th class="px-3 py-3 font-semibold">จังหวัด</th>
+              <th class="px-3 py-3 font-semibold w-36 text-center">การทำงาน</th>
             </tr>
           </thead>
-          <tbody id="carsTableBody"></tbody>
+          <tbody id="carsTableBody" class="divide-y divide-slate-100 bg-white"></tbody>
         </table>
       </div>
 

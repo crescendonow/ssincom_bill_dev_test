@@ -1,44 +1,86 @@
-/* ===== FONT ไทย ===== */
+/* ===== FONT & Base Styles ===== */
 body {
-  font-family: "Noto Sans Thai", sans-serif !important;
+  font-family: "Noto Sans Thai", -apple-system, BlinkMacSystemFont, sans-serif !important;
   font-optical-sizing: auto;
+  color: var(--text-main, #1e293b);
 }
 
-/* KPI */
-.kpi{background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;
-     padding:12px;text-align:right;}
-.kpi .kpi-title{font-size:11px;color:#6b7280;}
-.kpi .kpi-value{font-size:18px;font-weight:800;color:#111827;}
-.kpi-purple{background:#faf5ff;border-color:#e9d5ff;}
-.kpi-purple .kpi-title{color:#7c3aed;}
-.kpi-purple .kpi-value{color:#6d28d9;}
+/* KPI Cards (Modernized) */
+.kpi {
+  background: var(--bg-white, #fff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: var(--radius-lg, 0.75rem);
+  padding: 16px;
+  text-align: right;
+  box-shadow: var(--shadow-sm, 0 1px 2px 0 rgb(0 0 0 / 0.05));
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.kpi:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md, 0 4px 6px -1px rgb(0 0 0 / 0.1));
+}
+.kpi .kpi-title {
+  font-size: 12px;
+  color: var(--text-muted, #64748b);
+  margin-bottom: 4px;
+}
+.kpi .kpi-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary-blue, #2563eb);
+}
+.kpi-purple {
+  background: #faf5ff;
+  border-color: #e9d5ff;
+}
+.kpi-purple .kpi-title {
+  color: #7c3aed;
+}
+.kpi-purple .kpi-value {
+  color: #6d28d9;
+}
 
-/* ตาราง */
-#sale-tax-table{font-size:11px;}
-#sale-tax-table th,#sale-tax-table td{
-  border:1px solid #d1d5db;padding:4px 6px;line-height:1.3;}
-#sale-tax-table th{background:#f9fafb;font-weight:600;text-align:center;}
-.text-right{text-align:right;}
-.text-center{text-align:center;}
+/* Table Design */
+#sale-tax-table {
+  font-size: 13px;
+  width: 100%;
+  border-collapse: collapse;
+}
+#sale-tax-table th, #sale-tax-table td {
+  border: 1px solid var(--border-color, #d1d5db);
+  padding: 8px 12px;
+  line-height: 1.4;
+}
+#sale-tax-table th {
+  background: var(--bg-light, #f8fafc);
+  font-weight: 600;
+  text-align: center;
+  color: var(--text-main, #1e293b);
+}
+#sale-tax-table tbody tr:hover {
+  background-color: #f1f5f9;
+}
 
-/* Print */
-@media print{
-  @page{size:A4 landscape;margin:10mm;}
-  body *{visibility:hidden;}
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+
+/* Print Styles */
+@media print {
+  @page { size: A4 landscape; margin: 10mm; }
+  body * { visibility: hidden; }
   body, button, input, select, table, th, td, p, h1, h2, h3 {
-    font-family: "TH Sarabun New", "Tahoma", "Sukhumvit Set", "Thonburi",
-                 "Noto Sans Thai", "Noto Sans", Arial, sans-serif !important;
-    line-height: 1.5;
+    font-family: "TH Sarabun New", "Tahoma", "Noto Sans Thai", sans-serif !important;
+    line-height: 1.3;
+    font-size: 14pt;
   }
-  #print-area,#print-area *{visibility:visible;}
-  #print-area{position:absolute;left:0;top:0;width:100%;}
-  #sale-tax-table thead{display:table-header-group;}
-  #sale-tax-table tr{page-break-inside:avoid;}
-  #btnPrint,#btnExcel,#btnGenerate{display:none!important;}
-  .print-only{display:block!important;}
+  #print-area, #print-area * { visibility: visible; }
+  #print-area { position: absolute; left: 0; top: 0; width: 100%; }
+  #sale-tax-table thead { display: table-header-group; }
+  #sale-tax-table tr { page-break-inside: avoid; }
+  #btnPrint, #btnExcel, #btnGenerate, #pagination-controls { display: none !important; }
+  .print-only { display: block !important; }
+  .kpi { border: 1px solid #ccc; box-shadow: none; }
 }
-@media screen{
-  .print-only{display:none;}
+@media screen {
+  .print-only { display: none; }
 }
-#pagination-controls{print-color-adjust:exact;}
-@media print{#pagination-controls{display:none!important;}}

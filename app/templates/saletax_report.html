@@ -5,6 +5,20 @@
     <title>รายงานภาษีขาย</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8'
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <link rel="stylesheet" href="/static/css/style.css" />
     <link rel="stylesheet" href="/static/css/saletax_report.css" />
     <!-- flatpickr core + theme -->
     <link
@@ -26,87 +40,91 @@
     />
   </head>
 
-  <body class="bg-gray-50 min-h-screen">
+  <body class="bg-slate-50 min-h-screen text-slate-800">
     <!-- ปุ่ม -->
-    <div class="max-w-6xl mx-auto px-4 pt-8 flex items-center justify-between">
-      <a
-        href="/dashboard"
-        class="inline-flex items-center gap-2 text-blue-700 hover:underline"
-      >
-        ← กลับ Dashboard
-      </a>
-      <div class="flex gap-3">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 pt-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
+      <h1 class="text-2xl md:text-3xl font-bold flex items-center gap-2">
+        <i class="fa-solid fa-chart-line text-brand-600"></i>
+        รายงานภาษีขาย
+      </h1>
+      <div class="flex gap-3 flex-wrap">
+        <a
+          href="/dashboard"
+          class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-slate-600 bg-white hover:bg-slate-50 hover:shadow-sm border border-slate-200 smooth-transition font-medium"
+        >
+          <i class="fa-solid fa-arrow-left"></i> กลับ Dashboard
+        </a>
         <button
           id="btnPrint"
-          class="px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700"
+          class="px-4 py-2 rounded-lg bg-brand-600 text-white font-medium hover:bg-brand-700 shadow-sm smooth-transition hover-scale flex items-center gap-2"
         >
           <i class="fa-solid fa-print"></i> พิมพ์ PDF
         </button>
         <button
           id="btnExcel"
-          class="px-4 py-2 rounded-md bg-white text-gray-700 border hover:bg-gray-50"
+          class="px-4 py-2 rounded-lg bg-emerald-600 text-white font-medium hover:bg-emerald-700 shadow-sm smooth-transition hover-scale flex items-center gap-2"
         >
-          <i class="fa-solid fa-file-export"></i> ส่งออก Excel
+          <i class="fa-solid fa-file-excel"></i> ส่งออก Excel
         </button>
       </div>
     </div>
 
     <!-- ตัวกรองช่วงเวลา -->
-    <div class="max-w-6xl mx-auto px-4 pt-4">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 pt-4">
       <div
-        class="bg-white rounded-xl shadow p-4 mb-4 flex flex-wrap items-center gap-4"
+        class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mb-4 flex flex-wrap items-center gap-4"
       >
-        <div class="inline-flex rounded bg-gray-100" role="group">
+        <div class="inline-flex rounded-lg bg-slate-100 p-1" role="group">
           <button
-            class="gran-btn px-4 py-2 text-sm rounded-l bg-blue-600 text-white"
+            class="gran-btn px-4 py-2 text-sm font-medium rounded-md bg-white shadow-sm text-brand-600"
             data-type="day"
           >
             รายวัน
           </button>
-          <button class="gran-btn px-4 py-2 text-sm" data-type="month">
+          <button class="gran-btn px-4 py-2 text-sm font-medium rounded-md text-slate-600 hover:text-slate-800" data-type="month">
             รายเดือน
           </button>
-          <button class="gran-btn px-4 py-2 text-sm rounded-r" data-type="year">
+          <button class="gran-btn px-4 py-2 text-sm font-medium rounded-md text-slate-600 hover:text-slate-800" data-type="year">
             รายปี
           </button>
         </div>
 
         <div id="filter-day" class="flex items-center gap-2">
-          <span>จาก</span
+          <span class="text-sm font-medium text-slate-600">จาก</span
           ><input
             id="dayFrom"
             type="text"
-            class="border rounded px-2 py-1 w-40"
+            class="form-input w-40"
           />
-          <span>ถึง</span
+          <span class="text-sm font-medium text-slate-600">ถึง</span
           ><input
             id="dayTo"
             type="text"
-            class="border rounded px-2 py-1 w-40"
+            class="form-input w-40"
           />
         </div>
         <div id="filter-month" class="hidden items-center gap-2">
-          <span>เดือน</span
+          <span class="text-sm font-medium text-slate-600">เดือน</span
           ><input
             id="monthPick"
             type="text"
-            class="border rounded px-2 py-1 w-40"
+            class="form-input w-40"
             placeholder="เลือกเดือน"
           />
         </div>
         <div id="filter-year" class="hidden items-center gap-2">
-          <span>ปี</span
+          <span class="text-sm font-medium text-slate-600">ปี</span
           ><input
             id="yearPick"
             type="text"
-            class="border rounded px-2 py-1 w-28"
+            class="form-input w-28"
             placeholder="เลือกปี"
           />
         </div>
 
         <button
           id="btnGenerate"
-          class="ml-auto bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          class="ml-auto bg-brand-600 text-white font-medium px-5 py-2.5 rounded-lg hover:bg-brand-700 shadow-sm smooth-transition hover-scale flex items-center gap-2"
         >
           <i class="fa-solid fa-table-list"></i> สร้างรายงาน
         </button>
@@ -114,12 +132,12 @@
     </div>
 
     <!-- KPI -->
-    <div class="max-w-6xl mx-auto px-4 pt-2">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 pt-2">
       <div
-        class="bg-white rounded-xl shadow p-4 mb-4 flex justify-between items-center"
+        class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mb-4 flex flex-col md:flex-row justify-between items-center gap-4"
       >
-        <div id="subtitle" class="text-sm text-gray-500">—</div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div id="subtitle" class="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg">—</div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 w-full md:w-auto">
           <div class="kpi kpi-purple">
             <div class="kpi-title">จำนวนใบกำกับ</div>
             <div id="kCount" class="kpi-value">0</div>
@@ -143,47 +161,48 @@
     <!-- ส่วนตาราง (เฉพาะส่วนพิมพ์) -->
     <div
       id="print-area"
-      class="max-w-6xl mx-auto px-4 bg-white rounded-lg shadow p-6 mt-4"
+      class="max-w-7xl mx-auto px-4 sm:px-6 mt-4 pb-8"
     >
-      <div class="report-title-block text-center mb-6 print-only">
-        <h1 class="text-2xl font-bold">รายงานภาษีขาย</h1>
-        <p>เดือน <span class="month-year">—</span></p>
-        <p>
-          ชื่อผู้ประกอบการ &nbsp;บริษัท เอส แอนด์ เอส อินคอม จำกัด &nbsp;
-          เลขที่ประจำตัวผู้เสียภาษี 0715544000020
-        </p>
-        <p>
-          ชื่อสถานประกอบการ &nbsp;บริษัท เอส แอนด์ เอส อินคอม จำกัด &nbsp;
-          สำนักงานใหญ่ &nbsp;โทรศัพท์ &nbsp;0-3558-9274
-        </p>
-      </div>
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 print:border-none print:shadow-none print:p-0">
+        <div class="report-title-block text-center mb-6 print-only">
+          <h1 class="text-2xl font-bold text-slate-800">รายงานภาษีขาย</h1>
+          <p class="text-slate-600">เดือน <span class="month-year font-medium text-slate-800">—</span></p>
+          <p class="text-sm text-slate-600 mt-2">
+            ชื่อผู้ประกอบการ &nbsp;<span class="font-medium text-slate-800">บริษัท เอส แอนด์ เอส อินคอม จำกัด</span> &nbsp;
+            เลขที่ประจำตัวผู้เสียภาษี <span class="font-medium text-slate-800">0715544000020</span>
+          </p>
+          <p class="text-sm text-slate-600">
+            ชื่อสถานประกอบการ &nbsp;<span class="font-medium text-slate-800">บริษัท เอส แอนด์ เอส อินคอม จำกัด</span> &nbsp;
+            สำนักงานใหญ่ &nbsp;โทรศัพท์ &nbsp;<span class="font-medium text-slate-800">0-3558-9274</span>
+          </p>
+        </div>
 
-      <div class="overflow-x-auto">
-        <table
-          id="sale-tax-table"
-          class="w-full text-sm border-collapse border border-gray-300"
-        >
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="p-2 border text-center">ลำดับ</th>
-              <th class="p-2 border text-center">วันเดือนปี</th>
-              <th class="p-2 border text-center">เลขที่ใบกำกับ</th>
-              <th class="p-2 border text-center">รหัสลูกค้า</th>
-              <th class="p-2 border text-left">ชื่อผู้ขายสินค้า/บริการ</th>
-              <th class="p-2 border text-center">เลขประจำตัวผู้เสียภาษี</th>
-              <th class="p-2 border text-center">สถานประกอบการ</th>
-              <th class="p-2 border text-center">พนักงานขับรถ</th>
-              <th class="p-2 border text-center">รหัสสินค้า</th>
-              <th class="p-2 border text-left">รายการสินค้า</th>
-              <th class="p-2 border text-center">จำนวนตัน</th>
-              <th class="p-2 border text-right">มูลค่าสินค้า/บริการ</th>
-              <th class="p-2 border text-right">VAT</th>
-              <th class="p-2 border text-right">รวม</th>
-            </tr>
-          </thead>
-
-          <tbody id="reportBody"></tbody>
-        </table>
+        <div class="overflow-x-auto rounded-xl border border-slate-200 print:border-none print:overflow-visible">
+          <table
+            id="sale-tax-table"
+            class="w-full text-sm text-left print:border-collapse print:border print:border-slate-800"
+          >
+            <thead class="bg-slate-50 text-slate-600 border-b border-slate-200 print:bg-white print:border-slate-800">
+              <tr>
+                <th class="p-3 font-semibold text-center print:border print:border-slate-800">ลำดับ</th>
+                <th class="p-3 font-semibold text-center print:border print:border-slate-800">วันเดือนปี</th>
+                <th class="p-3 font-semibold text-center print:border print:border-slate-800">เลขที่ใบกำกับ</th>
+                <th class="p-3 font-semibold text-center print:border print:border-slate-800">รหัสลูกค้า</th>
+                <th class="p-3 font-semibold text-left print:border print:border-slate-800">ชื่อผู้ขายสินค้า/บริการ</th>
+                <th class="p-3 font-semibold text-center print:border print:border-slate-800">เลขประจำตัวผู้เสียภาษี</th>
+                <th class="p-3 font-semibold text-center print:border print:border-slate-800">สถานประกอบการ</th>
+                <th class="p-3 font-semibold text-center print:border print:border-slate-800">พนักงานขับรถ</th>
+                <th class="p-3 font-semibold text-center print:border print:border-slate-800">รหัสสินค้า</th>
+                <th class="p-3 font-semibold text-left print:border print:border-slate-800">รายการสินค้า</th>
+                <th class="p-3 font-semibold text-right print:border print:border-slate-800">จำนวนตัน</th>
+                <th class="p-3 font-semibold text-right print:border print:border-slate-800">มูลค่าสินค้า/บริการ</th>
+                <th class="p-3 font-semibold text-right print:border print:border-slate-800">VAT</th>
+                <th class="p-3 font-semibold text-right print:border print:border-slate-800">รวม</th>
+              </tr>
+            </thead>
+            <tbody id="reportBody" class="divide-y divide-slate-100 bg-white print:divide-none"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 

@@ -6,28 +6,45 @@
     <title>สร้างใบวางบิล</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8'
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="/static/css/bill_note.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
 </head>
 
-<body class="bg-gray-100">
+<body class="bg-slate-50 min-h-screen text-slate-800">
 
-    <div class="max-w-4xl mx-auto px-4 pt-8 page-controls">
-        <a href="/dashboard" class="inline-flex items-center gap-2 text-blue-700 hover:underline">
-            <span>←</span> กลับ Dashboard
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 pt-8 page-controls flex items-center justify-between">
+        <h1 class="text-2xl md:text-3xl font-bold flex items-center gap-2 text-slate-800">
+            <i class="fa-solid fa-file-invoice text-brand-600"></i> จัดการใบวางบิล
+        </h1>
+        <a href="/dashboard" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-600 bg-white hover:bg-slate-50 hover:shadow-sm border border-slate-200 smooth-transition font-medium">
+            <i class="fa-solid fa-arrow-left"></i> กลับ Dashboard
         </a>
     </div>
 
-    <div id="controls" class="max-w-4xl mx-auto p-4 bg-white shadow-lg my-8 rounded-lg">
-        <div class="border-b border-gray-200 mb-4">
+    <div id="controls" class="max-w-6xl mx-auto p-5 sm:p-8 bg-white shadow-sm border border-slate-200 my-8 rounded-2xl">
+        <div class="border-b border-slate-200 mb-6">
             <nav class="-mb-px flex space-x-8" aria-label="Tabs">
                 <button id="tab-create"
-                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-blue-500 text-blue-600">
-                    สร้าง / แก้ไขใบวางบิล
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-brand-500 text-brand-600">
+                    <i class="fa-solid fa-plus mr-2"></i> สร้าง / แก้ไขใบวางบิล
                 </button>
                 <button id="tab-search"
-                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                    ค้นหารายการ
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300">
+                    <i class="fa-solid fa-magnifying-glass mr-2"></i> ค้นหารายการ
                 </button>
             </nav>
         </div>
@@ -38,73 +55,73 @@
             <h1 class="text-2xl font-bold mb-4 text-gray-700">ค้นหาใบวางบิล</h1>
             <div class="grid md:grid-cols-3 gap-4 items-end">
                 <div>
-                    <label for="searchStartDate" class="block text-sm font-medium text-gray-600">วันที่เริ่มต้น</label>
+                    <label for="searchStartDate" class="block text-sm font-medium text-slate-600 mb-1">วันที่เริ่มต้น</label>
                     <input type="date" id="searchStartDate"
-                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+                        class="form-input">
                 </div>
                 <div>
-                    <label for="searchEndDate" class="block text-sm font-medium text-gray-600">วันที่สิ้นสุด</label>
+                    <label for="searchEndDate" class="block text-sm font-medium text-slate-600 mb-1">วันที่สิ้นสุด</label>
                     <input type="date" id="searchEndDate"
-                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+                        class="form-input">
                 </div>
                 <div>
-                    <label for="searchQuery" class="block text-sm font-medium text-gray-600">คำค้นหา</label>
+                    <label for="searchQuery" class="block text-sm font-medium text-slate-600 mb-1">คำค้นหา</label>
 
                     <input type="text" id="searchQuery" placeholder="เลขที่บิล / ชื่อลูกค้า"
-                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2" list="billNoteList"
+                        class="form-input" list="billNoteList"
                         autocomplete="off">
                     <datalist id="billNoteList"></datalist>
                 </div>
             </div>
-            <div class="mt-4">
+            <div class="mt-6 flex justify-end">
                 <button id="searchBillBtn"
-                    class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">ค้นหา</button>
+                    class="bg-brand-600 text-white font-medium px-6 py-2.5 rounded-lg hover:bg-brand-700 shadow-sm smooth-transition hover-scale flex items-center gap-2"><i class="fa-solid fa-magnifying-glass"></i> ค้นหา</button>
             </div>
-            <div class="mt-6 overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="bg-gray-50">
-                            <th class="p-2 text-left">วันที่</th>
-                            <th class="p-2 text-left">เลขที่ใบวางบิล</th>
-                            <th class="p-2 text-left">ลูกค้า</th>
-                            <th class="p-2 text-center">จัดการ</th>
+            <div class="mt-6 overflow-x-auto rounded-xl border border-slate-200">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                        <tr>
+                            <th class="p-3 font-semibold">วันที่</th>
+                            <th class="p-3 font-semibold">เลขที่ใบวางบิล</th>
+                            <th class="p-3 font-semibold">ลูกค้า</th>
+                            <th class="p-3 font-semibold text-center w-36">จัดการ</th>
                         </tr>
                     </thead>
-                    <tbody id="searchResultsBody">
+                    <tbody id="searchResultsBody" class="divide-y divide-slate-100 bg-white">
                     </tbody>
                 </table>
             </div>
         </div>
-        <div class="grid md:grid-cols-4 gap-4 items-end">
+        <div class="grid md:grid-cols-4 gap-4 items-end mt-4">
             <div>
-                <label for="billDate" class="block text-sm font-medium text-gray-600">
+                <label for="billDate" class="block text-sm font-medium text-slate-600 mb-1">
                     วันที่ใบวางบิล
                 </label>
-                <input type="date" id="billDate" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+                <input type="date" id="billDate" class="form-input">
             </div>
 
             <div>
-                <label for="customerSearch" class="block text-sm font-medium text-gray-600">ค้นหาลูกค้า</label>
+                <label for="customerSearch" class="block text-sm font-medium text-slate-600 mb-1">ค้นหาลูกค้า</label>
                 <input type="text" id="customerSearch" list="customerList"
-                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2" autocomplete="off">
+                    class="form-input" autocomplete="off">
                 <datalist id="customerList"></datalist>
                 <input type="hidden" id="customerId">
             </div>
             <div>
-                <label for="startDate" class="block text-sm font-medium text-gray-600">วันที่เริ่มต้น</label>
-                <input type="date" id="startDate" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+                <label for="startDate" class="block text-sm font-medium text-slate-600 mb-1">วันที่เริ่มต้น</label>
+                <input type="date" id="startDate" class="form-input">
             </div>
             <div>
-                <label for="endDate" class="block text-sm font-medium text-gray-600">วันที่สิ้นสุด</label>
-                <input type="date" id="endDate" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+                <label for="endDate" class="block text-sm font-medium text-slate-600 mb-1">วันที่สิ้นสุด</label>
+                <input type="date" id="endDate" class="form-input">
             </div>
         </div>
-        <div class="mt-4 flex gap-4">
-            <button id="generateBillBtn" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">
+        <div class="mt-6 flex flex-wrap gap-4 pt-4 border-t border-slate-100">
+            <button id="generateBillBtn" class="bg-brand-600 text-white font-medium px-6 py-2.5 rounded-lg hover:bg-brand-700 shadow-sm smooth-transition hover-scale flex items-center gap-2">
                 <i class="fa-solid fa-laptop-file"></i>สร้างเอกสาร</button>
-            <button id="saveBillBtn" class="bg-purple-600 text-white px-6 py-2 rounded-md hover:bg-purple-700 hidden">
+            <button id="saveBillBtn" class="bg-emerald-600 text-white font-medium px-6 py-2.5 rounded-lg hover:bg-emerald-700 shadow-sm smooth-transition hover-scale hidden items-center gap-2">
                 <i class="fa-solid fa-floppy-disk"></i> บันทึกใบวางบิล</button>
-            <button id="printPdfBtn" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 hidden">
+            <button id="printPdfBtn" class="bg-indigo-600 text-white font-medium px-6 py-2.5 rounded-lg hover:bg-indigo-700 shadow-sm smooth-transition hover-scale hidden items-center gap-2">
                 <i class="fa-solid fa-print"></i> พิมพ์ PDF</button>
 
         </div>
