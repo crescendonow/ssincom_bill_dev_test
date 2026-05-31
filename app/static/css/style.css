@@ -1,152 +1,52 @@
-/* Base Design System - Modern Clean & Professional */
-:root {
-  /* Colors */
-  --primary-blue: #2563eb;       /* Modern Tailwind Blue-600 */
-  --primary-hover: #1d4ed8;      /* Blue-700 */
-  --secondary-color: #64748b;    /* Slate-500 */
-  --bg-light: #f8fafc;           /* Slate-50 */
-  --bg-white: #ffffff;
-  --text-main: #1e293b;          /* Slate-800 */
-  --text-muted: #64748b;         /* Slate-500 */
-  --border-color: #e2e8f0;       /* Slate-200 */
-
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
-
-  /* Borders & Radius */
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
-
-  /* Transitions */
-  --transition-normal: all 0.2s ease-in-out;
-  --transition-slow: all 0.3s ease-in-out;
-}
-
 body {
-  font-family: "Noto Sans Thai", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-family:"Noto Sans Thai", sans-serif !important;
   font-optical-sizing: auto;
-  background-color: var(--bg-light);
-  color: var(--text-main);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
-/* 
- * Glassmorphism Helpers 
- */
-.glass {
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: var(--shadow-glass);
-}
-.glass-panel {
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border-color);
-  box-shadow: var(--shadow-md);
-  border-radius: var(--radius-lg);
-}
-
-/* 
- * Micro-interactions & Utilities
- */
-.hover-scale {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.hover-scale:hover {
-  transform: translateY(-2px) scale(1.01);
-  box-shadow: var(--shadow-lg);
-}
-.smooth-transition {
-  transition: var(--transition-normal);
-}
-
-/* 
- * Base Form Styling (Used in old form setups, modernized)
- */
-form.legacy-form {
-  background: var(--bg-white);
-  padding: 24px;
-  border-radius: var(--radius-lg);
+form {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
   max-width: 800px;
   margin: auto;
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--border-color);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-/* Inputs & Labels (Global base) */
-.form-input, input[type="text"], input[type="number"], input[type="password"], input[type="date"], select, textarea {
+input {
+  margin-bottom: 10px;
+  padding: 6px;
   width: 100%;
-  padding: 0.625rem 0.75rem;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  background-color: #f9fafb;
-  color: var(--text-main);
-  transition: var(--transition-normal);
-  font-size: 0.875rem;
   box-sizing: border-box;
 }
 
-.form-input:focus, input:focus, select:focus, textarea:focus {
-  outline: none;
-  border-color: var(--primary-blue);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-  background-color: var(--bg-white);
-}
-
-.form-label, label {
-  font-weight: 600;
+label {
+  font-weight: bold;
   display: block;
-  margin-top: 12px;
-  margin-bottom: 6px;
-  color: var(--text-main);
-  font-size: 0.875rem;
+  margin-top: 10px;
 }
 
-/* Buttons */
-.btn-primary {
-  background-color: var(--primary-blue);
-  color: white;
-  padding: 0.625rem 1.25rem;
-  border-radius: var(--radius-md);
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  transition: var(--transition-normal);
-}
-.btn-primary:hover {
-  background-color: var(--primary-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
-}
-
-/* Layout Utilities */
 .item-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 12px;
-  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
 }
+
 .item-row input {
   flex: 1 1 45%;
   min-width: 120px;
-  margin-bottom: 0;
-  margin-top: 0;
+}
+
+button {
+  padding: 8px 16px;
+  margin-top: 10px;
 }
 
 @media (max-width: 600px) {
-  form.legacy-form {
-    padding: 16px;
+  form {
+    padding: 15px;
   }
+
   .item-row input {
     flex: 1 1 100%;
   }

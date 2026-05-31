@@ -6,51 +6,32 @@
   <title>Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Configure Tailwind to use our CSS variables or custom colors if needed -->
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              50: '#eff6ff',
-              100: '#dbeafe',
-              500: '#3b82f6',
-              600: '#2563eb',
-              700: '#1d4ed8',
-            }
-          }
-        }
-      }
-    }
-  </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 
-<body class="bg-slate-50 min-h-screen font-sans text-slate-800">
+<body class="bg-gradient-to-b from-blue-500 to-blue-200 min-h-screen font-sans text-gray-800">
   <!-- Header -->
-  <header class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-50">
+  <header class="bg-transparent">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
       <div class="flex items-center justify-between gap-3">
         <!-- ซ้าย -->
-        <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 flex items-center gap-2">
-          <i class="fa-solid fa-chart-pie text-brand-600"></i>
+        <h1 class="text-2xl sm:text-3xl font-bold text-white">
           Dashboard
         </h1>
         <!-- ขวา -->
-        <div class="flex items-center gap-3">
-          <span class="hidden sm:inline text-slate-600">สวัสดี, <b class="text-slate-800">admin</b></span>
+        <div class="flex items-center gap-2">
+          <span class="hidden sm:inline text-white/90">สวัสดี, <b>admin</b></span>
           <a href="/logout"
-            class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white text-slate-600 border border-slate-300 hover:bg-slate-50 hover:text-red-600 smooth-transition">
+            class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/10 text-white border border-white/20 hover:bg-white/20 transition">
             <i class="fa-solid fa-right-from-bracket"></i>
-            <span class="hidden sm:inline">ออกจากระบบ</span>
+            ออกจากระบบ
           </a>
 
           <a href="/form"
-            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-600 text-white shadow-sm hover:bg-brand-700 hover:shadow hover:-translate-y-0.5 smooth-transition">
+            class="inline-flex items-center gap-1 px-3 sm:px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">
             <i class="fa-solid fa-plus"></i>
-            <span>สร้างใบกำกับภาษี</span>
+            สร้างใบกำกับภาษี
           </a>
 
         </div>
@@ -58,91 +39,67 @@
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10 space-y-8">
     <!-- ตัวเลขสรุป -->
-    <section aria-labelledby="stats" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-      <!-- Card 1 -->
-      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
-        <div class="absolute -right-6 -top-6 text-brand-50 opacity-50 group-hover:scale-110 transition-transform duration-500">
-          <i class="fa-solid fa-file-invoice text-9xl"></i>
-        </div>
-        <div class="relative z-10">
-          <div class="text-sm font-medium text-slate-500">ใบกำกับภาษีทั้งหมด</div>
-          <div id="stat_total_invoices" class="mt-2 text-3xl font-bold text-slate-800">—</div>
-          <div class="mt-2 text-slate-400 text-xs">7 วันย้อนหลังจนถึงวันนี้</div>
-        </div>
+    <section aria-labelledby="stats" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-white rounded-xl p-4 shadow">
+        <div class="text-sm text-gray-500">ใบกำกับภาษีทั้งหมด (7 วันล่าสุด)</div>
+        <div id="stat_total_invoices" class="mt-1 text-2xl font-bold">—</div>
+        <div class="mt-1 text-gray-500 text-sm">ช่วง 7 วันย้อนหลังจนถึงวันนี้</div>
       </div>
-      <!-- Card 2 -->
-      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
-        <div class="absolute -right-6 -top-6 text-brand-50 opacity-50 group-hover:scale-110 transition-transform duration-500">
-          <i class="fa-solid fa-coins text-9xl"></i>
-        </div>
-        <div class="relative z-10">
-          <div class="text-sm font-medium text-slate-500">ยอดรวม (ก่อน VAT)</div>
-          <div id="stat_before_vat" class="mt-2 text-3xl font-bold text-brand-600">฿—</div>
-          <div class="mt-2 text-slate-400 text-xs">เฉพาะช่วง 7 วันล่าสุด</div>
-        </div>
+      <div class="bg-white rounded-xl p-4 shadow">
+        <div class="text-sm text-gray-500">ยอดรวม (ก่อน VAT)</div>
+        <div id="stat_before_vat" class="mt-1 text-2xl font-bold text-blue-600">฿—</div>
+        <div class="mt-1 text-gray-500 text-sm">เฉพาะช่วง 7 วันล่าสุด</div>
       </div>
-      <!-- Card 3 -->
-      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
-        <div class="absolute -right-6 -top-6 text-brand-50 opacity-50 group-hover:scale-110 transition-transform duration-500">
-          <i class="fa-solid fa-percent text-9xl"></i>
-        </div>
-        <div class="relative z-10">
-          <div class="text-sm font-medium text-slate-500">VAT (7%)</div>
-          <div id="stat_vat" class="mt-2 text-3xl font-bold text-brand-600">฿—</div>
-          <div class="mt-2 text-slate-400 text-xs">จากยอดก่อน VAT</div>
-        </div>
+      <div class="bg-white rounded-xl p-4 shadow">
+        <div class="text-sm text-gray-500">VAT (7%)</div>
+        <div id="stat_vat" class="mt-1 text-2xl font-bold text-blue-600">฿—</div>
+        <div class="mt-1 text-gray-500 text-sm">จากยอดก่อน VAT</div>
       </div>
-      <!-- Card 4 -->
-      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
-        <div class="absolute -right-6 -top-6 text-brand-50 opacity-50 group-hover:scale-110 transition-transform duration-500">
-          <i class="fa-solid fa-sack-dollar text-9xl"></i>
-        </div>
-        <div class="relative z-10">
-          <div class="text-sm font-medium text-slate-500">ยอดสุทธิ</div>
-          <div id="stat_grand" class="mt-2 text-3xl font-bold text-green-600">฿—</div>
-          <div class="mt-2 text-slate-400 text-xs">รวม VAT แล้ว</div>
-        </div>
+      <div class="bg-white rounded-xl p-4 shadow">
+        <div class="text-sm text-gray-500">ยอดสุทธิ</div>
+        <div id="stat_grand" class="mt-1 text-2xl font-bold text-blue-600">฿—</div>
+        <div class="mt-1 text-gray-500 text-sm">เฉพาะช่วง 7 วันล่าสุด</div>
       </div>
     </section>
 
     <!-- ใบกำกับภาษีล่าสุด -->
-    <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-      <div class="flex items-center justify-between flex-wrap gap-4 mb-6 border-b border-slate-100 pb-4">
-        <h2 class="text-xl font-bold text-slate-800">ใบกำกับภาษีล่าสุด (7 วัน)</h2>
-        <div class="flex items-center gap-3">
-          <a href="/summary_invoices.html" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-brand-600 bg-brand-50 hover:bg-brand-100 smooth-transition font-medium">
-            <i class="fa-regular fa-rectangle-list"></i> รายการทั้งหมด
+    <section class="bg-white rounded-xl p-5 shadow">
+      <div class="flex items-center justify-between flex-wrap gap-3 mb-3">
+        <h2 class="text-lg font-bold">ใบกำกับภาษีล่าสุด (7 วัน)</h2>
+        <div class="flex items-center gap-2">
+          <a href="/summary_invoices.html" class="inline-flex items-center px-3 py-1.5 rounded border hover:bg-gray-50">
+            📃 รายการทั้งหมด
+          </a>
+          <a href="/form" class="inline-flex items-center px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700">
+            สร้างใบกำกับภาษี
           </a>
         </div>
       </div>
 
       <!-- Loading / Error -->
-      <div id="latest_invoices_loading" class="text-center text-slate-500 py-10 flex flex-col items-center gap-3">
-        <i class="fa-solid fa-circle-notch fa-spin text-3xl text-brand-500"></i>
-        <span>กำลังโหลดข้อมูล…</span>
-      </div>
-      <div id="latest_invoices_error" class="hidden text-center text-red-500 py-6 bg-red-50 rounded-lg">โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง</div>
+      <div id="latest_invoices_loading" class="text-center text-gray-500 py-6">กำลังโหลดข้อมูล…</div>
+      <div id="latest_invoices_error" class="hidden text-center text-red-600 py-6">โหลดข้อมูลไม่สำเร็จ</div>
 
       <!-- ลิสต์แบบการ์ด (มือถือ) -->
-      <div id="mobileInvoiceList" class="sm:hidden space-y-4"></div>
+      <div id="mobileInvoiceList" class="sm:hidden space-y-3"></div>
 
       <!-- ตาราง (จอ ≥ sm) -->
-      <div class="hidden sm:block overflow-x-auto rounded-xl border border-slate-200">
-        <table class="min-w-full text-left border-collapse">
+      <div class="hidden sm:block overflow-x-auto -mx-3 sm:mx-0">
+        <table class="min-w-full border-separate border-spacing-0">
           <thead>
-            <tr class="bg-slate-50 text-slate-600 text-sm border-b border-slate-200">
-              <th class="px-4 py-3 font-semibold">เลขที่</th>
-              <th class="px-4 py-3 font-semibold">วันที่</th>
-              <th class="px-4 py-3 font-semibold">ลูกค้า</th>
-              <th class="px-4 py-3 font-semibold text-right">ยอดก่อน VAT</th>
-              <th class="px-4 py-3 font-semibold text-right">VAT</th>
-              <th class="px-4 py-3 font-semibold text-right">ยอดสุทธิ</th>
-              <th class="px-4 py-3 font-semibold text-center">เครื่องมือ</th>
+            <tr class="bg-gray-50">
+              <th class="text-left text-sm font-medium text-gray-600 px-3 py-2 rounded-tl-lg">เลขที่</th>
+              <th class="text-left text-sm font-medium text-gray-600 px-3 py-2">วันที่</th>
+              <th class="text-left text-sm font-medium text-gray-600 px-3 py-2">ลูกค้า</th>
+              <th class="text-right text-sm font-medium text-gray-600 px-3 py-2">ยอดก่อน VAT</th>
+              <th class="text-right text-sm font-medium text-gray-600 px-3 py-2">VAT</th>
+              <th class="text-right text-sm font-medium text-gray-600 px-3 py-2 rounded-tr-lg">ยอดสุทธิ</th>
+              <th class="text-right text-sm font-medium text-gray-600 px-3 py-2">เครื่องมือ</th>
             </tr>
           </thead>
-          <tbody id="latestInvoicesTbody" class="divide-y divide-slate-100 bg-white">
+          <tbody id="latestInvoicesTbody">
             <!-- เติมด้วย JS -->
           </tbody>
         </table>
@@ -150,95 +107,81 @@
     </section>
 
     <!-- Quick actions -->
-    <section aria-labelledby="quick-actions" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-      
-      <a href="/summary_invoices.html" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-lg hover:border-brand-200 hover:-translate-y-1 transition-all duration-300 text-center flex flex-col items-center justify-center gap-3">
-        <div class="w-14 h-14 rounded-full bg-blue-50 text-brand-600 flex items-center justify-center text-2xl group-hover:bg-brand-600 group-hover:text-white transition-colors duration-300">
+    <section aria-labelledby="quick-actions" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <a href="/summary_invoices.html"
+        class="bg-white text-center p-6 rounded-xl shadow hover:shadow-md transition block">
+        <div class="text-3xl mb-2 text-blue-600">
           <i class="fa-solid fa-file-invoice"></i>
         </div>
-        <div>
-          <div class="font-bold text-slate-800">รายการใบกำกับภาษี</div>
-          <p class="text-xs text-slate-500 mt-1">ดูสรุปรายวัน / รายเดือน</p>
-        </div>
+        <div class="font-bold">ดูรายการใบกำกับภาษีที่ออก</div>
+        <p class="text-sm text-gray-500">ดูสรุปรายวัน / รายเดือน / รายปี</p>
       </a>
 
-      <a href="/bill_note.html" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-lg hover:border-amber-200 hover:-translate-y-1 transition-all duration-300 text-center flex flex-col items-center justify-center gap-3">
-        <div class="w-14 h-14 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-2xl group-hover:bg-amber-500 group-hover:text-white transition-colors duration-300">
+      <a href="/bill_note.html" class="bg-white text-center p-6 rounded-xl shadow hover:shadow-md transition block">
+        <div class="text-3xl mb-2 text-blue-600">
           <i class="fa-solid fa-file-invoice-dollar"></i>
         </div>
-        <div>
-          <div class="font-bold text-slate-800">สร้างใบวางบิล</div>
-          <p class="text-xs text-slate-500 mt-1">รวบรวมใบกำกับเพื่อวางบิล</p>
-        </div>
+        <div class="font-bold">สร้างใบวางบิล</div>
+        <p class="text-sm text-gray-500">รวบรวมใบกำกับเพื่อวางบิลลูกค้า</p>
       </a>
 
-      <a href="/credit_note_form.html" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-lg hover:border-rose-200 hover:-translate-y-1 transition-all duration-300 text-center flex flex-col items-center justify-center gap-3">
-        <div class="w-14 h-14 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-2xl group-hover:bg-rose-500 group-hover:text-white transition-colors duration-300">
+      <a href="/credit_note_form.html" class="bg-white text-center p-6 rounded-xl shadow hover:shadow-md transition block">
+        <div class="text-3xl mb-2 text-blue-600">
           <i class="fa-solid fa-credit-card"></i>
         </div>
-        <div>
-          <div class="font-bold text-slate-800">สร้างใบลดหนี้</div>
-          <p class="text-xs text-slate-500 mt-1">ปรับปรุงราคาและเครดิต</p>
-        </div>
+        <div class="font-bold">สร้างใบลดหนี้</div>
+        <p class="text-sm text-gray-500">รวบรวมใบกำกับเพื่อคิดราคาใหม่</p>
       </a>
 
-      <a href="/saletax_report.html" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-lg hover:border-emerald-200 hover:-translate-y-1 transition-all duration-300 text-center flex flex-col items-center justify-center gap-3">
-        <div class="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl group-hover:bg-emerald-500 group-hover:text-white transition-colors duration-300">
-          <i class="fa-solid fa-money-bill-wave"></i>
+      <a href="/saletax_report.html"
+        class="bg-white text-center p-6 rounded-xl shadow hover:shadow-md transition block">
+        <div class="text-3xl mb-2 text-blue-600">
+          <i class="fa-solid fa-money-bill"></i>
         </div>
-        <div>
-          <div class="font-bold text-slate-800">รายงานภาษีขาย</div>
-          <p class="text-xs text-slate-500 mt-1">รวบรวมรายงานการขายรายเดือน</p>
-        </div>
+        <div class="font-bold">สร้างใบรายงานภาษีขาย</div>
+        <p class="text-sm text-gray-500">รวบรวมรายงานการขาย รายเดือน รายปี</p>
       </a>
 
-      <a href="/car_numberplate.html" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-lg hover:border-indigo-200 hover:-translate-y-1 transition-all duration-300 text-center flex flex-col items-center justify-center gap-3">
-        <div class="w-14 h-14 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl group-hover:bg-indigo-500 group-hover:text-white transition-colors duration-300">
+      <a href="/car_numberplate.html"
+        class="bg-white text-center p-6 rounded-xl shadow hover:shadow-md transition block">
+        <div class="text-3xl mb-2 text-blue-600">
           <i class="fa-solid fa-truck"></i>
         </div>
-        <div>
-          <div class="font-bold text-slate-800">ทะเบียนรถ</div>
-          <p class="text-xs text-slate-500 mt-1">จัดการข้อมูลทะเบียนรถ</p>
-        </div>
+        <div class="font-bold">ทะเบียนรถ</div>
+        <p class="text-sm text-gray-500">บันทึก/ค้นหา ทะเบียนรถ</p>
       </a>
 
-      <a href="/customers" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-lg hover:border-purple-200 hover:-translate-y-1 transition-all duration-300 text-center flex flex-col items-center justify-center gap-3">
-        <div class="w-14 h-14 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center text-2xl group-hover:bg-purple-500 group-hover:text-white transition-colors duration-300">
-          <i class="fa-solid fa-users"></i>
+      <a href="/customers" class="bg-white text-center p-6 rounded-xl shadow hover:shadow-md transition block">
+        <div class="text-3xl mb-2 text-blue-600">
+          <i class="fa-solid fa-user-group"></i>
         </div>
-        <div>
-          <div class="font-bold text-slate-800">จัดการลูกค้า</div>
-          <p class="text-xs text-slate-500 mt-1">ข้อมูลผู้ติดต่อและที่อยู่</p>
-        </div>
+        <div class="font-bold">จัดการลูกค้า</div>
+        <p class="text-sm text-gray-500">เพิ่ม/แก้ไข/ลบ ข้อมูลลูกค้า</p>
       </a>
 
-      <a href="/drivers.html" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-lg hover:border-teal-200 hover:-translate-y-1 transition-all duration-300 text-center flex flex-col items-center justify-center gap-3">
-        <div class="w-14 h-14 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center text-2xl group-hover:bg-teal-500 group-hover:text-white transition-colors duration-300">
-          <i class="fa-solid fa-id-card-clip"></i>
+      <a href="/drivers.html" class="bg-white text-center p-6 rounded-xl shadow hover:shadow-md transition block">
+        <div class="text-3xl mb-2 text-blue-600">
+          <i class="fa-solid fa-id-badge"></i>
         </div>
-        <div>
-          <div class="font-bold text-slate-800">พนักงานขับรถ</div>
-          <p class="text-xs text-slate-500 mt-1">จัดการประวัติคนขับ</p>
-        </div>
+        <div class="font-bold">พนักงานขับรถ</div>
+        <p class="text-sm text-gray-500">เพิ่ม/แก้ไข/ลบ ข้อมูลพนักงาน</p>
       </a>
 
-      <a href="/products" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-lg hover:border-cyan-200 hover:-translate-y-1 transition-all duration-300 text-center flex flex-col items-center justify-center gap-3">
-        <div class="w-14 h-14 rounded-full bg-cyan-50 text-cyan-600 flex items-center justify-center text-2xl group-hover:bg-cyan-500 group-hover:text-white transition-colors duration-300">
-          <i class="fa-solid fa-boxes-stacked"></i>
+      <a href="/products" class="bg-white text-center p-6 rounded-xl shadow hover:shadow-md transition block">
+        <div class="text-3xl mb-2 text-indigo-600">
+          <i class="fa-solid fa-dolly"></i>
         </div>
-        <div>
-          <div class="font-bold text-slate-800">จัดการสินค้า</div>
-          <p class="text-xs text-slate-500 mt-1">แคตตาล็อกราคาสินค้า</p>
-        </div>
+        <div class="font-bold">จัดการสินค้า</div>
+        <p class="text-sm text-gray-500">เพิ่ม/แก้ไข/ลบ สินค้า</p>
       </a>
-
     </section>
   </main>
 
-  <footer class="mt-8 pb-8 text-center text-slate-400 text-sm">
-    © S &amp; S INCOM — Modern Dashboard
+  <footer class="mt-8 pb-6 text-center text-white/70 text-xs">
+    © S &amp; S INCOM — Dashboard
   </footer>
 
+  <!-- แยกสคริปต์ออกมา -->
   <script src="/static/js/dashboard.js" defer></script>
 </body>
 

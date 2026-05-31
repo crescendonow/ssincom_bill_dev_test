@@ -5,52 +5,11 @@
   <meta charset="UTF-8" />
   <title>Tax Invoice</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      corePlugins: {
-        preflight: false, // Prevent breaking print layout
-      },
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8'
-            }
-          }
-        }
-      }
-    }
-  </script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
+  <!-- ✅ ใช้ไฟล์สไตล์ที่แยกออกมา -->
   <link rel="stylesheet" href="/static/css/invoice.css" />
-  <style>
-    @media screen {
-      body {
-        background-color: #f8fafc; /* bg-slate-50 */
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 2rem 1rem;
-        min-height: 100vh;
-      }
-      .doc {
-        background-color: #ffffff;
-        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        max-width: 210mm; /* A4 width */
-        width: 100%;
-      }
-    }
-  </style>
 </head>
 
 <body>
-  <!-- Floating Print Button -->
-  <div class="noprint fixed bottom-6 right-6">
-    <button onclick="window.print()" class="bg-brand-600 text-white px-6 py-3 rounded-full shadow-lg hover:bg-brand-700 hover:shadow-xl transition-all duration-300 font-sans font-medium flex items-center gap-2 border-none cursor-pointer">
-      <i class="fa-solid fa-print"></i> พิมพ์ / บันทึก PDF
-    </button>
-  </div>
 
   <div class="doc">
     <!-- head block -->
@@ -251,7 +210,10 @@
   </div>
 
   <div class="noprint" style="margin-top:14px; text-align:right;">
-    <!-- Moved print button to floating action button -->
+    <button onclick="window.print()"
+      style="padding:8px 14px; background:#0F3F7F; color:#fff; border:none; border-radius:8px; cursor:pointer;">
+      🖨️ พิมพ์ / บันทึก PDF
+    </button>
   </div>
 
   <script src="/static/js/invoice.js"></script>

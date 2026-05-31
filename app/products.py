@@ -46,18 +46,14 @@ def api_products_all(db: Session = Depends(get_db)):
 @router.post("/api/products/check-duplicate")
 def api_products_check_duplicate(
     cf_itemid: str = Form(""),
-    cf_itemname: str = Form(""),
     ignore_idx: Optional[int] = Form(None),
     db: Session = Depends(get_db),
 ):
-    q = db.query(models.ProductList)
-    cond = []
-    if cf_itemid:  cond.append(models.ProductList.cf_itemid == cf_itemid)
-    if cf_itemname: cond.append(models.ProductList.cf_itemname == cf_itemname)
-    if cond:
-        q = q.filter(or_(*cond))
-    else:
+    cf_itemid = cf_itemid.strip()
+    if not cf_itemid:
         return {"duplicate": False}
+
+    q = db.query(models.ProductList).filter(models.ProductList.cf_itemid == cf_itemid)
     if ignore_idx:
         q = q.filter(models.ProductList.idx != ignore_idx)
     exists = db.query(q.exists()).scalar()

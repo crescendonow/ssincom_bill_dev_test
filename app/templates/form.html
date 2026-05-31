@@ -10,19 +10,6 @@
 
   <!-- CSS/JS libs -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8'
-            }
-          }
-        }
-      }
-    }
-  </script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.css" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/datepicker.min.js"></script>
@@ -31,7 +18,6 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
 
   <!-- สไตล์ของฟอร์ม (แยกออกมา) -->
-  <link rel="stylesheet" href="/static/css/style.css" />
   <link rel="stylesheet" href="/static/css/form.css" />
 
   <!-- สไตล์ A4 ของหน้า invoice เฉพาะตอนพิมพ์/สร้าง PDF -->
@@ -61,28 +47,23 @@
     </div>
 
     <!-- ฟอร์มหลัก -->
-    <div class="card p-5 md:p-8">
-      <div class="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
-        <div class="w-10 h-10 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center text-xl">
-          <i class="fa-solid fa-file-invoice"></i>
-        </div>
-        <h2 class="text-xl md:text-2xl font-bold text-slate-800">แบบฟอร์มใบกำกับภาษี</h2>
-      </div>
+    <div class="card p-4 md:p-8">
+      <h2 class="text-xl md:text-2xl font-bold mb-4 md:mb-6">แบบฟอร์มใบกำกับภาษี</h2>
 
-      <form id="invoice_form" onsubmit="return previewInvoice(event)" class="space-y-5">
+      <form id="invoice_form" onsubmit="return previewInvoice(event)" class="space-y-4">
         <input type="hidden" id="cf_branch" name="cf_branch" />
         <!-- หมายเลข/วันที่ -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label for="invoice_number" class="block mb-1 text-sm font-medium text-gray-900">เลขที่ใบกำกับภาษี</label>
             <input type="text" id="invoice_number" name="invoice_number" placeholder="Invoice No"
-              class="form-input w-full" required />
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" required />
             <p id="invNoHelp" class="mt-1 text-sm text-red-600 hidden">เลขที่ใบกำกับนี้ถูกใช้แล้ว</p>
           </div>
           <div>
             <label for="invoice_date" class="block mb-1 text-sm font-medium text-gray-900">วันที่</label>
             <input id="invoice_date" name="invoice_date" type="date" min="1900-01-01" max="2100-12-31"
-              class="form-input w-full" />
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
           </div>
         </div>
 
@@ -91,17 +72,17 @@
           <div>
             <label for="grn_number" class="block mb-1 text-sm font-medium text-gray-900">เลขที่ใบรับสินค้า (GRN)</label>
             <input type="text" id="grn_number" name="grn_number" placeholder="เช่น GRN-0001"
-              class="form-input w-full" />
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
           </div>
           <div>
             <label for="dn_number" class="block mb-1 text-sm font-medium text-gray-900">เลขที่ใบส่งสินค้า (DN)</label>
             <input type="text" id="dn_number" name="dn_number" placeholder="เช่น DN-0001"
-              class="form-input w-full" />
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
           </div>
           <div>
             <label for="po_number" class="block mb-1 text-sm font-medium text-gray-900">เลขที่ใบสั่งซื้อ (PO)</label>
             <input type="text" id="po_number" name="po_number" placeholder="PO-XXXXX"
-              class="form-input w-full" />
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
           </div>
         </div>
         <!-- ค้นหาพนักงานขับรถ -->
@@ -111,7 +92,7 @@
           </label>
           <input type="text" id="driver_search" list="driversList" autocomplete="off"
             placeholder="เช่น D0007 หรือ 1103700xxxxx หรือ ชื่อ-นามสกุล"
-            class="form-input w-full" />
+            class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
           <datalist id="driversList"></datalist>
           <!-- ช่องเก็บ driver_id ที่จะส่งเข้า DB -->
           <input type="hidden" name="driver_id" id="driver_id" />
@@ -123,19 +104,19 @@
           <label for="personid" class="block mb-1 text-sm font-medium text-gray-900">รหัสลูกค้า (personid)</label>
           <input type="text" name="personid" id="personid" list="personidList" autocomplete="off"
             oninput="selectCustomerByPersonid()" placeholder="เช่น PC55901001"
-            class="form-input w-full bg-slate-100" />
+            class="bg-gray-100 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
         </div>
 
         <div>
           <label for="customer_name" class="block mb-1 text-sm font-medium text-gray-900">ชื่อลูกค้า</label>
           <input type="text" name="customer_name" id="customer_name" list="customerList" oninput="selectCustomer()"
-            class="form-input w-full bg-slate-100" />
+            class="bg-gray-100 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
         </div>
 
         <div>
           <label for="customer_address" class="block mb-1 text-sm font-medium text-gray-900">ที่อยู่</label>
           <input type="text" name="customer_address" id="customer_address"
-            class="form-input w-full" />
+            class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -143,32 +124,32 @@
             <label for="customer_taxid"
               class="block mb-1 text-sm font-medium text-gray-900">เลขประจำตัวผู้เสียภาษี</label>
             <input type="text" name="customer_taxid" id="customer_taxid"
-              class="form-input w-full" />
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
           </div>
           <div>
             <label for="tel" class="block mb-1 text-sm font-medium text-gray-900">โทรศัพท์</label>
             <input type="text" name="tel" id="tel"
-              class="form-input w-full" />
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
           </div>
           <div>
             <label for="mobile" class="block mb-1 text-sm font-medium text-gray-900">มือถือ</label>
             <input type="text" name="mobile" id="mobile"
-              class="form-input w-full" />
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
           </div>
           <div>
             <label for="cf_personzipcode" class="block mb-1 text-sm font-medium text-gray-900">รหัสไปรษณีย์</label>
             <input type="text" name="cf_personzipcode" id="cf_personzipcode"
-              class="form-input w-full" />
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
           </div>
           <div>
             <label for="cf_provincename" class="block mb-1 text-sm font-medium text-gray-900">จังหวัด</label>
             <input type="text" name="cf_provincename" id="cf_provincename"
-              class="form-input w-full" />
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
           </div>
           <div>
             <label for="car_numberplate" class="block mb-1 text-sm font-medium text-gray-900">ทะเบียนรถจัดส่ง</label>
             <input type="text" name="car_numberplate" id="car_numberplate" list="car_plate_datalist"
-              placeholder="เช่น 1กก 1234" class="form-input w-full" />
+              placeholder="เช่น 1กก 1234" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
             <p id="car_plate_msg" class="text-xs text-gray-400 mt-1"></p>
           </div>
         </div>
@@ -178,7 +159,7 @@
           <div>
             <label for="fm_payment" class="block mb-1 text-sm font-medium text-gray-900">วิธีชำระ</label>
             <select id="fm_payment" name="fm_payment"
-              class="form-input w-full">
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5">
               <option value="cash">เงินสด / โอนทันที</option>
               <option value="credit">เครดิต</option>
             </select>
@@ -186,12 +167,12 @@
           <div>
             <label for="fmlpaymentcreditday" class="block mb-1 text-sm font-medium text-gray-900">เครดิต (วัน)</label>
             <input type="number" name="fmlpaymentcreditday" id="fmlpaymentcreditday"
-              class="form-input w-full" />
+              class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
           </div>
           <div>
             <label for="due_date" class="block mb-1 text-sm font-medium text-gray-900">กำหนดชำระ (Due date)</label>
             <input type="text" id="due_date" name="due_date" readonly placeholder="คำนวณอัตโนมัติ"
-              class="form-input w-full bg-slate-100" />
+              class="bg-gray-100 border border-gray-300 text-sm rounded-lg w-full p-2.5" />
           </div>
         </div>
 
@@ -200,13 +181,13 @@
         <div id="items" class="space-y-3 md:space-y-4">
           <div class="flex flex-wrap gap-3 md:gap-4 item-row items-end">
             <input name="product_code" readonly placeholder="รหัสสินค้า"
-              class="form-input product_code flex-1 min-w-[120px] bg-slate-100" />
+              class="product_code flex-1 min-w-[120px] bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5" />
             <input name="description" readonly placeholder="รายละเอียด"
-              class="form-input description flex-1 min-w-[140px] bg-slate-100" />
+              class="description flex-1 min-w-[140px] bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5" />
             <input name="quantity" type="number" step="0.01" placeholder="จำนวน" oninput="updateTotal()"
-              class="form-input quantity w-24" />
+              class="quantity w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
             <input name="unit_price" type="number" step="0.01" placeholder="ราคาต่อหน่วย" oninput="updateTotal()"
-              class="form-input unit_price w-28 md:w-32" />
+              class="unit_price w-28 md:w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5" />
             <button type="button" onclick="openProductModal(this)"
               class="text-sm text-blue-600 hover:text-blue-800 px-2">🔍 ค้นหา</button>
           </div>
@@ -227,7 +208,7 @@
           <div class="flex flex-wrap gap-2 items-center justify-between md:justify-start">
             <div class="flex items-center gap-2">
               <label for="variant" class="text-sm">ชนิดเอกสาร</label>
-              <select id="variant" class="form-input">
+              <select id="variant" class="bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5">
                 <option value="invoice_original">ใบกำกับ/ส่งของ/แจ้งหนี้ (ต้นฉบับ)</option>
                 <option value="invoice_copy">ใบกำกับ/ส่งของ/แจ้งหนี้ (สำเนา)</option>
                 <option value="receipt_original">ใบเสร็จรับเงิน (ต้นฉบับ)</option>
@@ -236,25 +217,25 @@
             </div>
             <div class="flex gap-2">
               <button type="button" onclick="previewInvoice(event)"
-                class="px-4 py-2 rounded-lg bg-slate-600 hover:bg-slate-700 text-white flex items-center gap-2 smooth-transition hover-scale">
+                class="px-4 py-2 rounded bg-gray-600 text-white flex items-center gap-2">
                 <i class="fa-solid fa-magnifying-glass"></i>
                 Preview
               </button>
 
               <button type="button" id="btnSave" onclick="saveInvoice()"
-                class="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white flex items-center gap-2 smooth-transition hover-scale shadow-sm">
+                class="px-4 py-2 rounded bg-blue-600 text-white flex items-center gap-2">
                 <i class="fa-solid fa-floppy-disk"></i>
                 Save
               </button>
 
               <button type="button" id="btnUpdate" onclick="updateInvoice()"
-                class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-2 hidden smooth-transition hover-scale">
+                class="px-4 py-2 rounded bg-amber-600 text-white flex items-center gap-2 hidden">
                 <i class="fa-solid fa-pen-to-square"></i>
                 Update
               </button>
 
               <button type="button" id="btnMergePdf" onclick="downloadMergedPdf()"
-                class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2 smooth-transition hover-scale">
+                class="px-4 py-2 rounded bg-green-700 text-white flex items-center gap-2">
                 <i class="fa-solid fa-file-pdf"></i>
                 Merge PDF
               </button>

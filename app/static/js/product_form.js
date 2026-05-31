@@ -114,7 +114,6 @@ function fillProductForm(p) {
 async function isProductDuplicate(payload, ignoreIdx=null) {
   const fd = new FormData();
   fd.append('cf_itemid', payload.cf_itemid || '');
-  fd.append('cf_itemname', payload.cf_itemname || '');
   if (ignoreIdx) fd.append('ignore_idx', ignoreIdx);
   const res = await fetch('/api/products/check-duplicate', { method:'POST', body: fd });
   const data = await res.json().catch(()=>({duplicate:false}));

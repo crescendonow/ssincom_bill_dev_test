@@ -5,20 +5,6 @@
     <title>แบบฟอร์มใบลดหนี้ (Credit Note)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              brand: {
-                50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8'
-              }
-            }
-          }
-        }
-      }
-    </script>
-    <link rel="stylesheet" href="/static/css/style.css" />
     <link rel="stylesheet" href="/static/css/credit_note.css" />
     <link
       rel="stylesheet"
@@ -26,32 +12,30 @@
     />
   </head>
 
-
-  <body class="bg-slate-50 text-slate-800">
-    <div class="max-w-5xl mx-auto p-4 md:p-8">
-      <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl md:text-3xl font-bold flex items-center gap-2">
-          <i class="fa-solid fa-file-invoice text-brand-600"></i>
+  <body class="bg-gray-100">
+    <div class="max-w-5xl mx-auto p-4 md:p-6">
+      <div class="flex items-center justify-between mb-4">
+        <a href="/dashboard" class="text-blue-700 hover:underline"
+          >← กลับ Dashboard</a
+        >
+        <h1 class="text-xl md:text-2xl font-bold">
           แบบฟอร์มใบลดหนี้ (Credit Note)
         </h1>
-        <a href="/dashboard" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-600 bg-white hover:bg-slate-50 hover:shadow-sm border border-slate-200 smooth-transition font-medium"
-          ><i class="fa-solid fa-arrow-left"></i> กลับ Dashboard</a
-        >
       </div>
 
       <!-- ===== TABS ===== -->
-      <div id="controls" class="bg-white shadow-sm border border-slate-200 rounded-2xl p-5 md:p-8 mb-6">
-        <div class="border-b border-slate-200 mb-6">
+      <div id="controls" class="bg-white shadow rounded-lg p-4 md:p-6 mb-6">
+        <div class="border-b border-gray-200 mb-4">
           <nav class="-mb-px flex space-x-8" aria-label="Tabs">
             <button
               id="tab-create"
-              class="whitespace-nowrap py-4 px-1 border-b-2 font-semibold text-sm border-brand-500 text-brand-600"
+              class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-blue-500 text-blue-600"
             >
               สร้าง / แก้ไขใบลดหนี้
             </button>
             <button
               id="tab-search"
-              class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 transition-colors"
+              class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
             >
               ค้นหารายการ
             </button>
@@ -60,7 +44,7 @@
 
         <!-- ===== PANEL: CREATE ===== -->
         <div id="panel-create">
-          <h2 class="text-xl font-bold mb-4 text-slate-700">สร้างใบลดหนี้</h2>
+          <h2 class="text-2xl font-bold mb-4 text-gray-700">สร้างใบลดหนี้</h2>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
@@ -68,7 +52,7 @@
               <input
                 type="date"
                 id="cn_date"
-                class="form-input"
+                class="mt-1 w-full border rounded p-2"
               />
             </div>
             <div>
@@ -76,7 +60,7 @@
               <input
                 type="text"
                 id="creditnote_number"
-                class="form-input bg-slate-100"
+                class="mt-1 w-full border rounded p-2 bg-gray-100"
                 readonly
               />
               <p class="text-xs text-gray-500 mt-1">
@@ -87,7 +71,7 @@
               <button
                 id="btnGenNo"
                 type="button"
-                class="w-full md:w-auto px-4 py-2.5 bg-brand-600 text-white font-medium rounded-lg hover:bg-brand-700 shadow-sm smooth-transition hover-scale"
+                class="w-full md:w-auto px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
               >
                 สร้างเลขเอกสาร
               </button>
@@ -100,25 +84,25 @@
               <input
                 name="grn_number"
                 placeholder="เลขที่ใบรับสินค้า"
-                class="form-input grn_number flex-1 min-w-[120px]"
+                class="grn_number flex-1 min-w-[120px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5"
               />
 
               <input
                 name="invoice_number"
                 placeholder="เลขที่ใบกำกับ"
-                class="form-input invoice_number flex-1 min-w-[140px]"
+                class="invoice_number flex-1 min-w-[140px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5"
               />
 
               <input
                 name="product_code"
                 placeholder="รหัสสินค้า"
-                class="form-input product_code w-32"
+                class="product_code w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5"
               />
 
               <input
                 name="description"
                 placeholder="รายละเอียด"
-                class="form-input description flex-1 min-w-[140px]"
+                class="description flex-1 min-w-[140px] bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5"
               />
 
               <!-- ราคา/หน่วย (จะ autofill จากรหัสสินค้า) -->
@@ -127,7 +111,7 @@
                 type="number"
                 step="0.01"
                 placeholder="ราคา/หน่วย"
-                class="form-input unit_price w-32"
+                class="unit_price w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5"
                 oninput="updateTotal()"
               />
 
@@ -136,7 +120,7 @@
                 type="number"
                 step="0.01"
                 placeholder="จำนวน"
-                class="form-input quantity w-24"
+                class="quantity w-24 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5"
                 oninput="updateTotal()"
               />
 
@@ -145,7 +129,7 @@
                 type="number"
                 step="0.01"
                 placeholder="บทปรับ/หน่วย (บาท)"
-                class="form-input fine w-28 md:w-32"
+                class="fine w-28 md:w-32 bg-gray-50 border border-gray-300 text-sm rounded-lg p-2.5"
                 oninput="updateTotal()"
               />
 
@@ -154,14 +138,14 @@
                 name="old_total_vat"
                 placeholder="มูลค่าเดิม (รวม VAT)"
                 readonly
-                class="form-input old_total_vat w-40 bg-slate-100 text-right"
+                class="old_total_vat w-40 bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5 text-right"
               />
 
               <input
                 name="new_total_vat"
                 placeholder="มูลค่าใหม่ (รวม VAT)"
                 readonly
-                class="form-input new_total_vat w-40 bg-slate-100 text-right"
+                class="new_total_vat w-40 bg-gray-100 border border-gray-300 text-sm rounded-lg p-2.5 text-right"
               />
 
               <!-- เก็บราคาฐาน -->
@@ -207,7 +191,7 @@
                 autocomplete="off"
                 oninput="selectCustomerByPersonid()"
                 placeholder="เช่น PC55901001"
-                class="form-input w-full bg-slate-100"
+                class="bg-gray-100 border border-gray-300 text-sm rounded-lg w-full p-2.5"
               />
             </div>
 
@@ -223,7 +207,7 @@
                 id="customer_name"
                 list="customerList"
                 oninput="selectCustomer()"
-                class="form-input w-full bg-slate-100"
+                class="bg-gray-100 border border-gray-300 text-sm rounded-lg w-full p-2.5"
               />
             </div>
 
@@ -237,7 +221,7 @@
                 type="text"
                 name="customer_address"
                 id="customer_address"
-                class="form-input w-full"
+                class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5"
               />
             </div>
 
@@ -252,7 +236,7 @@
                   type="text"
                   name="customer_taxid"
                   id="customer_taxid"
-                  class="form-input w-full"
+                  class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5"
                 />
               </div>
               <div>
@@ -265,7 +249,7 @@
                   type="text"
                   name="tel"
                   id="tel"
-                  class="form-input w-full"
+                  class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5"
                 />
               </div>
               <div>
@@ -278,7 +262,7 @@
                   type="text"
                   name="mobile"
                   id="mobile"
-                  class="form-input w-full"
+                  class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5"
                 />
               </div>
               <div>
@@ -291,7 +275,7 @@
                   type="text"
                   name="cf_personzipcode"
                   id="cf_personzipcode"
-                  class="form-input w-full"
+                  class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5"
                 />
               </div>
               <div>
@@ -304,7 +288,7 @@
                   type="text"
                   name="cf_provincename"
                   id="cf_provincename"
-                  class="form-input w-full"
+                  class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2.5"
                 />
               </div>
             </div>
@@ -331,7 +315,7 @@
               </label>
               <select
                 id="cn_variant"
-                class="form-input"
+                class="mt-1 w-full border rounded p-2 bg-white text-sm"
               >
                 <option value="creditnote_original">ต้นฉบับ</option>
                 <option value="creditnote_copy">สำเนา</option>
@@ -339,39 +323,39 @@
             </div>
           </div>
 
-          <div class="mt-6 pt-4 border-t border-slate-100 flex gap-3 flex-wrap">
+          <div class="mt-4 flex gap-4 flex-wrap">
             <button
               id="btnPreview"
               type="button"
-              class="px-4 py-2.5 bg-slate-600 text-white rounded-lg hover:bg-slate-700 font-medium smooth-transition hover-scale flex items-center gap-2"
+              class="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-800"
             >
               <i class="fa-solid fa-eye"></i> Preview
             </button>
             <button
               id="btnSave"
               type="button"
-              class="px-5 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium shadow-sm smooth-transition hover-scale flex items-center gap-2"
+              class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
             >
               <i class="fa-solid fa-floppy-disk"></i> บันทึก
             </button>
             <button
               id="btnUpdate"
               type="button"
-              class="px-4 py-2.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 font-medium hidden smooth-transition hover-scale flex items-center gap-2"
+              class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 hidden"
             >
               <i class="fa-solid fa-rotate"></i> อัปเดตใบลดหนี้
             </button>
             <button
               id="btnPDF"
               type="button"
-              class="px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium smooth-transition hover-scale flex items-center gap-2"
+              class="px-4 py-2 bg-green-700 text-white rounded hover:bg-green-800"
             >
               <i class="fa-solid fa-file-pdf"></i> PDF
             </button>
             <button
               id="btnNew"
               type="button"
-              class="px-4 py-2.5 bg-slate-400 text-white rounded-lg hover:bg-slate-500 font-medium hidden smooth-transition flex items-center gap-2"
+              class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 hidden"
             >
               <i class="fa-solid fa-plus"></i> สร้างใหม่
             </button>
@@ -380,43 +364,43 @@
 
         <!-- ===== PANEL: SEARCH ===== -->
         <div id="panel-search" class="hidden">
-          <h2 class="text-xl font-bold mb-4 text-slate-700">ค้นหาใบลดหนี้</h2>
+          <h2 class="text-2xl font-bold mb-4 text-gray-700">ค้นหาใบลดหนี้</h2>
           <div class="grid md:grid-cols-3 gap-4 items-end">
             <div>
               <label
                 for="searchStartDate"
-                class="block text-sm font-medium text-slate-700"
+                class="block text-sm font-medium text-gray-600"
                 >วันที่เริ่มต้น</label
               >
               <input
                 type="date"
                 id="searchStartDate"
-                class="form-input"
+                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2"
               />
             </div>
             <div>
               <label
                 for="searchEndDate"
-                class="block text-sm font-medium text-slate-700"
+                class="block text-sm font-medium text-gray-600"
                 >วันที่สิ้นสุด</label
               >
               <input
                 type="date"
                 id="searchEndDate"
-                class="form-input"
+                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2"
               />
             </div>
             <div>
               <label
                 for="searchQuery"
-                class="block text-sm font-medium text-slate-700"
+                class="block text-sm font-medium text-gray-600"
                 >คำค้นหา</label
               >
               <input
                 type="text"
                 id="searchQuery"
                 placeholder="เลขที่ใบลดหนี้ / ชื่อลูกค้า"
-                class="form-input"
+                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2"
                 autocomplete="off"
               />
             </div>
@@ -424,23 +408,23 @@
           <div class="mt-4">
             <button
               id="searchBtn"
-              class="bg-brand-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-brand-700 shadow-sm smooth-transition hover-scale"
+              class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
             >
-              <i class="fa-solid fa-magnifying-glass"></i> ค้นหา
+              ค้นหา
             </button>
           </div>
-          <div class="mt-6 overflow-x-auto rounded-xl border border-slate-200">
-            <table class="w-full text-sm text-left">
+          <div class="mt-6 overflow-x-auto">
+            <table class="w-full text-sm">
               <thead>
-                <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
-                  <th class="p-3 font-semibold">วันที่</th>
-                  <th class="p-3 font-semibold">เลขที่ใบลดหนี้</th>
-                  <th class="p-3 font-semibold">ลูกค้า</th>
-                  <th class="p-3 font-semibold text-right">ยอดรวม</th>
-                  <th class="p-3 font-semibold text-center">จัดการ</th>
+                <tr class="bg-gray-50">
+                  <th class="p-2 text-left">วันที่</th>
+                  <th class="p-2 text-left">เลขที่ใบลดหนี้</th>
+                  <th class="p-2 text-left">ลูกค้า</th>
+                  <th class="p-2 text-right">ยอดรวม</th>
+                  <th class="p-2 text-center">จัดการ</th>
                 </tr>
               </thead>
-              <tbody id="searchResultsBody" class="divide-y divide-slate-100 bg-white"></tbody>
+              <tbody id="searchResultsBody"></tbody>
             </table>
           </div>
         </div>
