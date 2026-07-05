@@ -99,29 +99,17 @@ def generate_creditnote_number(db: Session, doc_date: date) -> str:
 
     return f"{prefix}{max_run + 1}{suffix}"
 
-CREDIT_NOTE_BODY_ROWS_PER_PAGE = 10
-CREDIT_NOTE_FINAL_ROWS_PER_PAGE = 7
+CREDIT_NOTE_ROWS_PER_PAGE = 10
+
 
 def _paginate_credit_note_rows(rows: list[dict]) -> tuple[list[dict], int]:
     if not rows:
         return [{"rows": []}], 1
 
-    pages = []
-    idx = 0
-    total = len(rows)
-
-    while total - idx > CREDIT_NOTE_FINAL_ROWS_PER_PAGE:
-        remaining = total - idx
-        if remaining <= CREDIT_NOTE_BODY_ROWS_PER_PAGE:
-            take = CREDIT_NOTE_FINAL_ROWS_PER_PAGE
-        else:
-            take = CREDIT_NOTE_BODY_ROWS_PER_PAGE
-        pages.append({"rows": rows[idx:idx + take]})
-        idx += take
-
-    if idx < total:
-        pages.append({"rows": rows[idx:]})
-
+    pages = [
+        {"rows": rows[idx:idx + CREDIT_NOTE_ROWS_PER_PAGE]}
+        for idx in range(0, len(rows), CREDIT_NOTE_ROWS_PER_PAGE)
+    ]
     return pages, len(pages)
 
 # --- PAGES ---

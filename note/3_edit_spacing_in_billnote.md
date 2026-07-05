@@ -22,3 +22,9 @@
 - The requested architecture file is `app/.docs/arcitecture_ssincom_bill.md`; root `.docs/arcitecture_ssincom_bill.md` does not exist.
 - Attached PDFs are credit-note examples of the same signature overflow class.
 - No dependency installation or database migration is part of this fix.
+
+## Credit Note Pagination Fix
+- Change credit-note pagination to a fixed 10 rows per page: rows 1-10 on page 1, rows 11-20 on page 2, and so on.
+- Remove the previous final-page-only 7-row pagination logic.
+- Keep summary, reason, and signature blocks on the final logical page only.
+- Verify generated PDFs do not contain blank pages after the pagination and spacing changes.
