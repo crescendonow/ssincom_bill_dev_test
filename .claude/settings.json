@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cp __TRACKED_VAR__/Sarabun-Regular.ttf app/static/fonts/THSarabunNew.ttf)",
+      "Bash(cp __TRACKED_VAR__/Sarabun-Bold.ttf 'app/static/fonts/THSarabunNew Bold.ttf')",
+      "Bash(cp __TRACKED_VAR__/Sarabun-Italic.ttf 'app/static/fonts/THSarabunNew Italic.ttf')",
+      "Bash(cp __TRACKED_VAR__/Sarabun-BoldItalic.ttf 'app/static/fonts/THSarabunNew BoldItalic.ttf')",
+      "Bash(cp __TRACKED_VAR__/OFL.txt app/static/fonts/OFL.txt)"
+    ]
+  }
+}

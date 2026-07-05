@@ -30,7 +30,7 @@
   font-style: italic;
 }
 body {
-  font-family: "TH Sarabun New", "Noto Sans Thai", sans-serif !important;
+  font-family: "Noto Sans Thai", sans-serif !important;
   font-optical-sizing: auto;
 }
 
@@ -92,6 +92,7 @@ body {
 
 .credit-note,
 .credit-note * {
+  font-family: "TH Sarabun New", "Noto Sans Thai", sans-serif;
   letter-spacing: normal;
   font-stretch: normal;
   font-kerning: normal;
