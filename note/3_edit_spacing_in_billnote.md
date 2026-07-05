@@ -23,8 +23,21 @@
 - Attached PDFs are credit-note examples of the same signature overflow class.
 - No dependency installation or database migration is part of this fix.
 
-## Credit Note Pagination Fix
-- Change credit-note pagination to a fixed 10 rows per page: rows 1-10 on page 1, rows 11-20 on page 2, and so on.
-- Remove the previous final-page-only 7-row pagination logic.
+## 2026-07-05 Credit Note Font/Pagination Update
+- Confirmed problem sample: `credit_note_SSCR14-3006_2569 (3).pdf` is the current broken output.
+- Priority: readability first. Do not compress Thai text horizontally just to fit more rows.
+- Remove any effective character condensing for exported PDF: no letter-spacing reduction, no font-stretch/scale transforms, and prefer a real embedded Thai font so WeasyPrint/browser PDF rendering does not substitute a cramped fallback.
+- Do not keep credit-note pagination fixed at 10 rows if the page is unnecessarily short.
+- Test candidate row counts in the 15-20 range and choose the highest count that still keeps the first page fully visible, with no clipped final row.
+- Preserve current line spacing where possible; the reported line spacing is already acceptable.
+- Fix the first-page missing/clipped last-row issue by making pagination leave a measurable safety margin instead of relying on exact A4 height.
 - Keep summary, reason, and signature blocks on the final logical page only.
-- Verify generated PDFs do not contain blank pages after the pagination and spacing changes.
+- Keep public routes, payloads, DB schema, document numbers, totals, VAT, save/update flows, and PDF filename behavior unchanged.
+
+## Implementation Plan For This Round
+- Scope confirmed: update only credit-note export/preview. Do not change bill-note behavior in this round.
+- Update `app/credit_note.py` pagination constant/helper after verification. Candidate values: 15, 16, 17, 18, 19, 20 rows/page.
+- Update `app/static/css/credit_note.css` to remove horizontal compression risk and define/load the local `TH Sarabun New` font files explicitly for PDF rendering.
+- Add a focused verification path that renders credit-note test fixtures with 15-20 rows and checks page count/pagination output; if PDF dependencies are not usable locally, document that verification gap.
+- Run syntax checks after edits: `python -m py_compile app/credit_note.py app/bill_note.py`.
+- Probe result: candidate 15 is selected for this round because it is the safest value in the requested 15-20 range after readability-first font changes. Edge headless showed overflow risk for 15-20 with medium-length descriptions, so do not raise above 15 without a real WeasyPrint/runtime PDF check.

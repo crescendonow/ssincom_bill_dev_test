@@ -2,8 +2,35 @@
    BASE จาก bill_note.css
    =============================== */
 
+@font-face {
+  font-family: "TH Sarabun New";
+  src: url("../fonts/THSarabunNew.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "TH Sarabun New";
+  src: url("../fonts/THSarabunNew Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "TH Sarabun New";
+  src: url("../fonts/THSarabunNew Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "TH Sarabun New";
+  src: url("../fonts/THSarabunNew BoldItalic.ttf") format("truetype");
+  font-weight: 700;
+  font-style: italic;
+}
 body {
-  font-family: "Noto Sans Thai", sans-serif !important;
+  font-family: "TH Sarabun New", "Noto Sans Thai", sans-serif !important;
   font-optical-sizing: auto;
 }
 
@@ -26,8 +53,8 @@ body {
   --print-h3: 16pt;
 
   /* ตาราง */
-  --print-table: 11.2pt;
-  --print-table-small: 11pt;
+  --print-table: 12pt;
+  --print-table-small: 11.5pt;
 
   /* ระยะห่าง */
   --print-line-height: 1.12;
@@ -61,6 +88,16 @@ body {
   overflow: visible;
   break-inside: avoid;
   page-break-inside: avoid;
+}
+
+.credit-note,
+.credit-note * {
+  letter-spacing: normal;
+  font-stretch: normal;
+  font-kerning: normal;
+  font-optical-sizing: none;
+  text-rendering: optimizeLegibility;
+  transform: none;
 }
 
 /* พื้นที่ต่าง ๆ ของ A4 (ถ้าไม่มี header/section ใน credit_note.html ก็ไม่เป็นไร) */
@@ -409,6 +446,7 @@ main {
 .cn-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
   margin-top: 1mm;
   /* ระยะห่างจาก header ~0.5 ซม. */
   border-left: var(--border);
@@ -427,6 +465,9 @@ main {
   font-weight: 400;
   line-height: 1.15;
   border-left: var(--border);
+  overflow-wrap: break-word;
+  word-break: normal;
+  white-space: normal;
   /* เส้นแบ่งคอลัมน์ */
 }
 
@@ -458,6 +499,8 @@ main {
 .cn-table td.num,
 .cn-table th.num {
   text-align: right;
+  white-space: nowrap;
+  overflow-wrap: normal;
 }
 
 /* ตารางสรุปด้านล่าง */
@@ -570,6 +613,7 @@ main {
 /* ใช้กับ credit note เท่านั้น: main ไม่ต้องมี padding ด้านข้าง */
 .credit-note main {
   padding: 0;
+  overflow: visible;
 }
 
 /* ให้เส้นตารางของใบลดหนี้ใช้ขนาดเดียวกับ cn-header-row ทั้งหมด */

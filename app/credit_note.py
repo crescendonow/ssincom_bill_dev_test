@@ -99,7 +99,8 @@ def generate_creditnote_number(db: Session, doc_date: date) -> str:
 
     return f"{prefix}{max_run + 1}{suffix}"
 
-CREDIT_NOTE_ROWS_PER_PAGE = 10
+CREDIT_NOTE_ROWS_PER_PAGE = 15
+CREDIT_NOTE_TESTED_ROWS_PER_PAGE = (15, 16, 17, 18, 19, 20)
 
 
 def _paginate_credit_note_rows(rows: list[dict]) -> tuple[list[dict], int]:
