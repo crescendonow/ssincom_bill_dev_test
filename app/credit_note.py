@@ -7,7 +7,6 @@ from datetime import datetime, date
 from typing import Optional
 from pathlib import Path
 import tempfile, uuid
-from math import ceil 
 from . import models  
 
 from .database import SessionLocal, Base
@@ -99,6 +98,31 @@ def generate_creditnote_number(db: Session, doc_date: date) -> str:
             pass
 
     return f"{prefix}{max_run + 1}{suffix}"
+
+CREDIT_NOTE_BODY_ROWS_PER_PAGE = 10
+CREDIT_NOTE_FINAL_ROWS_PER_PAGE = 7
+
+def _paginate_credit_note_rows(rows: list[dict]) -> tuple[list[dict], int]:
+    if not rows:
+        return [{"rows": []}], 1
+
+    pages = []
+    idx = 0
+    total = len(rows)
+
+    while total - idx > CREDIT_NOTE_FINAL_ROWS_PER_PAGE:
+        remaining = total - idx
+        if remaining <= CREDIT_NOTE_BODY_ROWS_PER_PAGE:
+            take = CREDIT_NOTE_FINAL_ROWS_PER_PAGE
+        else:
+            take = CREDIT_NOTE_BODY_ROWS_PER_PAGE
+        pages.append({"rows": rows[idx:idx + take]})
+        idx += take
+
+    if idx < total:
+        pages.append({"rows": rows[idx:]})
+
+    return pages, len(pages)
 
 # --- PAGES ---
 @router.get("/credit_note_form.html", response_class=HTMLResponse)
@@ -205,16 +229,7 @@ def credit_note_preview_page(request: Request, no: str = Query(...), db: Session
     vat = round(sum_reduce_value * 0.07, 2)
     grand = round(sum_reduce_value + vat, 2)
 
-    # ---------- แบ่งหน้า: 10 แถวต่อหน้า ----------
-    from math import ceil
-    ITEMS_PER_PAGE = 10
-    total_pages = max(1, ceil(len(rows) / ITEMS_PER_PAGE)) if rows else 1
-    pages = []
-    for i in range(total_pages):
-        start = i * ITEMS_PER_PAGE
-        end = start + ITEMS_PER_PAGE
-        pages.append({"rows": rows[start:end]})
-    # -----------------------------------------------
+    pages, total_pages = _paginate_credit_note_rows(rows)
 
     # วันที่เอกสาร (หัวใบลดหนี้) ให้ใช้ created_at เดิม
     d = head.created_at or datetime.now().date()
@@ -513,15 +528,7 @@ def _build_creditnote_context_from_payload(payload: dict, db: Session) -> dict:
     sum_reduce_vat = round(sum_reduce_value * 0.07, 2)
     sum_total = round(sum_reduce_value + sum_reduce_vat, 2)
 
-    # ---------- แบ่งหน้า: 10 แถวต่อหน้า ----------
-    ITEMS_PER_PAGE = 10
-    total_pages = max(1, ceil(len(rows) / ITEMS_PER_PAGE)) if rows else 1
-    pages = []
-    for i in range(total_pages):
-        start = i * ITEMS_PER_PAGE
-        end = start + ITEMS_PER_PAGE
-        pages.append({"rows": rows[start:end]})
-    # -------------------------------------------
+    pages, total_pages = _paginate_credit_note_rows(rows)
 
     # --- buyer จาก payload / DB ---
     buyer_payload = d.get("buyer") or {}

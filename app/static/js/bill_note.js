@@ -150,23 +150,39 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function renderBillDocument(data) {
+    async function renderBillDocument(data) {
         const container = document.getElementById('bill-note-container');
         const template = document.getElementById('bill-note-template');
-        container.innerHTML = '';
+        const invoices = data.invoices || [];
+        const BODY_ROWS_PER_PAGE = 10;
+        const INITIAL_FINAL_ROWS_PER_PAGE = 10;
+        const MIN_FINAL_ROWS_PER_PAGE = 1;
 
-        const ITEMS_PER_PAGE = 10;
-        const totalPages = Math.ceil((data.invoices || []).length / ITEMS_PER_PAGE) || 1;
+        const previousDisplay = container.style.display;
+        const previousVisibility = container.style.visibility;
+        container.style.display = 'block';
+        container.style.visibility = 'hidden';
 
-        for (let i = 0; i < totalPages; i++) {
-            const pageNode = template.content.cloneNode(true);
-            const pageElement = pageNode.querySelector('.A4-page');
+        const nextFrame = () => new Promise(resolve => requestAnimationFrame(resolve));
 
-            const startIdx = i * ITEMS_PER_PAGE;
-            const pageInvoices = (data.invoices || []).slice(startIdx, startIdx + ITEMS_PER_PAGE);
+        function paginateInvoices(finalRowsPerPage) {
+            if (invoices.length === 0) return [{ startIndex: 0, invoices: [] }];
 
+            const pages = [];
+            let idx = 0;
+            while (invoices.length - idx > finalRowsPerPage) {
+                const remaining = invoices.length - idx;
+                const take = remaining <= BODY_ROWS_PER_PAGE ? finalRowsPerPage : BODY_ROWS_PER_PAGE;
+                pages.push({ startIndex: idx, invoices: invoices.slice(idx, idx + take) });
+                idx += take;
+            }
+            pages.push({ startIndex: idx, invoices: invoices.slice(idx) });
+            return pages;
+        }
+
+        function fillPage(pageElement, pageInvoices, startIdx, pageNo, totalPages, isFinalPage) {
             pageElement.querySelector('.cust-person-id').textContent = data.customer.person_id || '-';
-            
+
             const prename = (data.customer.prename || '').trim();
             const name = (data.customer.name || '').trim();
             const fullName = prename ? `${prename} ${name}` : name;
@@ -175,14 +191,19 @@ document.addEventListener('DOMContentLoaded', () => {
             pageElement.querySelector('.cust-address').textContent = data.customer.address || '-';
             pageElement.querySelector('.cust-tax-id').textContent = data.customer.tax_id || '-';
             pageElement.querySelector('.cust-branch').textContent = data.customer.branch || '-';
-
             pageElement.querySelector('.bill-number').textContent = data.bill_note_number || '(ยังไม่ได้บันทึก)';
             pageElement.querySelector('.bill-date').textContent = new Date(data.bill_date || Date.now()).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+            pageElement.querySelector('.page-number').textContent = `${pageNo} / ${totalPages}`;
+            pageElement.querySelector('.payment-due-date').textContent = formatLongThaiDate(data.payment_duedate) || '-';
+
             const signatureDate = pageElement.querySelector('.signature-date');
             if (signatureDate) signatureDate.textContent = new Date(data.bill_date || Date.now()).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
 
-            pageElement.querySelector('.page-number').textContent = `${i + 1} / ${totalPages}`;
-            pageElement.querySelector('.payment-due-date').textContent = formatLongThaiDate(data.payment_duedate) || '-';
+            const pageEnder = pageElement.querySelector('.page-ender');
+            if (pageEnder) {
+                pageEnder.classList.toggle('is-hidden', !isFinalPage);
+                pageEnder.setAttribute('aria-hidden', isFinalPage ? 'false' : 'true');
+            }
 
             const tableBody = pageElement.querySelector('.invoice-table-body');
             tableBody.innerHTML = '';
@@ -199,16 +220,53 @@ document.addEventListener('DOMContentLoaded', () => {
                 tableBody.appendChild(tr);
             });
 
-            if (i === totalPages - 1) {
-                pageElement.querySelector('.summary-footer').classList.remove('hidden');
+            const summaryFooter = pageElement.querySelector('.summary-footer');
+            if (isFinalPage) {
+                summaryFooter.classList.remove('hidden');
                 pageElement.querySelector('.summary-total').textContent = Number(data.summary.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
                 const totalInWordsEl = pageElement.querySelector('.total-in-words');
                 totalInWordsEl.classList.remove('hidden');
                 totalInWordsEl.textContent = `(ตัวอักษร: ${thaiBahtText(data.summary.total_amount)})`;
+            } else {
+                summaryFooter.classList.add('hidden');
             }
-
-            container.appendChild(pageElement);
         }
+
+        function renderPages(pages) {
+            container.innerHTML = '';
+            pages.forEach((page, index) => {
+                const pageNode = template.content.cloneNode(true);
+                const pageElement = pageNode.querySelector('.A4-page');
+                fillPage(pageElement, page.invoices, page.startIndex, index + 1, pages.length, index === pages.length - 1);
+                container.appendChild(pageElement);
+            });
+        }
+
+        function isOverflowing(el) {
+            if (!el) return false;
+            return el.scrollHeight - el.clientHeight > 2 || el.scrollWidth - el.clientWidth > 2;
+        }
+
+        function finalPageOverflows() {
+            const pages = container.querySelectorAll('.A4-page');
+            const finalPage = pages[pages.length - 1];
+            return isOverflowing(finalPage) || isOverflowing(finalPage?.querySelector('main'));
+        }
+
+        let finalRowsPerPage = INITIAL_FINAL_ROWS_PER_PAGE;
+        let pages = paginateInvoices(finalRowsPerPage);
+        renderPages(pages);
+        await nextFrame();
+
+        while (finalPageOverflows() && finalRowsPerPage > MIN_FINAL_ROWS_PER_PAGE) {
+            finalRowsPerPage -= 1;
+            pages = paginateInvoices(finalRowsPerPage);
+            renderPages(pages);
+            await nextFrame();
+        }
+
+        container.style.visibility = previousVisibility;
+        container.style.display = previousDisplay === 'none' ? 'block' : previousDisplay;
 
         const printBtnEl = document.getElementById('printPdfBtn');
         const saveBtnEl = document.getElementById('saveBillBtn');
@@ -230,7 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    async function loadBillForEditing(billNumber) { currentEditingBillNumber = billNumber; const res = await fetch(`/api/billing-notes/${billNumber}`); if (!res.ok) { alert('ไม่สามารถโหลดข้อมูลใบวางบิลได้'); return; } const data = await res.json(); currentBillData = data; renderBillDocument(data); saveBtn.classList.add('hidden'); updateBtn.classList.remove('hidden'); printBtn.classList.remove('hidden'); switchTab('create'); document.querySelectorAll('.invoice-table-body tr').forEach(tr => { const td = document.createElement('td'); td.className = 'p-2 text-center noprint'; td.innerHTML = '<button class="btn-remove-item text-red-500"><i class="fa-solid fa-xmark"></i></button>'; tr.appendChild(td); }); }
+    async function loadBillForEditing(billNumber) { currentEditingBillNumber = billNumber; const res = await fetch(`/api/billing-notes/${billNumber}`); if (!res.ok) { alert('ไม่สามารถโหลดข้อมูลใบวางบิลได้'); return; } const data = await res.json(); currentBillData = data; await renderBillDocument(data); saveBtn.classList.add('hidden'); updateBtn.classList.remove('hidden'); printBtn.classList.remove('hidden'); switchTab('create'); document.querySelectorAll('.invoice-table-body tr').forEach(tr => { const td = document.createElement('td'); td.className = 'p-2 text-center noprint'; td.innerHTML = '<button class="btn-remove-item text-red-500"><i class="fa-solid fa-xmark"></i></button>'; tr.appendChild(td); }); }
 
     async function updateBillNote() {
         if (!currentEditingBillNumber) return; const items = []; document.querySelectorAll('.invoice-table-body tr').forEach(tr => { const inv = currentBillData.invoices.find(i => i.invoice_number === tr.dataset.invNumber); if (inv) { items.push({ invoice_number: inv.invoice_number, invoice_date: inv.invoice_date, due_date: inv.due_date, amount: inv.amount }); } }); const total_amount = items.reduce((s, it) => s + Number(it.amount || 0), 0); const billDateInput = document.getElementById('billDate'); const bill_date = billDateInput && billDateInput.value ? billDateInput.value : new Date().toISOString().split('T')[0]; const cid = parseInt(document.getElementById('customerId')?.value, 10); const customer_id = Number.isFinite(cid) ? cid : undefined; const payload = { items, total_amount, bill_date, customer_id };
