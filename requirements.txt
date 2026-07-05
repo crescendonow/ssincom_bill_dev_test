@@ -3,7 +3,7 @@ uvicorn
 sqlalchemy
 psycopg2-binary
 jinja2
-weasyprint
+weasyprint==69.0
 python-multipart
 itsdangerous==2.2.0
 pypdf==3.17.4

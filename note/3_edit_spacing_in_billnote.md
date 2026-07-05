@@ -109,3 +109,45 @@ Google Fonts มีตระกูล **"Sarabun"** ซึ่งหน้า spe
 - แทนที่ `app/static/fonts/THSarabunNew*.ttf` ทั้ง 4 ไฟล์ด้วย Google Fonts Sarabun (ชื่อไฟล์เดิม, ตรวจ GDEF/GPOS/cmap ผ่านแล้วที่ path ปลายทางจริง) + เพิ่ม `app/static/fonts/OFL.txt`
 - แก้ `app/static/css/credit_note.css`: `body` เหลือ `"Noto Sans Thai", sans-serif` (ตัด TH Sarabun New ออก), ย้ายไปประกาศที่ `.credit-note, .credit-note *` แทน
 - **ยังไม่ได้ยืนยันด้วยการ render จริง** (ข้อจำกัดข้อ 10) — ผู้ใช้ต้อง deploy/build แล้ว export PDF ซ้ำเพื่อยืนยันภาพจริง โดยเฉพาะจุดที่เคยมีวรรณยุกต์ซ้อน (เช่น "ทรายคัดขนาดพิเศษ") และเช็คว่าหน้าฟอร์ม `credit_note_form.html` ฟอนต์ตรงกับหน้าอื่นแล้ว
+- **[อัปเดตรอบ 3] ผลจริง: การแก้รอบนี้ถูก commit เป็น `e887005` และ deploy แล้ว แต่ไม่มีผลใด ๆ ต่อ PDF — สาเหตุดูรอบ 3 ด้านล่าง (ไฟล์ฟอนต์ไม่เคยถูกโหลดเลยตั้งแต่แรก)**
+
+## 2026-07-05 (รอบ 3) — พบ root cause ตัวจริง: `@font-face` ถูกทิ้งเงียบ ๆ เพราะไม่ส่ง `FontConfiguration`
+
+### รายงานจากผู้ใช้
+- Export PDF หลัง deploy รอบ 2 (`credit_note_SSCR14-3006_2569 (2).pdf`, 15:07) ตัวอักษรยังถูก condense เหมือนเดิมทุกประการ
+
+### หลักฐานชี้ขาด: แกะ font dictionary จากไฟล์ PDF จริงทั้ง 4 ตัวอย่างใน Downloads
+วิธี: decompress flate streams ในไฟล์ PDF แล้ว grep หา `/BaseFont`, `/FontFamily`, `/Producer` (ทำได้บนเครื่องนี้ ไม่ต้อง render)
+
+| ไฟล์ | เวลา export | Producer | ฟอนต์ที่ฝังจริงใน PDF |
+|---|---|---|---|
+| credit_note_SSCR13-2906_2569.pdf | 09:49 | WeasyPrint 68.1 | **Laksaman** + Laksaman-Bold |
+| credit_note_SSCR14-3006_2569.pdf | 09:49 | WeasyPrint 68.1 | **Laksaman** + Laksaman-Bold |
+| ...(1).pdf (หลัง deploy รอบ 1) | 13:03 | WeasyPrint 69.0 | **Laksaman** + Laksaman-Bold |
+| ...(2).pdf (หลัง deploy รอบ 2 / e887005) | 15:07 | WeasyPrint 69.0 | **Laksaman** + Laksaman-Bold |
+
+ข้อสรุปจากตาราง:
+- **ทุกไฟล์ ทุกรอบแก้ ฝังฟอนต์ Laksaman — ไม่เคยเป็น TH Sarabun New / Sarabun / Noto Sans Thai เลยสักครั้ง**
+- Producer เปลี่ยน 68.1 → 69.0 ระหว่างวัน พิสูจน์ว่า Docker image ถูก rebuild จริง (ปัญหาไม่ใช่ deploy ค้าง/cache) และยังชี้ว่า requirements.txt ไม่ pin weasyprint ทำให้เวอร์ชันลอยเงียบ ๆ ทุก build
+
+### กลไกของบั๊ก (ยืนยันจาก source code ของ WeasyPrint โดยตรง)
+1. `app/credit_note.py` (บรรทัด ~438-441) เรียก `write_pdf(stylesheets=[CSS(filename=...)])` **โดยไม่ส่ง `font_config`**
+2. จาก source WeasyPrint (ตรวจจาก 65.1 ใน venv เครื่องนี้; ตรรกะเดียวกันทุกรุ่นที่เกี่ยวข้อง):
+   - `weasyprint/css/__init__.py:1047-1048`: `@font-face` จะถูกลงทะเบียน**ก็ต่อเมื่อ** `font_config is not None` — ไม่มีก็ข้ามเฉย ๆ ไม่มี error ไม่มี warning
+   - `weasyprint/__init__.py:310-312`: `CSS()` parse stylesheet ทันทีตอนสร้าง object ⇒ @font-face ที่ถูกข้ามตอนนั้น หายถาวร ต่อให้ write_pdf จะสร้าง font config ภายในทีหลังก็ไม่ช่วย
+   - docstring ของ class CSS เขียนตรง ๆ ว่า "An additional argument called ``font_config`` must be provided to handle ``@font-face`` rules"
+3. เมื่อ @font-face ตาย → Pango/fontconfig ใน Docker มองหา family "TH Sarabun New" → ไม่มีฟอนต์ระบบชื่อนี้ → fontconfig substitution จับคู่ไปที่ **Laksaman** (ฟอนต์ TLWG ใน `fonts-thai-tlwg` ที่สืบสายมาจาก TH Sarabun และมี compat alias ฝั่ง tlwg) → Laksaman บน environment นี้ render สระ/วรรณยุกต์ทับ-ชิดกัน = อาการ "condensed" ที่ผู้ใช้เห็นมาตลอด
+4. **นัยสำคัญ:** การแก้รอบ 1 (เพิ่ม @font-face + reset letter-spacing) และรอบ 2 (เปลี่ยนไฟล์ฟอนต์เป็น Sarabun ที่ตาราง GDEF/GPOS ถูกต้อง) เดินถูกทางแต่เป็น dead fix ทั้งคู่ — เพราะไฟล์ฟอนต์ไม่เคยถูก WeasyPrint เปิดอ่านเลยแม้แต่ครั้งเดียว
+
+### แก้ข้อสันนิษฐานเดิมของรอบ 2 (บันทึกไว้กันเข้าใจผิดภายหลัง)
+- ข้อสังเกต "ตัวอักษร extract เพี้ยนด้วย offset คงที่ 0x0D0E" ของรอบ 2 **ไม่ถูกต้องทั้งหมด**: ตรวจละเอียดพบ offset ต่างกันระหว่างข้อความ regular (0x0D0E เช่น ย→Ĕ, ข→ô) กับข้อความ bold (0x0D0F เช่น ช→û, ค→õ) และ mark บางตัว map แบบไม่เข้า pattern เลย (เช่น ใ→ı, ่→ǥ)
+- คำอธิบายที่สอดคล้องกว่า: เป็น artifact ของ ToUnicode/subset ราย font subset (Laksaman-regular กับ Laksaman-Bold คนละ subset จึงคนละ offset) — ยืนยันเพิ่มว่าการ extract เพี้ยนเป็นปัญหาชั้น extraction แยกจากปัญหาภาพ แต่ทั้งสองอย่างมีต้นตอร่วมคือฟอนต์ fallback ที่ไม่ได้ตั้งใจใช้
+- การที่ fingerprint การ extract ของไฟล์ (2) เหมือนไฟล์ (1) ทุกตัวอักษร คือสัญญาณแรกที่นำไปสู่การพบว่า embedded font ไม่เคยเปลี่ยน
+
+### แผนแก้รอบ 3 (อนุมัติแล้ว)
+1. `app/credit_note.py`: import `FontConfiguration` จาก `weasyprint.text.fonts` (มีจริง ยืนยันแล้วที่ `text/fonts.py:74`) แล้วส่ง `font_config` ตัวเดียวกันให้ทั้ง `CSS(...)` และ `write_pdf(...)` ใน `export_creditnote_pdf`
+2. `requirements.txt`: pin `weasyprint==69.0` (เวอร์ชันที่รันบน production จริงตอนนี้ พิสูจน์จาก /Producer) — ผู้ใช้อนุมัติแล้ว
+3. commit + push → Railway auto-deploy (ผู้ใช้ยืนยัน flow แล้ว)
+4. Verify แบบพิสูจน์ได้: export ใหม่แล้วแกะ embedded font จากไฟล์ — ต้องเห็น `XXXXXX+Sarabun` แทน Laksaman; แล้วผู้ใช้ยืนยันภาพ (ผู้, ที่อยู่, จำกัด, สำนักงานใหญ่ ต้องไม่ทับกัน; 11 แถวยังอยู่ หน้า 1/1)
+5. Watch item: metric ของ Sarabun ต่างจาก Laksaman — ถ้าแถวสุดท้ายถูก clip ค่อยปรับ `CREDIT_NOTE_ROWS_PER_PAGE`/line-height รอบถัดไป
+- หมายเหตุ scope: `form.py:479-481` (invoice) มี pattern ไม่ส่ง font_config เหมือนกัน แต่ `invoice.css` ไม่มี @font-face จึงยังไม่กระทบ — จดไว้เผื่ออนาคต

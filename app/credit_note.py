@@ -11,6 +11,7 @@ from . import models
 
 from .database import SessionLocal, Base
 from weasyprint import HTML, CSS
+from weasyprint.text.fonts import FontConfiguration
 from fastapi.templating import Jinja2Templates
 
 router = APIRouter()
@@ -435,9 +436,13 @@ def export_creditnote_pdf(payload: dict = Body(...), db: Session = Depends(get_d
         )
         tmp_pdf = Path(tempfile.gettempdir()) / f"credit_note_{safe_no}.pdf"
 
+        # font_config ต้องเป็นตัวเดียวกันทั้งใน CSS() และ write_pdf()
+        # ไม่งั้น @font-face (TH Sarabun New) ถูกทิ้งเงียบ ๆ แล้ว fallback เป็นฟอนต์ระบบ
+        font_config = FontConfiguration()
         HTML(string=html_str, base_url=str(base_dir)).write_pdf(
             str(tmp_pdf),
-            stylesheets=[CSS(filename=str(css_path))]
+            stylesheets=[CSS(filename=str(css_path), font_config=font_config)],
+            font_config=font_config,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"weasyprint error: {e}")
