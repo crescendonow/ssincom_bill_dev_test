@@ -1,3 +1,34 @@
+    /* ฝัง TH Sarabun New จาก /static/fonts เพื่อให้ WeasyPrint ใช้ฟอนต์เดียวกับเบราว์เซอร์
+       (คอนเทนเนอร์ไม่ได้ติดตั้งฟอนต์นี้ ถ้าไม่ประกาศ @font-face จะตกไปใช้ฟอนต์สำรอง)
+       path เป็น relative จากตัวไฟล์ CSS -> ใช้ได้ทั้งตอน <link> ในเบราว์เซอร์ และตอน CSS(filename=...) */
+    @font-face {
+        font-family: "TH Sarabun New";
+        src: url("../fonts/THSarabunNew.ttf") format("truetype");
+        font-weight: normal;
+        font-style: normal;
+    }
+
+    @font-face {
+        font-family: "TH Sarabun New";
+        src: url("../fonts/THSarabunNew%20Bold.ttf") format("truetype");
+        font-weight: bold;
+        font-style: normal;
+    }
+
+    @font-face {
+        font-family: "TH Sarabun New";
+        src: url("../fonts/THSarabunNew%20Italic.ttf") format("truetype");
+        font-weight: normal;
+        font-style: italic;
+    }
+
+    @font-face {
+        font-family: "TH Sarabun New";
+        src: url("../fonts/THSarabunNew%20BoldItalic.ttf") format("truetype");
+        font-weight: bold;
+        font-style: italic;
+    }
+
     @page {
         size: A4;
         margin: 8mm;
@@ -8,7 +39,7 @@
     }
 
     body {
-        font-family: "TH Sarabun New", "Tahoma", "sans-serif", "Sukhumvit Set", "Thonburi","NotoSansThai", "Noto Sans Thai", "Noto Sans", "Arial";
+        font-family: "TH Sarabun New", "Tahoma", "Sukhumvit Set", "Thonburi", "Noto Sans Thai", "Noto Sans", "Arial", sans-serif;
         font-size: 12pt;
         /* เดิม 15pt */
         color: #0F3F7F;

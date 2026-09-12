@@ -7,6 +7,7 @@ from datetime import datetime, date
 from typing import Optional
 from pathlib import Path
 import tempfile, uuid
+from math import ceil 
 from . import models  
 
 from .database import SessionLocal, Base
@@ -76,6 +77,47 @@ def _to_date(s: str) -> date:
 
 def _be_year(ad: int) -> int: return ad + 543
 
+def _customer_display_name(prename: object, fname: object) -> str:
+    """Build a display name from customer master data without changing fname."""
+    prefix = str(prename or "").strip()
+    name = str(fname or "").strip()
+    if not prefix or not name or name.startswith(prefix):
+        return name or prefix
+    return f"{prefix} {name}"
+
+def _customer_json(c) -> dict:
+    display_name = _customer_display_name(c.prename, c.fname)
+    return {
+        "personid": c.personid,
+        "fname": c.fname,
+        "prename": str(c.prename or "").strip(),
+        "display_name": display_name,
+        "tel": c.tel,
+        "mobile": c.mobile,
+        "cf_personaddress": c.cf_personaddress,
+        "cf_personzipcode": c.cf_personzipcode,
+        "cf_provincename": c.cf_provincename,
+        "cf_taxid": c.cf_taxid,
+    }
+
+def _buyer_json(c) -> dict:
+    display_name = _customer_display_name(c.prename, c.fname)
+    branch = "สำนักงานใหญ่" if getattr(c, "cf_hq", 0) == 1 else (c.cf_branch or "")
+    return {
+        "personid": c.personid,
+        "name": display_name,
+        "fname": c.fname,
+        "prename": str(c.prename or "").strip(),
+        "display_name": display_name,
+        "addr": c.cf_personaddress or "",
+        "branch": branch,
+        "tax": c.cf_taxid or "",
+        "tel": c.tel,
+        "mobile": c.mobile,
+        "zipcode": c.cf_personzipcode,
+        "prov": c.cf_provincename,
+    }
+
 def generate_creditnote_number(db: Session, doc_date: date) -> str:
     dd = f"{doc_date.day:02d}"
     mm = f"{doc_date.month:02d}"
@@ -100,20 +142,6 @@ def generate_creditnote_number(db: Session, doc_date: date) -> str:
 
     return f"{prefix}{max_run + 1}{suffix}"
 
-CREDIT_NOTE_ROWS_PER_PAGE = 15
-CREDIT_NOTE_TESTED_ROWS_PER_PAGE = (15, 16, 17, 18, 19, 20)
-
-
-def _paginate_credit_note_rows(rows: list[dict]) -> tuple[list[dict], int]:
-    if not rows:
-        return [{"rows": []}], 1
-
-    pages = [
-        {"rows": rows[idx:idx + CREDIT_NOTE_ROWS_PER_PAGE]}
-        for idx in range(0, len(rows), CREDIT_NOTE_ROWS_PER_PAGE)
-    ]
-    return pages, len(pages)
-
 # --- PAGES ---
 @router.get("/credit_note_form.html", response_class=HTMLResponse)
 def credit_note_form_page(request: Request):
@@ -129,37 +157,76 @@ def api_cust_suggest_personid(q: str = Query(""), limit: int = Query(10, ge=1, l
 @router.get("/api/customers/suggest-name")
 def api_cust_suggest_name(q: str = Query(""), limit: int = Query(10, ge=1, le=50), db: Session = Depends(get_db)):
     q = q.strip()
-    qs = db.query(models.CustomerList.fname).filter(models.CustomerList.fname.ilike(f"%{q}%"))\
-            .order_by(models.CustomerList.fname.asc()).limit(limit).all()
-    return {"items": [r[0] for r in qs if r[0]]}
+    customer = models.CustomerList
+    display_expr = func.trim(func.concat(
+        func.trim(func.coalesce(customer.prename, "")),
+        " ",
+        func.trim(func.coalesce(customer.fname, "")),
+    ))
+    pattern = f"%{q}%"
+    qs = (
+        db.query(customer)
+        .filter(or_(
+            customer.fname.ilike(pattern),
+            customer.prename.ilike(pattern),
+            display_expr.ilike(pattern),
+        ))
+        .order_by(customer.fname.asc())
+        .limit(limit * 3)
+        .all()
+    )
+    items = []
+    for c in qs:
+        display_name = _customer_display_name(c.prename, c.fname)
+        if display_name and display_name not in items:
+            items.append(display_name)
+        if len(items) >= limit:
+            break
+    return {"items": items}
 
 @router.get("/api/customers/by-personid")
 def api_cust_by_personid(personid: str = Query(...), db: Session = Depends(get_db)):
     c = db.query(models.CustomerList).filter(models.CustomerList.personid == personid).first()
     if not c:
         raise HTTPException(status_code=404, detail="customer not found")
-    return {
-        "personid": c.personid, "fname": c.fname,
-        "tel": c.tel, "mobile": c.mobile,
-        "cf_personaddress": c.cf_personaddress,
-        "cf_personzipcode": c.cf_personzipcode,
-        "cf_provincename": c.cf_provincename,
-        "cf_taxid": c.cf_taxid,
-    }
+    return _customer_json(c)
 
 @router.get("/api/customers/by-name")
 def api_cust_by_name(name: str = Query(...), db: Session = Depends(get_db)):
-    c = db.query(models.CustomerList).filter(models.CustomerList.fname == name).first()
+    normalized_name = name.strip()
+    customer = models.CustomerList
+    display_expr = func.trim(func.concat(
+        func.trim(func.coalesce(customer.prename, "")),
+        " ",
+        func.trim(func.coalesce(customer.fname, "")),
+    ))
+    c = (
+        db.query(customer)
+        .filter(or_(
+            func.trim(func.coalesce(customer.fname, "")) == normalized_name,
+            display_expr == normalized_name,
+        ))
+        .first()
+    )
+    if not c:
+        # Legacy rows may already contain prename in fname, making the SQL
+        # concatenation duplicate the prefix. Compare the normalized value too.
+        candidates = (
+            db.query(customer)
+            .filter(or_(
+                customer.fname.ilike(f"%{normalized_name}%"),
+                customer.prename.ilike(f"%{normalized_name}%"),
+            ))
+            .limit(100)
+            .all()
+        )
+        c = next(
+            (row for row in candidates if _customer_display_name(row.prename, row.fname) == normalized_name),
+            None,
+        )
     if not c:
         raise HTTPException(status_code=404, detail="customer not found")
-    return {
-        "personid": c.personid, "fname": c.fname,
-        "tel": c.tel, "mobile": c.mobile,
-        "cf_personaddress": c.cf_personaddress,
-        "cf_personzipcode": c.cf_personzipcode,
-        "cf_provincename": c.cf_provincename,
-        "cf_taxid": c.cf_taxid,
-    }
+    return _customer_json(c)
 
 @router.get("/credit_note.html", response_class=HTMLResponse)
 def credit_note_preview_page(request: Request, no: str = Query(...), db: Session = Depends(get_db)):
@@ -219,7 +286,16 @@ def credit_note_preview_page(request: Request, no: str = Query(...), db: Session
     vat = round(sum_reduce_value * 0.07, 2)
     grand = round(sum_reduce_value + vat, 2)
 
-    pages, total_pages = _paginate_credit_note_rows(rows)
+    # ---------- แบ่งหน้า: 10 แถวต่อหน้า ----------
+    from math import ceil
+    ITEMS_PER_PAGE = 10
+    total_pages = max(1, ceil(len(rows) / ITEMS_PER_PAGE)) if rows else 1
+    pages = []
+    for i in range(total_pages):
+        start = i * ITEMS_PER_PAGE
+        end = start + ITEMS_PER_PAGE
+        pages.append({"rows": rows[start:end]})
+    # -----------------------------------------------
 
     # วันที่เอกสาร (หัวใบลดหนี้) ให้ใช้ created_at เดิม
     d = head.created_at or datetime.now().date()
@@ -244,13 +320,7 @@ def credit_note_preview_page(request: Request, no: str = Query(...), db: Session
         buyer = None
 
     if buyer:
-        branch_info = "สำนักงานใหญ่" if getattr(buyer, "cf_hq", 0) == 1 else (buyer.cf_branch or "")
-        buyer_ctx = {
-            "name": buyer.fname or "",
-            "addr": buyer.cf_personaddress or "",
-            "branch": branch_info,
-            "tax": buyer.cf_taxid or "",
-        }
+        buyer_ctx = _buyer_json(buyer)
     else:
         # fallback ค่าเดิม (กันกรณีหา customer ไม่เจอ)
         buyer_ctx = {
@@ -378,16 +448,7 @@ def get_credit_note(no: str, db: Session = Depends(get_db)):
                 "price_after_fine": it.price_after_fine,
             } for it in items
         ],
-        "buyer": {
-            "personid": buyer.personid,
-            "name": buyer.fname,
-            "addr": buyer.cf_personaddress,
-            "tax": buyer.cf_taxid,
-            "tel": buyer.tel,
-            "mobile": buyer.mobile,
-            "zipcode": buyer.cf_personzipcode,
-            "prov": buyer.cf_provincename,
-        } if buyer else None
+        "buyer": _buyer_json(buyer) if buyer else None
     }
 
 @router.post("/export-creditnote-pdf")
@@ -436,12 +497,11 @@ def export_creditnote_pdf(payload: dict = Body(...), db: Session = Depends(get_d
         )
         tmp_pdf = Path(tempfile.gettempdir()) / f"credit_note_{safe_no}.pdf"
 
-        # font_config ต้องเป็นตัวเดียวกันทั้งใน CSS() และ write_pdf()
-        # ไม่งั้น @font-face (TH Sarabun New) ถูกทิ้งเงียบ ๆ แล้ว fallback เป็นฟอนต์ระบบ
         font_config = FontConfiguration()
+        stylesheet = CSS(filename=str(css_path), font_config=font_config)
         HTML(string=html_str, base_url=str(base_dir)).write_pdf(
             str(tmp_pdf),
-            stylesheets=[CSS(filename=str(css_path), font_config=font_config)],
+            stylesheets=[stylesheet],
             font_config=font_config,
         )
     except Exception as e:
@@ -522,7 +582,15 @@ def _build_creditnote_context_from_payload(payload: dict, db: Session) -> dict:
     sum_reduce_vat = round(sum_reduce_value * 0.07, 2)
     sum_total = round(sum_reduce_value + sum_reduce_vat, 2)
 
-    pages, total_pages = _paginate_credit_note_rows(rows)
+    # ---------- แบ่งหน้า: 10 แถวต่อหน้า ----------
+    ITEMS_PER_PAGE = 10
+    total_pages = max(1, ceil(len(rows) / ITEMS_PER_PAGE)) if rows else 1
+    pages = []
+    for i in range(total_pages):
+        start = i * ITEMS_PER_PAGE
+        end = start + ITEMS_PER_PAGE
+        pages.append({"rows": rows[start:end]})
+    # -------------------------------------------
 
     # --- buyer จาก payload / DB ---
     buyer_payload = d.get("buyer") or {}
@@ -534,13 +602,7 @@ def _build_creditnote_context_from_payload(payload: dict, db: Session) -> dict:
             from . import models
             c = db.query(models.CustomerList).filter(models.CustomerList.personid == personid).first()
             if c:
-                branch_info = "สำนักงานใหญ่" if getattr(c, "cf_hq", 0) == 1 else (c.cf_branch or "")
-                buyer = {
-                    "name": c.fname or "",
-                    "addr": c.cf_personaddress or "",
-                    "branch": branch_info,
-                    "tax": c.cf_taxid or "",
-                }
+                buyer = _buyer_json(c)
         except Exception:
             buyer = None
 
@@ -652,16 +714,7 @@ def grn_summary(grn: str = Query(..., min_length=1), db: Session = Depends(get_d
         from . import models
         c = db.query(models.CustomerList).filter(models.CustomerList.personid == personid).first()
         if c:
-            buyer = {
-                "personid": c.personid,
-                "name": c.fname,
-                "addr": c.cf_personaddress,
-                "tax": c.cf_taxid,
-                "tel": c.tel,
-                "mobile": c.mobile,
-                "zipcode": c.cf_personzipcode,
-                "prov": c.cf_provincename,
-            }
+            buyer = _buyer_json(c)
     except Exception:
         buyer = None
 
@@ -772,7 +825,7 @@ def search_credit_notes(
                 if inv_row and inv_row[0]:
                     cust = db.query(models.CustomerList).filter(models.CustomerList.personid == inv_row[0]).first()
                     if cust:
-                        customer_name = cust.fname
+                        customer_name = _customer_display_name(cust.prename, cust.fname)
         
         output.append({
             "creditnote_number": cn.creditnote_number,
@@ -804,16 +857,7 @@ def get_credit_note_detail(no: str = Query(...), db: Session = Depends(get_db)):
             if inv_row and inv_row[0]:
                 cust = db.query(models.CustomerList).filter(models.CustomerList.personid == inv_row[0]).first()
                 if cust:
-                    buyer = {
-                        "personid": cust.personid,
-                        "name": cust.fname,
-                        "addr": cust.cf_personaddress,
-                        "tax": cust.cf_taxid,
-                        "tel": cust.tel,
-                        "mobile": cust.mobile,
-                        "zipcode": cust.cf_personzipcode,
-                        "prov": cust.cf_provincename,
-                    }
+                    buyer = _buyer_json(cust)
     
     return {
         "head": {

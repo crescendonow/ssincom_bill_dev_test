@@ -150,6 +150,57 @@ def _parse_ymd(s: Optional[str]) -> Optional[date]:
             return None
     return None
 
+# ---------- ชื่อลูกค้า: คำนำหน้า + ชื่อ ----------
+def _resolve_customer_prename(db: Session, personid: Optional[str]) -> str:
+    """ดึงคำนำหน้าชื่อลูกค้าจาก products.customer_list ด้วย personid
+
+    ตาราง ss_invoices.invoices ไม่ได้เก็บ prename (เก็บแค่ fname) จึงต้องอ้างอิง
+    ทะเบียนลูกค้าตอน render — ครอบคลุมบิลเก่าที่บันทึกไว้ก่อนหน้าด้วย
+    """
+    pid = (personid or "").strip()
+    if not pid:
+        return ""
+    row = (db.query(models.CustomerList.prename)
+             .filter(models.CustomerList.personid == pid)
+             .first())
+    return (row[0] or "").strip() if row else ""
+
+def _customer_display_name(prename: Optional[str], name: Optional[str]) -> str:
+    """ต่อ prename + fname โดยกันซ้ำ กรณี fname เก่าถูกบันทึกมาพร้อมคำนำหน้าแล้ว"""
+    prename = (prename or "").strip()
+    name = (name or "").strip()
+    if not prename:
+        return name
+    if not name or name.startswith(prename):
+        return name or prename
+    return f"{prename} {name}"
+
+def normalize_payload(db: Session, src: dict) -> dict:
+    """normalize คีย์จาก payload ให้ตรงกับ invoice.html (ใช้ร่วมกันทั้ง preview และ PDF)"""
+    out = dict(src or {})
+    # ---- หัวลูกค้า ----
+    out["customer_name"]     = src.get("customer_name") or src.get("fname") or ""
+    out["customer_prename"]  = src.get("customer_prename") or _resolve_customer_prename(db, src.get("personid"))
+    out["customer_display_name"] = _customer_display_name(out["customer_prename"], out["customer_name"])
+    out["customer_taxid"]    = src.get("customer_taxid") or src.get("cf_taxid") or ""
+    out["customer_address"]  = src.get("customer_address") or src.get("cf_personaddress") or ""
+    out["cf_personzipcode"]  = src.get("cf_personzipcode") or ""
+    out["cf_provincename"]   = src.get("cf_provincename") or ""
+    out["tel"]               = src.get("tel") or src.get("mobile") or ""
+    out["mobile"]            = src.get("mobile") or src.get("tel") or ""
+
+    # ---- รายการสินค้า ----
+    items = []
+    for it in (src.get("items") or []):
+        items.append({
+            "product_code": it.get("product_code") or it.get("cf_itemid") or "",
+            "description":  it.get("description")  or it.get("cf_itemname") or "",
+            "quantity":     float(it.get("quantity") or 0),
+            "unit_price":   float(it.get("unit_price") or 0),
+        })
+    out["items"] = items
+    return out
+
 # ---------- Page: form ----------
 @router.get("/form", response_class=HTMLResponse)
 @router.get("/form.html", response_class=HTMLResponse)
@@ -393,20 +444,21 @@ def api_update_invoice(inv_id: int, payload: InvoiceUpdate, db: Session = Depend
 
 # ---------- Preview HTML (เรนเดอร์จาก invoice.html) ----------
 @router.post("/preview", response_class=HTMLResponse)
-def preview(request: Request, payload: dict = Body(...)):
+def preview(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
+    view_payload = normalize_payload(db, payload)
     return templates.TemplateResponse(
         request,
         "invoice.html",
         {
             "request": request,
-            "invoice": payload,
-            "discount": payload.get("discount", 0),
-            "vat_rate": payload.get("vat_rate", 7),
+            "invoice": view_payload,
+            "discount": view_payload.get("discount", 0),
+            "vat_rate": view_payload.get("vat_rate", 7),
         }
     )
 
 @router.post("/export-merged-pdf")
-def export_merged_pdf(request: Request, payload: dict = Body(...)):
+def export_merged_pdf(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
     """
     สร้าง PDF 4 เวอร์ชันจาก invoice.html (เหมือน preview) แล้ว merge เป็นไฟล์เดียว
     - normalize คีย์จาก payload ให้ตรงกับเทมเพลต
@@ -424,36 +476,13 @@ def export_merged_pdf(request: Request, payload: dict = Body(...)):
     css_path = base_dir / "static" / "css" / "invoice.css"
     static_root_uri = (base_dir / "static").as_uri()  # e.g. file:///app/app/static
 
-    def normalize_payload(src: dict) -> dict:
-        out = dict(src or {})
-        # ---- หัวลูกค้า ----
-        out["customer_name"]     = src.get("customer_name") or src.get("fname") or ""
-        out["customer_taxid"]    = src.get("customer_taxid") or src.get("cf_taxid") or ""
-        out["customer_address"]  = src.get("customer_address") or src.get("cf_personaddress") or ""
-        out["cf_personzipcode"]  = src.get("cf_personzipcode") or ""
-        out["cf_provincename"]   = src.get("cf_provincename") or ""
-        out["tel"]               = src.get("tel") or src.get("mobile") or ""
-        out["mobile"]            = src.get("mobile") or src.get("tel") or ""
-
-        # ---- รายการสินค้า ----
-        items = []
-        for it in (src.get("items") or []):
-            items.append({
-                "product_code": it.get("product_code") or it.get("cf_itemid") or "",
-                "description":  it.get("description")  or it.get("cf_itemname") or "",
-                "quantity":     float(it.get("quantity") or 0),
-                "unit_price":   float(it.get("unit_price") or 0),
-            })
-        out["items"] = items
-        return out
-
     temp_pdf_paths = []
     merger = PdfMerger()
 
     try:
         for variant_code, _name in variants:
             payload["variant"] = variant_code
-            view_payload = normalize_payload(payload)
+            view_payload = normalize_payload(db, payload)
 
             # 1) เรนเดอร์ HTML เดียวกับ preview
             html_resp = templates.TemplateResponse(

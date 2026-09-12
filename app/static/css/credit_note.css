@@ -1,34 +1,41 @@
 /* ===============================
-   BASE จาก bill_note.css
+   FONT: ฝัง TH Sarabun New จาก /static/fonts
+   คอนเทนเนอร์ไม่ได้ติดตั้งฟอนต์นี้ ถ้าไม่ประกาศ @font-face
+   WeasyPrint จะตกไปใช้ฟอนต์สำรอง ทำให้ PDF ไม่ตรงกับที่เห็นบนจอ
+   path เป็น relative จากตัวไฟล์ CSS -> ใช้ได้ทั้ง <link> และ CSS(filename=...)
    =============================== */
-
 @font-face {
   font-family: "TH Sarabun New";
   src: url("../fonts/THSarabunNew.ttf") format("truetype");
-  font-weight: 400;
+  font-weight: normal;
   font-style: normal;
 }
 
 @font-face {
   font-family: "TH Sarabun New";
-  src: url("../fonts/THSarabunNew Bold.ttf") format("truetype");
-  font-weight: 700;
+  src: url("../fonts/THSarabunNew%20Bold.ttf") format("truetype");
+  font-weight: bold;
   font-style: normal;
 }
 
 @font-face {
   font-family: "TH Sarabun New";
-  src: url("../fonts/THSarabunNew Italic.ttf") format("truetype");
-  font-weight: 400;
+  src: url("../fonts/THSarabunNew%20Italic.ttf") format("truetype");
+  font-weight: normal;
   font-style: italic;
 }
 
 @font-face {
   font-family: "TH Sarabun New";
-  src: url("../fonts/THSarabunNew BoldItalic.ttf") format("truetype");
-  font-weight: 700;
+  src: url("../fonts/THSarabunNew%20BoldItalic.ttf") format("truetype");
+  font-weight: bold;
   font-style: italic;
 }
+
+/* ===============================
+   BASE จาก bill_note.css
+   =============================== */
+
 body {
   font-family: "Noto Sans Thai", sans-serif !important;
   font-optical-sizing: auto;
@@ -43,9 +50,9 @@ body {
 /* สเกลตัวแปรสำหรับการพิมพ์ */
 :root {
   /* base สำหรับเนื้อหา */
-  --print-base: 12pt;
-  --print-small: 11pt;
-  --print-xs: 10.5pt;
+  --print-base: 14pt;
+  --print-small: 13pt;
+  --print-xs: 12pt;
 
   /* หัวข้อ */
   --print-h1: 20pt;
@@ -53,13 +60,13 @@ body {
   --print-h3: 16pt;
 
   /* ตาราง */
-  --print-table: 12pt;
-  --print-table-small: 11.5pt;
+  --print-table: 14pt;
+  --print-table-small: 13pt;
 
   /* ระยะห่าง */
-  --print-line-height: 1.12;
-  --print-cell-vpad: 0.55mm;
-  --print-cell-hpad: 1.3mm;
+  --print-line-height: 1.45;
+  --print-cell-vpad: 2.2mm;
+  --print-cell-hpad: 2.4mm;
 
   /* สำหรับใบลดหนี้ */
   --border: 1px solid #000;
@@ -79,26 +86,6 @@ body {
   border: none;
   box-shadow: none;
   background: #fff;
-}
-.credit-note {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-  overflow: visible;
-  break-inside: avoid;
-  page-break-inside: avoid;
-}
-
-.credit-note,
-.credit-note * {
-  font-family: "TH Sarabun New", "Noto Sans Thai", sans-serif;
-  letter-spacing: normal;
-  font-stretch: normal;
-  font-kerning: normal;
-  font-optical-sizing: none;
-  text-rendering: optimizeLegibility;
-  transform: none;
 }
 
 /* พื้นที่ต่าง ๆ ของ A4 (ถ้าไม่มี header/section ใน credit_note.html ก็ไม่เป็นไร) */
@@ -178,12 +165,12 @@ body {
 
   .A4-page h2 {
     font-size: var(--print-h2);
-    line-height: 1.2;
+    line-height: 1.3;
   }
 
   .A4-page h3 {
     font-size: var(--print-h3);
-    line-height: 1.2;
+    line-height: 1.35;
   }
 
   /* ข้อความทั่วไปเล็กลงเล็กน้อยในบางส่วน */
@@ -255,7 +242,7 @@ section.border-t-2.border-b-2 p strong {
   section.border-t-2.border-b-2 p,
   section.border-t-2.border-b-2 p span,
   section.border-t-2.border-b-2 p strong {
-    font-size: 12pt;
+    font-size: 13pt;
     line-height: 1.45;
   }
 }
@@ -283,7 +270,7 @@ section.border-t-2.border-b-2 p strong {
 /* ส่วนขวา (ใบลดหนี้) ไม่ต้องมีเส้นขอบ */
 .cn-top-right {
   text-align: right;
-  padding: 2px 6px;
+  padding: 4px 8px;
   border: none !important;
   display: flex;
   flex-direction: column;
@@ -298,7 +285,7 @@ section.border-t-2.border-b-2 p strong {
 
 /* กล่องข้อความ */
 .cn-doc-title {
-  font-size: 15pt;
+  font-size: 16pt;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -311,7 +298,7 @@ section.border-t-2.border-b-2 p strong {
 }
 
 .cn-doc-copy {
-  font-size: 11.5pt;
+  font-size: 12pt;
   padding: 1px 8px;
   border: 1px solid #000;
   border-radius: 2px;
@@ -336,9 +323,9 @@ section.border-t-2.border-b-2 p strong {
 .cn-header-cell {
   border-right: var(--border);
   border-bottom: var(--border);
-  padding: 2px 4px;
-  font-size: 12pt;
-  line-height: 1.2;
+  padding: 6px 8px;
+  font-size: 13pt;
+  line-height: 1.3;
 }
 
 /* ให้คอลัมน์ซ้ายสุดของทุก cn-header-row มีเส้นขอบซ้ายต่อเนื่องลงมา */
@@ -373,12 +360,12 @@ section.border-t-2.border-b-2 p strong {
 .cn-kv-table td {
   padding: 1px 4px;
   vertical-align: top;
-  font-size: 11.5pt;
+  font-size: 12pt;
 }
 
 /* บรรทัดหัว "ชื่อผู้ประกอบการ" / "ชื่อลูกค้า" */
 .cn-kv-title {
-  font-size: 12pt;
+  font-size: 13pt;
   /* ขนาด 14 */
   font-weight: 400;
   /* ตัวบาง */
@@ -390,32 +377,32 @@ section.border-t-2.border-b-2 p strong {
 /* ค่า doc_date / doc_no */
 .cn-doc-value {
   text-align: center;
-  padding: 2px 0;
-  font-size: 12pt;
+  padding: 4px 0;
+  font-size: 13pt;
 }
 
 /* บล็อกข้อมูลผู้ประกอบการ–ลูกค้า */
 .cn-info-block {
-  padding: 2px 4px;
-  font-size: 12pt;
-  line-height: 1.2;
+  padding: 6px 8px;
+  font-size: 13pt;
+  line-height: 1.35;
   border-right: var(--border);
   border-bottom: var(--border);
 }
 
 /* หัวข้อ เช่น “ชื่อผู้ประกอบการ”, “ชื่อลูกค้า” */
 .cn-info-title {
-  font-size: 12pt;
+  font-size: 13pt;
   font-weight: 400;
   /* ตัวบาง */
   text-decoration: underline;
-  margin-bottom: 1mm;
+  margin-bottom: 2mm;
   /* เว้น 0.5 ซม. */
 }
 
 /* บรรทัดข้อมูล */
 .cn-info-line {
-  margin-bottom: 1mm;
+  margin-bottom: 2mm;
   /* 0.5 ซม. ต่อบรรทัด */
 }
 
@@ -447,8 +434,7 @@ main {
 .cn-table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
-  margin-top: 1mm;
+  margin-top: 2mm;
   /* ระยะห่างจาก header ~0.5 ซม. */
   border-left: var(--border);
   /* ให้กรอบซ้าย–ขวาเท่ากับ cn-header-row */
@@ -460,15 +446,11 @@ main {
 /* ทุกเซลล์ใช้เส้นแนวตั้งเหมือน header */
 .cn-table th,
 .cn-table td {
-  padding: 2px 4px;
+  padding: 4px 6px;
   vertical-align: top;
-  font-size: 12pt;
+  font-size: 13pt;
   font-weight: 400;
-  line-height: 1.15;
   border-left: var(--border);
-  overflow-wrap: break-word;
-  word-break: normal;
-  white-space: normal;
   /* เส้นแบ่งคอลัมน์ */
 }
 
@@ -491,17 +473,10 @@ main {
   border-bottom: none;
 }
 
-.cn-table tbody tr {
-  break-inside: avoid;
-  page-break-inside: avoid;
-}
-
 
 .cn-table td.num,
 .cn-table th.num {
   text-align: right;
-  white-space: nowrap;
-  overflow-wrap: normal;
 }
 
 /* ตารางสรุปด้านล่าง */
@@ -509,19 +484,16 @@ main {
   width: 70%;
   /* กว้างเท่ากับ 3 คอลัมน์แรกของตารางด้านบน */
   border-collapse: collapse;
-  margin-top: 0.6mm;
-  break-inside: avoid;
-  page-break-inside: avoid;
+  margin-top: 2mm;
 }
 
 /* ทุกช่องมีเส้นบน–ล่าง */
 .cn-summary td {
   border-top: var(--border);
   border-bottom: var(--border);
-  font-size: 12pt;
+  font-size: 13pt;
   font-weight: 400;
-  line-height: 1.15;
-  padding: 2px 4px;
+  padding: 4px 6px;
 }
 
 /* ซ้ายสุดมีเส้นซ้าย */
@@ -547,12 +519,11 @@ main {
 
 .cn-reason {
   border: var(--border);
-  padding: 2px 4px;
-  min-height: 24px;
+  padding: 4px 6px;
+  min-height: 32px;
   margin-top: 0;
   /* ← ไม่เว้นช่องว่างจากขอบบน */
-  font-size: 12pt;
-  line-height: 1.15;
+  font-size: 13pt;
 }
 
 /* ================================
@@ -560,8 +531,6 @@ main {
    ================================ */
 
 .cn-signatures {
-  break-inside: avoid;
-  page-break-inside: avoid;
   display: table;
   width: 100%;
   border-left: var(--border);
@@ -575,7 +544,7 @@ main {
   display: table-cell;
   vertical-align: bottom;
   text-align: center;
-  padding: 3.5mm 0 2.2mm 0;
+  padding: 10mm 0 8mm 0;
 }
 
 /* ซ้าย */
@@ -596,25 +565,24 @@ main {
   width: 45mm;
   border-top: var(--border);
   height: 0;
-  margin-bottom: 1.4mm;
+  margin-bottom: 4mm;
 }
 
 /* ข้อความ */
 .sig-label {
-  font-size: 10.8pt;
+  font-size: 12pt;
   text-align: center;
   white-space: nowrap;
 }
 
 .cn-footnote {
-  font-size: 10pt;
-  margin-top: 2px;
+  font-size: 11pt;
+  margin-top: 8px;
 }
 
 /* ใช้กับ credit note เท่านั้น: main ไม่ต้องมี padding ด้านข้าง */
 .credit-note main {
   padding: 0;
-  overflow: visible;
 }
 
 /* ให้เส้นตารางของใบลดหนี้ใช้ขนาดเดียวกับ cn-header-row ทั้งหมด */

@@ -28,6 +28,14 @@ def _to_date(s: Optional[str]) -> Optional[date]:
     except Exception:
         return None
 
+def _customer_display_name(prename: object, fname: object) -> str:
+    """Build a display name without modifying the stored customer fields."""
+    prefix = str(prename or "").strip()
+    name = str(fname or "").strip()
+    if not prefix or not name or name.startswith(prefix):
+        return name or prefix
+    return f"{prefix} {name}"
+
 def generate_next_billnote_number(db: Session):
     """ สร้างเลขที่ใบวางบิล BNTS<YY><MM><NNNNNN> """
     now = datetime.now()
@@ -100,8 +108,9 @@ def get_all_customers(db: Session = Depends(get_db)):
             "idx": idx,
             "personid": personid or "",
             "fname": fname or "",
-            "prename": prename or "",
-            "customer_name": (fname or ""),
+            "prename": str(prename or "").strip(),
+            "customer_name": _customer_display_name(prename, fname),
+            "display_name": _customer_display_name(prename, fname),
         }
         for (idx, personid, fname, prename) in rows
     ]
@@ -124,6 +133,7 @@ def get_billing_note_details(bill_note_number: str, db: Session = Depends(get_db
             "customer": {
                 "name": bill_note.fname,
                 "prename": bill_note.prename or "",
+                "display_name": _customer_display_name(bill_note.prename, bill_note.fname),
                 "tax_id": bill_note.cf_taxid,
                 "branch": "สำนักงานใหญ่",
                 "address": bill_note.cf_personaddress,
@@ -190,6 +200,7 @@ def get_billing_note_details(bill_note_number: str, db: Session = Depends(get_db
         "customer": {
             "name": bill_note.fname,
             "prename": bill_note.prename or "",
+            "display_name": _customer_display_name(bill_note.prename, bill_note.fname),
             "tax_id": bill_note.cf_taxid,
             "branch": branch_info,
             "address": bill_note.cf_personaddress,
@@ -233,6 +244,7 @@ def get_invoices_for_billing_note(
             "customer": {
                 "name": customer.fname,
                 "prename": customer.prename or "",
+                "display_name": _customer_display_name(customer.prename, customer.fname),
                 "tax_id": customer.cf_taxid,
                 "branch": "สำนักงานใหญ่" if customer.cf_hq == 1 else f"สาขาที่ {customer.cf_branch}",
                 "address": customer.cf_personaddress,
@@ -252,6 +264,7 @@ def get_invoices_for_billing_note(
             "customer": {
                 "name": customer.fname,
                 "prename": customer.prename or "",
+                "display_name": _customer_display_name(customer.prename, customer.fname),
                 "tax_id": customer.cf_taxid,
                 "branch": "สำนักงานใหญ่" if customer.cf_hq == 1 else f"สาขาที่ {customer.cf_branch}",
                 "address": customer.cf_personaddress,
@@ -302,6 +315,7 @@ def get_invoices_for_billing_note(
         "customer": {
             "name": customer.fname,
             "prename": customer.prename or "",
+            "display_name": _customer_display_name(customer.prename, customer.fname),
             "tax_id": customer.cf_taxid,
             "branch": "สำนักงานใหญ่" if customer.cf_hq == 1 else f"สาขาที่ {customer.cf_branch}",
             "address": customer.cf_personaddress,
@@ -385,14 +399,40 @@ def search_billing_notes(start: Optional[str] = None, end: Optional[str] = None,
         query = query.filter(models.BillNote.bill_date <= _to_date(end))
     if q:
         search_term = f"%{q.strip()}%"
+        display_expr = func.trim(func.concat(
+            func.trim(func.coalesce(models.BillNote.prename, "")),
+            " ",
+            func.trim(func.coalesce(models.BillNote.fname, "")),
+        ))
         query = query.filter(
             or_(
                 models.BillNote.billnote_number.ilike(search_term),
+                models.BillNote.prename.ilike(search_term),
                 models.BillNote.fname.ilike(search_term),
+                display_expr.ilike(search_term),
                 models.BillNote.personid.ilike(search_term),
             )
         )
-    return query.order_by(models.BillNote.bill_date.desc(), models.BillNote.billnote_number.desc()).limit(100).all()
+    rows = query.order_by(models.BillNote.bill_date.desc(), models.BillNote.billnote_number.desc()).limit(100).all()
+    return [
+        {
+            "idx": row.idx,
+            "billnote_number": row.billnote_number,
+            "bill_date": row.bill_date,
+            "payment_duedate": row.payment_duedate,
+            "prename": str(row.prename or "").strip(),
+            "fname": row.fname,
+            "display_name": _customer_display_name(row.prename, row.fname),
+            "personid": row.personid,
+            "tel": row.tel,
+            "mobile": row.mobile,
+            "cf_personaddress": row.cf_personaddress,
+            "cf_personzipcode": row.cf_personzipcode,
+            "cf_provincename": row.cf_provincename,
+            "cf_taxid": row.cf_taxid,
+        }
+        for row in rows
+    ]
 
 @router.put("/api/billing-notes/{bill_note_number}")
 def update_billing_note(bill_note_number: str, payload: BillNoteUpdatePayload, db: Session = Depends(get_db)):

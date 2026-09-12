@@ -1,7 +1,34 @@
 // /static/js/credit_note.js
 
 let currentEditingCreditNoteNumber = null;
+let cnDatePicker = null;
+let searchStartDatePicker = null;
+let searchEndDatePicker = null;
 
+const localISODate = (value = new Date()) => {
+    const offset = value.getTimezoneOffset() * 60000;
+    return new Date(value.getTime() - offset).toISOString().slice(0, 10);
+};
+const createCreditThaiDatePicker = (input, defaultDate) => {
+    const picker = window.ThaiDatePicker?.init(input, { defaultDate });
+    if (picker) return picker;
+    if (input) {
+        input.type = 'date';
+        if (defaultDate) input.value = defaultDate;
+    }
+    return { getDate: () => input?.value || '', setDate: (value) => { if (input) input.value = value || ''; } };
+};
+const creditDateValue = (picker, input) => picker?.getDate?.() || input?.value || '';
+const creditCustomerDisplayName = (customer) => {
+    const prefix = (customer?.prename || '').trim();
+    const name = (customer?.fname || customer?.name || '').trim();
+    if (!prefix || !name || name.startsWith(prefix)) return customer?.display_name || name || prefix;
+    return customer?.display_name || `${prefix} ${name}`;
+};
+const prepareCreditPrintFonts = () => {
+    if (!window.ThaiPrintFonts?.ready) return Promise.reject(new Error('Thai print font helper is unavailable.'));
+    return ThaiPrintFonts.ready();
+};
 document.addEventListener('DOMContentLoaded', () => {
     const cnDateEl = document.getElementById('cn_date');
     const cnNoEl = document.getElementById('creditnote_number');
@@ -19,8 +46,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchBtn = document.getElementById('searchBtn');
     const searchResultsBody = document.getElementById('searchResultsBody');
 
-    const todayISO = new Date().toISOString().slice(0, 10);
-    if (cnDateEl && !cnDateEl.value) cnDateEl.value = todayISO;
+    const todayISO = localISODate();
+    cnDatePicker = createCreditThaiDatePicker(cnDateEl, todayISO);
+    searchStartDatePicker = createCreditThaiDatePicker(document.getElementById('searchStartDate'));
+    searchEndDatePicker = createCreditThaiDatePicker(document.getElementById('searchEndDate'));
+    prepareCreditPrintFonts().catch(error => console.warn('Thai preview fonts are not ready yet.', error));
 
     // ===== TAB SWITCHING =====
     function switchTab(target) {
@@ -43,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ===== GENERATE NUMBER =====
     btnGenNo?.addEventListener("click", async () => {
-        const d = cnDateEl.value;
+        const d = creditDateValue(cnDatePicker, cnDateEl);
         if (!d) { alert("กรุณาเลือกวันที่เอกสารก่อนสร้างเลขเอกสาร"); return; }
 
         try {
@@ -97,6 +127,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ===== PREVIEW =====
     btnPreview?.addEventListener('click', async () => {
+        try {
+            await prepareCreditPrintFonts();
+        } catch (error) {
+            console.error(error);
+            alert('\u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e42\u0e2b\u0e25\u0e14\u0e41\u0e1a\u0e1a\u0e2d\u0e31\u0e01\u0e29\u0e23\u0e44\u0e17\u0e22\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a\u0e01\u0e32\u0e23\u0e41\u0e2a\u0e14\u0e07\u0e1c\u0e25 \u0e01\u0e23\u0e38\u0e13\u0e32\u0e25\u0e2d\u0e07\u0e43\u0e2b\u0e21\u0e48\u0e2d\u0e35\u0e01\u0e04\u0e23\u0e31\u0e49\u0e07');
+            return;
+        }
         const payload = buildPayload();
         const res = await fetch('/api/credit-notes/preview', {
             method: 'POST',
@@ -142,8 +179,8 @@ document.addEventListener('DOMContentLoaded', () => {
     searchBtn?.addEventListener('click', searchCreditNotes);
 
     async function searchCreditNotes() {
-        const start = document.getElementById('searchStartDate').value;
-        const end = document.getElementById('searchEndDate').value;
+        const start = creditDateValue(searchStartDatePicker, document.getElementById('searchStartDate'));
+        const end = creditDateValue(searchEndDatePicker, document.getElementById('searchEndDate'));
         const q = document.getElementById('searchQuery').value;
         const params = new URLSearchParams({ start, end, q });
 
@@ -221,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Fill header
             cnNoEl.value = data.head.creditnote_number;
-            cnDateEl.value = data.head.created_at || todayISO;
+            cnDatePicker.setDate(data.head.created_at || todayISO, false);
 
             // Clear existing items
             const itemsContainer = document.getElementById('items');
@@ -256,7 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Fill customer info
             if (data.buyer) {
                 document.getElementById('personid').value = data.buyer.personid || '';
-                document.getElementById('customer_name').value = data.buyer.name || '';
+                document.getElementById('customer_name').value = creditCustomerDisplayName(data.buyer);
                 document.getElementById('customer_address').value = data.buyer.addr || '';
                 document.getElementById('customer_taxid').value = data.buyer.tax || '';
                 document.getElementById('tel').value = data.buyer.tel || '';
@@ -284,7 +321,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function resetForm() {
         currentEditingCreditNoteNumber = null;
         cnNoEl.value = '';
-        cnDateEl.value = todayISO;
+        cnDatePicker.setDate(todayISO, false);
 
         // Clear items - keep one empty row
         const itemsContainer = document.getElementById('items');
@@ -408,7 +445,7 @@ window.removeItem = removeItem;
 
 // ===== buildPayload: แนบข้อมูลลูกค้า + variant =====
 function buildPayload() {
-    const d = document.getElementById('cn_date')?.value || new Date().toISOString().slice(0, 10);
+    const d = creditDateValue(cnDatePicker, document.getElementById('cn_date')) || localISODate();
     const cn = document.getElementById('creditnote_number')?.value || '';
     const items = [];
 
@@ -654,7 +691,7 @@ async function selectCustomerByPersonid() {
     if (!c) return;
 
     // เติมฟิลด์
-    (document.getElementById('customer_name') || {}).value = c.fname || '';
+    (document.getElementById('customer_name') || {}).value = creditCustomerDisplayName(c);
     (document.getElementById('customer_address') || {}).value = c.cf_personaddress || '';
     (document.getElementById('customer_taxid') || {}).value = c.cf_taxid || '';
     (document.getElementById('tel') || {}).value = c.tel || '';
@@ -673,6 +710,7 @@ async function selectCustomer() {
     const c = await res.json().catch(() => null);
     if (!c) return;
 
+    (document.getElementById('customer_name') || {}).value = creditCustomerDisplayName(c);
     (document.getElementById('personid') || {}).value = c.personid || '';
     (document.getElementById('customer_address') || {}).value = c.cf_personaddress || '';
     (document.getElementById('customer_taxid') || {}).value = c.cf_taxid || '';

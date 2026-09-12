@@ -1,0 +1,35 @@
+# Form regression checks
+
+These checks exercise the billing-note and credit-note fixes described in
+`note/5_edit_form_in_bill_creditnote_20260912.md`.
+
+## Browser
+
+Install `playwright-core` (tested with 1.58.2), Chromium, and optionally
+`flatpickr` (4.6.13) in a development or temporary directory. Set:
+
+- `PLAYWRIGHT_MODULE`: module name or absolute path to Playwright/Playwright Core.
+- `CHROME_EXECUTABLE`: absolute path to Chromium or Chrome.
+- `FLATPICKR_DIR`: optional path to `flatpickr/dist`; when set the tests serve
+  those assets locally, otherwise they use the templates' CDN URLs.
+
+Run `node --test tests/form_regressions.cjs`.
+
+The harness serves real templates, scripts, CSS and fonts on localhost and
+replaces API responses with fixtures. It fixes the browser timezone and date
+for the Bangkok midnight regression. Printing is intercepted to inspect actual
+FontFace load states at the point the app would invoke the native dialog.
+No production server or database is contacted. Native printer dialog behavior
+and physical output still require a manual check.
+
+## Backend
+
+With FastAPI, SQLAlchemy and Jinja2 installed, run:
+
+`python -m unittest discover -s tests -p 'test_*.py' -v`
+
+The suite imports the real endpoints/models with an isolated SQLite database.
+WeasyPrint is mocked at its native rendering boundary: it verifies that the
+customer name reaches the original/copy HTML and that the same FontConfiguration
+reaches CSS and the renderer. It does not validate the resulting PDF binary;
+that needs the application's WeasyPrint native libraries.

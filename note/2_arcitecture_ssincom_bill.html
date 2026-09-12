@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สถาปัตยกรรมระบบ ssincom_bill</title>
+<style>
+  :root{
+    --brand-50:#eff6ff; --brand-100:#dbeafe; --brand-200:#bfdbfe; --brand-500:#3b82f6;
+    --brand-600:#2563eb; --brand-700:#1d4ed8; --brand-800:#1e40af;
+    --slate-50:#f8fafc; --slate-100:#f1f5f9; --slate-200:#e2e8f0; --slate-300:#cbd5e1;
+    --slate-400:#94a3b8; --slate-500:#64748b; --slate-600:#475569; --slate-700:#334155;
+    --slate-800:#1e293b; --amber-50:#fffbeb; --amber-300:#fcd34d; --amber-800:#92400e;
+    --red-50:#fef2f2; --red-200:#fecaca; --red-700:#b91c1c; --green-700:#15803d;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth; scroll-padding-top:16px;}
+  body{
+    font-family:'Segoe UI','Leelawadee UI',Tahoma,'Noto Sans Thai',sans-serif;
+    background:var(--slate-100); color:var(--slate-800);
+    line-height:1.65; font-size:15.5px;
+  }
+  code,pre{font-family:Consolas,'Cascadia Mono','Courier New',monospace;}
+  code{background:var(--brand-50); color:var(--brand-800); padding:1px 6px; border-radius:6px; font-size:.9em; border:1px solid var(--brand-100);}
+  pre{
+    background:var(--slate-800); color:#e2e8f0; padding:16px 18px; border-radius:12px;
+    overflow-x:auto; font-size:13px; line-height:1.55; margin:12px 0;
+  }
+  pre code{background:none; border:none; color:inherit; padding:0;}
+  a{color:var(--brand-600); text-decoration:none;}
+  a:hover{text-decoration:underline;}
+
+  /* ---------- layout ---------- */
+  .page{max-width:1240px; margin:0 auto; padding:24px 16px 64px; display:flex; gap:24px; align-items:flex-start;}
+  nav.toc{
+    position:sticky; top:24px; width:250px; flex:none;
+    background:#fff; border:1px solid var(--slate-200); border-radius:16px;
+    padding:18px 16px; box-shadow:0 1px 2px rgba(15,23,42,.05);
+    max-height:calc(100vh - 48px); overflow-y:auto;
+  }
+  nav.toc h2{font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--slate-400); margin-bottom:10px;}
+  nav.toc ol{list-style:none; counter-reset:toc;}
+  nav.toc li{counter-increment:toc; margin:2px 0;}
+  nav.toc a{
+    display:block; padding:5px 8px 5px 30px; border-radius:8px; color:var(--slate-600);
+    font-size:13.5px; position:relative;
+  }
+  nav.toc a::before{
+    content:counter(toc); position:absolute; left:8px; top:5px;
+    color:var(--brand-600); font-weight:700; font-size:12px;
+  }
+  nav.toc a:hover{background:var(--brand-50); color:var(--brand-700); text-decoration:none;}
+  main{flex:1; min-width:0;}
+
+  /* ---------- header ---------- */
+  header.hero{
+    background:linear-gradient(135deg,var(--brand-700),var(--brand-500));
+    color:#fff; border-radius:20px; padding:34px 34px 28px; margin-bottom:24px;
+    box-shadow:0 8px 24px rgba(29,78,216,.25);
+  }
+  header.hero .kicker{font-size:13px; letter-spacing:.12em; text-transform:uppercase; opacity:.85;}
+  header.hero h1{font-size:30px; margin:6px 0 8px; line-height:1.25;}
+  header.hero p{opacity:.92; max-width:640px;}
+  .badges{display:flex; flex-wrap:wrap; gap:8px; margin-top:16px;}
+  .badge{
+    background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.3);
+    padding:3px 12px; border-radius:999px; font-size:12.5px;
+  }
+
+  /* ---------- sections ---------- */
+  section.card{
+    background:#fff; border:1px solid var(--slate-200); border-radius:16px;
+    padding:26px 28px; margin-bottom:22px; box-shadow:0 1px 2px rgba(15,23,42,.05);
+  }
+  section.card h2{
+    font-size:21px; color:var(--brand-800); margin-bottom:14px;
+    padding-bottom:10px; border-bottom:2px solid var(--brand-100);
+  }
+  section.card h2 .no{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:30px; height:30px; border-radius:9px; background:var(--brand-600); color:#fff;
+    font-size:15px; margin-right:10px; vertical-align:-4px;
+  }
+  section.card h3{font-size:16.5px; color:var(--slate-700); margin:20px 0 8px;}
+  section.card p{margin:8px 0;}
+  ul.plain,ol.plain{margin:8px 0 8px 22px;}
+  ul.plain li,ol.plain li{margin:4px 0;}
+
+  /* ---------- tables ---------- */
+  .table-wrap{overflow-x:auto; margin:12px 0; border:1px solid var(--slate-200); border-radius:12px;}
+  table{border-collapse:collapse; width:100%; font-size:13.5px; min-width:640px;}
+  thead th{
+    background:var(--slate-50); color:var(--slate-600); text-align:left;
+    padding:9px 12px; font-weight:600; border-bottom:1px solid var(--slate-200); white-space:nowrap;
+  }
+  tbody td{padding:8px 12px; border-bottom:1px solid var(--slate-100); vertical-align:top;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:var(--brand-50);}
+
+  /* ---------- callouts ---------- */
+  .note,.warn{border-radius:12px; padding:12px 16px; margin:12px 0; font-size:14px;}
+  .note{background:var(--brand-50); border:1px solid var(--brand-200);}
+  .warn{background:var(--amber-50); border:1px solid var(--amber-300);}
+  .warn b:first-child, .note b:first-child{display:inline-block; margin-bottom:2px;}
+  .pill{display:inline-block; border-radius:999px; padding:1px 10px; font-size:12px; font-weight:600;}
+  .pill.ok{background:#dcfce7; color:var(--green-700);}
+  .pill.no{background:var(--red-50); color:var(--red-700); border:1px solid var(--red-200);}
+
+  /* ---------- svg diagrams ---------- */
+  .diagram{overflow-x:auto; margin:14px 0; padding:6px 0;}
+  .diagram svg{display:block; margin:0 auto; max-width:100%; height:auto;}
+  .diagram + .caption, .caption{
+    text-align:center; font-size:12.5px; color:var(--slate-500); margin-top:2px;
+  }
+  svg text{font-family:'Segoe UI','Leelawadee UI',Tahoma,'Noto Sans Thai',sans-serif;}
+
+  footer.foot{
+    text-align:center; color:var(--slate-500); font-size:13px; margin-top:8px; padding:0 12px;
+  }
+  @media (max-width:900px){
+    .page{flex-direction:column;}
+    nav.toc{position:static; width:100%; max-height:none;}
+  }
+  @media print{
+    body{background:#fff;}
+    nav.toc{display:none;}
+    section.card{box-shadow:none; break-inside:avoid-page;}
+    header.hero{box-shadow:none;}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<nav class="toc">
+  <h2>สารบัญ</h2>
+  <ol>
+    <li><a href="#overview">ภาพรวมระบบ</a></li>
+    <li><a href="#structure">โครงสร้างโปรเจกต์</a></li>
+    <li><a href="#wiring">การประกอบแอป (Wiring)</a></li>
+    <li><a href="#auth">Auth &amp; Session</a></li>
+    <li><a href="#database">ฐานข้อมูล (Database)</a></li>
+    <li><a href="#modules">Backend Modules ทั้ง 9</a></li>
+    <li><a href="#frontend">Frontend</a></li>
+    <li><a href="#pdf">ระบบสร้าง PDF</a></li>
+    <li><a href="#flows">Flow แบบ End-to-End</a></li>
+    <li><a href="#deploy">การ Deploy</a></li>
+    <li><a href="#caveats">ข้อสังเกต / จุดควรระวัง</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<header class="hero">
+  <div class="kicker">Architecture Documentation · ssincom_dev_test</div>
+  <h1>สถาปัตยกรรมระบบ ssincom_bill</h1>
+  <p>ระบบออกใบกำกับภาษี · ใบวางบิล · ใบลดหนี้ · รายงานภาษีขาย ของ บริษัท เอส แอนด์ เอส อินคอม จำกัด — เอกสารสรุปความเชื่อมโยงทั้งระบบตั้งแต่ Browser จนถึงฐานข้อมูลและไฟล์ PDF</p>
+  <div class="badges">
+    <span class="badge">FastAPI · Python 3.11</span>
+    <span class="badge">SQLAlchemy + PostgreSQL (5 schemas)</span>
+    <span class="badge">Jinja2</span>
+    <span class="badge">WeasyPrint + pypdf</span>
+    <span class="badge">Tailwind (CDN) + Vanilla JS</span>
+    <span class="badge">Docker / Railway</span>
+  </div>
+  <div class="badges" style="margin-top:8px; opacity:.85">
+    <span class="badge">จัดทำ 5 ก.ค. 2569 · อ้างอิง commit 074c7d1</span>
+    <span class="badge">ไฟล์คู่กัน: app/.docs/arcitecture_ssincom_bill.md</span>
+  </div>
+</header>
+
+<!-- ================= 1. OVERVIEW ================= -->
+<section class="card" id="overview">
+  <h2><span class="no">1</span>ภาพรวมระบบ (System Overview)</h2>
+  <p>ระบบเว็บสำหรับออกและจัดการ<b>เอกสารการขาย</b>ครบวงจร ใช้งานภายในบริษัท (ผู้ใช้บัญชีเดียว) ธุรกิจเกี่ยวข้องกับการขายและขนส่งสินค้า — ใบกำกับแต่ละใบผูก<b>ทะเบียนรถ</b>และ<b>พนักงานขับรถ</b>ได้ เอกสารธุรกิจ 4 ชนิดเชื่อมโยงกันดังนี้</p>
+
+  <div class="diagram">
+  <svg viewBox="0 0 940 300" role="img" aria-label="ความเชื่อมโยงเอกสารธุรกิจ 4 ชนิด">
+    <defs>
+      <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0 L10 5 L0 10 z" fill="#64748b"/>
+      </marker>
+      <marker id="arb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0 L10 5 L0 10 z" fill="#2563eb"/>
+      </marker>
+    </defs>
+    <!-- master data -->
+    <rect x="20" y="90" width="190" height="120" rx="14" fill="#f8fafc" stroke="#cbd5e1"/>
+    <text x="115" y="115" text-anchor="middle" font-size="13" font-weight="700" fill="#475569">Master Data</text>
+    <text x="115" y="138" text-anchor="middle" font-size="12.5" fill="#64748b">ลูกค้า · สินค้า</text>
+    <text x="115" y="158" text-anchor="middle" font-size="12.5" fill="#64748b">ทะเบียนรถ · คนขับ</text>
+    <text x="115" y="185" text-anchor="middle" font-size="11" fill="#94a3b8">(schema: products)</text>
+    <!-- invoice -->
+    <rect x="280" y="100" width="220" height="100" rx="14" fill="#eff6ff" stroke="#2563eb" stroke-width="1.6"/>
+    <text x="390" y="138" text-anchor="middle" font-size="15" font-weight="700" fill="#1d4ed8">ใบกำกับภาษี / ใบส่งสินค้า</text>
+    <text x="390" y="160" text-anchor="middle" font-size="12" fill="#475569">(Invoice) — ss_invoices</text>
+    <line x1="210" y1="150" x2="278" y2="150" stroke="#64748b" stroke-width="1.6" marker-end="url(#ar)"/>
+    <text x="244" y="141" text-anchor="middle" font-size="11" fill="#64748b">ป้อนข้อมูล</text>
+    <!-- bill note -->
+    <rect x="640" y="20" width="270" height="76" rx="14" fill="#fff" stroke="#2563eb" stroke-width="1.4"/>
+    <text x="775" y="50" text-anchor="middle" font-size="14" font-weight="700" fill="#1d4ed8">ใบวางบิล (Billing Note)</text>
+    <text x="775" y="72" text-anchor="middle" font-size="11.5" fill="#64748b">รวมใบกำกับหลายใบของลูกค้า · ss_bills</text>
+    <path d="M500 122 C 570 100, 590 70, 636 58" fill="none" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arb)"/>
+    <text x="560" y="76" text-anchor="middle" font-size="11.5" fill="#2563eb">รวมหลายใบ (ใบละครั้งเดียว)</text>
+    <!-- credit note -->
+    <rect x="640" y="112" width="270" height="76" rx="14" fill="#fff" stroke="#2563eb" stroke-width="1.4"/>
+    <text x="775" y="142" text-anchor="middle" font-size="14" font-weight="700" fill="#1d4ed8">ใบลดหนี้ (Credit Note)</text>
+    <text x="775" y="164" text-anchor="middle" font-size="11.5" fill="#64748b">อ้างอิงย้อนหลังผ่าน GRN · credits</text>
+    <line x1="500" y1="150" x2="636" y2="150" stroke="#2563eb" stroke-width="1.8" marker-end="url(#arb)"/>
+    <text x="568" y="141" text-anchor="middle" font-size="11.5" fill="#2563eb">อ้างอิง GRN</text>
+    <!-- reports -->
+    <rect x="640" y="204" width="270" height="76" rx="14" fill="#fff" stroke="#94a3b8" stroke-dasharray="5 4"/>
+    <text x="775" y="234" text-anchor="middle" font-size="14" font-weight="700" fill="#475569">รายงาน (อ่านอย่างเดียว)</text>
+    <text x="775" y="256" text-anchor="middle" font-size="11.5" fill="#64748b">ภาษีขาย · สรุปใบกำกับ · ต่อคนขับ</text>
+    <path d="M500 178 C 570 200, 590 230, 636 240" fill="none" stroke="#64748b" stroke-width="1.6" marker-end="url(#ar)"/>
+    <text x="558" y="226" text-anchor="middle" font-size="11.5" fill="#64748b">สรุปยอด + VAT 7%</text>
+  </svg>
+  </div>
+  <div class="caption">ความเชื่อมโยงของเอกสารทั้ง 4 ชนิด — ทุกอย่างตั้งต้นจากใบกำกับภาษี</div>
+
+  <h3>Tech Stack</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>ชั้น (Layer)</th><th>เทคโนโลยี</th><th>หมายเหตุ</th></tr></thead>
+    <tbody>
+      <tr><td>Web framework</td><td>FastAPI (Python 3.11)</td><td>ASGI รันด้วย uvicorn</td></tr>
+      <tr><td>ORM / DB</td><td>SQLAlchemy 2.x style + PostgreSQL</td><td><b>ไม่มี Alembic</b> — ตารางต้องมีอยู่ก่อนใน DB (<code>create_all</code> ถูก comment)</td></tr>
+      <tr><td>Template</td><td>Jinja2</td><td>ใช้ทั้ง render หน้าเว็บ และ render เอกสาร PDF</td></tr>
+      <tr><td>PDF</td><td>WeasyPrint + pypdf (merge)</td><td>pdfkit/wkhtmltopdf ติดตั้งใน Docker แต่<b>ไม่ถูกใช้ในโค้ด</b></td></tr>
+      <tr><td>Frontend</td><td>HTML + Vanilla JS (fetch) + Tailwind CSS (CDN) + Font Awesome</td><td>ไม่มี build step / ไม่มี framework</td></tr>
+      <tr><td>Auth</td><td>Starlette SessionMiddleware (signed cookie)</td><td>บัญชีเดียวจาก env</td></tr>
+      <tr><td>Deploy</td><td>Docker (python:3.11-bookworm) บน Railway</td><td>ฟอนต์ไทยติดตั้งใน image</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>ผังสถาปัตยกรรมรวม</h3>
+  <div class="diagram">
+  <svg viewBox="0 0 940 560" role="img" aria-label="ผังสถาปัตยกรรมรวมของระบบ">
+    <defs>
+      <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0 L10 5 L0 10 z" fill="#475569"/>
+      </marker>
+    </defs>
+    <!-- Browser -->
+    <rect x="220" y="16" width="500" height="86" rx="14" fill="#f0f9ff" stroke="#38bdf8" stroke-width="1.5"/>
+    <text x="470" y="48" text-anchor="middle" font-size="15" font-weight="700" fill="#0369a1">Browser (ผู้ใช้)</text>
+    <text x="470" y="72" text-anchor="middle" font-size="12" fill="#475569">หน้า HTML + JS ประจำหน้า (fetch) · Tailwind + Font Awesome จาก CDN</text>
+    <line x1="470" y1="102" x2="470" y2="140" stroke="#475569" stroke-width="1.8" marker-end="url(#ar2)"/>
+    <text x="482" y="126" font-size="11.5" fill="#64748b">HTTP — JSON API + หน้า HTML</text>
+
+    <!-- FastAPI -->
+    <rect x="60" y="144" width="820" height="212" rx="16" fill="#eff6ff" stroke="#2563eb" stroke-width="1.8"/>
+    <text x="470" y="172" text-anchor="middle" font-size="15" font-weight="700" fill="#1d4ed8">FastAPI — app/main.py</text>
+    <text x="470" y="193" text-anchor="middle" font-size="12" fill="#475569">SessionMiddleware (cookie 2 ชม.) · mount /static · Jinja2Templates · login/dashboard · /healthz</text>
+    <text x="470" y="222" text-anchor="middle" font-size="12.5" font-weight="700" fill="#334155">include_router ตามลำดับ (ไม่มี prefix — ลำดับชี้ผู้ชนะเมื่อ path ชนกัน)</text>
+    <!-- router chips row1 -->
+    <g font-size="12" text-anchor="middle">
+      <rect x="88"  y="238" width="128" height="30" rx="15" fill="#fff" stroke="#2563eb"/><text x="152" y="258" fill="#1d4ed8">1. form</text>
+      <rect x="226" y="238" width="168" height="30" rx="15" fill="#fff" stroke="#2563eb"/><text x="310" y="258" fill="#1d4ed8">2. summary_invoices</text>
+      <rect x="404" y="238" width="128" height="30" rx="15" fill="#fff" stroke="#2563eb"/><text x="468" y="258" fill="#1d4ed8">3. customers</text>
+      <rect x="542" y="238" width="120" height="30" rx="15" fill="#fff" stroke="#2563eb"/><text x="602" y="258" fill="#1d4ed8">4. products</text>
+      <rect x="672" y="238" width="96" height="30" rx="15" fill="#fff" stroke="#2563eb"/><text x="720" y="258" fill="#1d4ed8">5. cars</text>
+      <rect x="88"  y="276" width="128" height="30" rx="15" fill="#fff" stroke="#2563eb"/><text x="152" y="296" fill="#1d4ed8">6. bill_note</text>
+      <rect x="226" y="276" width="168" height="30" rx="15" fill="#fff" stroke="#2563eb"/><text x="310" y="296" fill="#1d4ed8">7. saletax_report</text>
+      <rect x="404" y="276" width="128" height="30" rx="15" fill="#fff" stroke="#2563eb"/><text x="468" y="296" fill="#1d4ed8">8. drivers_form</text>
+      <rect x="542" y="276" width="226" height="30" rx="15" fill="#fff" stroke="#2563eb"/><text x="655" y="296" fill="#1d4ed8">9. credit_note (+model schema credits)</text>
+    </g>
+    <text x="470" y="336" text-anchor="middle" font-size="11.5" fill="#94a3b8">ทุก router สร้าง get_db() และ Jinja2Templates ของตัวเอง</text>
+
+    <!-- arrows down -->
+    <line x1="250" y1="356" x2="250" y2="398" stroke="#475569" stroke-width="1.8" marker-end="url(#ar2)"/>
+    <text x="262" y="382" font-size="11.5" fill="#64748b">SQLAlchemy ORM + raw SQL</text>
+    <line x1="690" y1="356" x2="690" y2="398" stroke="#475569" stroke-width="1.8" marker-end="url(#ar2)"/>
+    <text x="702" y="382" font-size="11.5" fill="#64748b">render Jinja2 template</text>
+
+    <!-- PostgreSQL -->
+    <rect x="80" y="402" width="360" height="136" rx="16" fill="#f8fafc" stroke="#475569" stroke-width="1.5"/>
+    <text x="260" y="430" text-anchor="middle" font-size="15" font-weight="700" fill="#334155">PostgreSQL</text>
+    <g font-size="11.5" text-anchor="middle">
+      <rect x="100" y="444" width="100" height="26" rx="13" fill="#e2e8f0"/><text x="150" y="461" fill="#334155">ss_invoices</text>
+      <rect x="210" y="444" width="90" height="26" rx="13" fill="#e2e8f0"/><text x="255" y="461" fill="#334155">ss_bills</text>
+      <rect x="310" y="444" width="90" height="26" rx="13" fill="#e2e8f0"/><text x="355" y="461" fill="#334155">credits</text>
+      <rect x="140" y="478" width="100" height="26" rx="13" fill="#e2e8f0"/><text x="190" y="495" fill="#334155">products</text>
+      <rect x="250" y="478" width="90" height="26" rx="13" fill="#e2e8f0"/><text x="295" y="495" fill="#334155">public</text>
+    </g>
+    <text x="260" y="526" text-anchor="middle" font-size="11" fill="#94a3b8">DATABASE_URL (+sslmode=require อัตโนมัติ ยกเว้น *.railway.internal)</text>
+
+    <!-- WeasyPrint -->
+    <rect x="500" y="402" width="380" height="136" rx="16" fill="#f8fafc" stroke="#475569" stroke-width="1.5"/>
+    <text x="690" y="430" text-anchor="middle" font-size="15" font-weight="700" fill="#334155">WeasyPrint (HTML + CSS → PDF)</text>
+    <text x="690" y="456" text-anchor="middle" font-size="12" fill="#475569">invoice.html × 4 ชุด → pypdf merge เป็นไฟล์เดียว</text>
+    <text x="690" y="476" text-anchor="middle" font-size="12" fill="#475569">credit_note.html × 2 ชุด (ต้นฉบับ + สำเนา)</text>
+    <text x="690" y="502" text-anchor="middle" font-size="11.5" fill="#92400e">ฟอนต์ไทยมาจากระบบ (fonts-thai-tlwg ใน Docker) — ไม่มี @font-face</text>
+    <text x="690" y="524" text-anchor="middle" font-size="11" fill="#94a3b8">ใบวางบิล/รายงานภาษีขาย พิมพ์ฝั่ง browser (window.print)</text>
+  </svg>
+  </div>
+  <div class="caption">ผังรวม: Browser → FastAPI (9 routers) → PostgreSQL 5 schemas / WeasyPrint</div>
+</section>
+
+<!-- ================= 2. STRUCTURE ================= -->
+<section class="card" id="structure">
+  <h2><span class="no">2</span>โครงสร้างโปรเจกต์ (Project Structure)</h2>
+<pre><code>ssincom_dev_test/
+├── Dockerfile               # python:3.11-bookworm + ไลบรารี WeasyPrint + ฟอนต์ไทย + wkhtmltopdf
+├── entrypoint.sh            # ตรวจ $PORT แล้ว exec uvicorn app.main:app (มี debug printenv)
+├── Procfile                 # ทางเลือกแบบ buildpack: web: uvicorn app.main:app
+├── requirements.txt         # fastapi, uvicorn, sqlalchemy, psycopg2-binary, jinja2,
+│                            # weasyprint, python-multipart, itsdangerous, pypdf, pdfkit
+├── .gitignore               # /fastapi
+├── fastapi/                 # ❗ Python venv ในเครื่อง (ไม่ใช่โค้ดแอป, ถูก gitignore)
+├── note/                    # บันทึก/รายงานประกอบโปรเจกต์
+└── app/                     # ⭐ ตัวแอปทั้งหมด
+    ├── main.py              # ประกอบแอป: middleware, login, dashboard, include routers, /export-pdf
+    ├── database.py          # engine + SessionLocal + Base (อ่าน DATABASE_URL)
+    ├── models.py            # ORM models 10 ตาราง (credit_note ประกาศ model แยกเอง 2 ตาราง)
+    ├── crud.py              # ⚠️ dead code — ไม่ถูก import และอ้างคอลัมน์ที่ไม่มีจริง
+    ├── pdf_generator.py     # helper PDF ตัวเก่า (ใช้เฉพาะ /export-pdf/{id}, เขียนลง /tmp)
+    ├── test_script.py       # แอปจิ๋วไว้ทดสอบ ไม่เกี่ยวกับ app.main
+    ├── form.py              # ใบกำกับภาษี: สร้าง/แก้ไข + preview + export PDF 4 ชุด
+    ├── summary_invoices.py  # รายงาน/ค้นหา/แก้ไขใบกำกับ (JSON API)
+    ├── bill_note.py         # ใบวางบิล (เลข BNTS..., กันใบกำกับซ้ำ)
+    ├── credit_note.py       # ใบลดหนี้ (ใหญ่สุด ~880 บรรทัด, schema credits)
+    ├── customers.py         # ลูกค้า (CRUD + running number PC...)
+    ├── products.py          # สินค้า (CRUD)
+    ├── cars.py              # ทะเบียนรถ (CRUD + lookup ยี่ห้อ/จังหวัด)
+    ├── drivers_form.py      # พนักงานขับรถ (CRUD + รายงานต่อคนขับ)
+    ├── saletax_report.py    # รายงานภาษีขาย (JSON API)
+    ├── templates/           # Jinja2 templates 13 ไฟล์ (หน้าเว็บ + เอกสาร PDF)
+    └── static/
+        ├── css/             # style.css (global), form.css, invoice.css, bill_note.css,
+        │                    # credit_note.css, saletax_report.css
+        ├── js/              # JS 12 ไฟล์ จับคู่กับหน้าแต่ละหน้า
+        ├── fonts/           # THSarabunNew*.ttf (⚠️ ไม่ถูกอ้างด้วย @font-face — ไม่ถูกใช้จริง)
+        └── ss_logo.png      # โลโก้บริษัท</code></pre>
+</section>
+
+<!-- ================= 3. WIRING ================= -->
+<section class="card" id="wiring">
+  <h2><span class="no">3</span>การเริ่มทำงานและการประกอบแอป (App Wiring)</h2>
+  <h3>ลำดับการ start</h3>
+  <ol class="plain">
+    <li>Container รัน <code>entrypoint.sh</code> → <code>exec uvicorn app.main:app --host 0.0.0.0 --port $PORT</code> (default 8000)</li>
+    <li><code>app/main.py</code> สร้าง <code>app = FastAPI()</code> (main.py:24)</li>
+    <li>ติด <code>SessionMiddleware</code> — secret จาก env <code>SESSION_SECRET</code> (มี fallback hardcode), อายุ cookie 2 ชั่วโมง (main.py:26–30)</li>
+    <li>mount <code>/static</code> + สร้าง <code>Jinja2Templates</code> จาก <code>app/templates</code></li>
+    <li>ประกาศ route ของ main.py เอง: login/logout/dashboard/หน้า HTML หลายหน้า/<code>/export-pdf</code>/<code>/healthz</code></li>
+    <li><code>include_router</code> ทั้ง 9 ตัว <b>โดยไม่มี prefix/tags</b> (main.py:66–74)</li>
+  </ol>
+  <div class="note"><b>หมายเหตุ:</b> <code>models.Base.metadata.create_all(...)</code> ถูก comment ไว้ (main.py:25) — แอปไม่สร้างตารางเอง ตารางทั้งหมดต้องถูกสร้างใน PostgreSQL ไว้ก่อน</div>
+
+  <h3>Route ที่ประกาศซ้ำกัน (Route Collisions) — ตัวที่ลงทะเบียนก่อนชนะ</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Path</th><th>ผู้ชนะ (ถูกใช้จริง)</th><th>ผู้แพ้ (ถูกบัง — ไม่มีวันถูกเรียก)</th></tr></thead>
+    <tbody>
+      <tr><td><code>GET /customers</code></td><td>main.py:93 (TemplateResponse)</td><td>customers.py:85 (FileResponse)</td></tr>
+      <tr><td><code>GET /api/customers/all</code></td><td>customers.py:94 (dict เต็ม)</td><td>bill_note.py:85 (เฉพาะ idx/personid/fname/prename)</td></tr>
+      <tr><td><code>GET /api/invoices/{id}/items</code></td><td>form.py:251</td><td>summary_invoices.py:268</td></tr>
+      <tr><td><code>GET /api/invoices/{id}/detail</code></td><td>form.py:270</td><td>summary_invoices.py:299</td></tr>
+      <tr><td><code>PUT /api/invoices/{id}</code></td><td>form.py:346</td><td>summary_invoices.py:352</td></tr>
+    </tbody>
+  </table></div>
+  <p>ผลที่ควรรู้: โค้ดฝั่ง "ผู้แพ้" ยังอยู่ในไฟล์แต่ตายสนิท — เวลาแก้บั๊กของ endpoint เหล่านี้ต้องแก้ที่<b>ผู้ชนะ</b>เท่านั้น</p>
+
+  <h3>Route ที่อยู่ใน main.py เอง</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Route</th><th>หน้าที่</th></tr></thead>
+    <tbody>
+      <tr><td><code>GET/POST /login</code>, <code>GET /logout</code></td><td>ระบบ login (หัวข้อ 4)</td></tr>
+      <tr><td><code>GET /</code>, <code>/dashboard</code>, <code>/dashboard.html</code></td><td>Dashboard ศูนย์รวมเมนู — <b>route เดียวที่เช็ค session</b></td></tr>
+      <tr><td><code>/summary_invoices.html</code> · <code>/car_numberplate.html</code> · <code>/customers</code> · <code>/drivers.html</code> · <code>/products</code> · <code>/bill_note.html</code> · <code>/saletax_report.html</code></td><td>เสิร์ฟหน้า HTML ของโมดูลต่าง ๆ</td></tr>
+      <tr><td><code>GET /export-pdf/{invoice_id}</code></td><td>export PDF เส้นทางเก่า ผ่าน pdf_generator.py (หัวข้อ 8)</td></tr>
+      <tr><td><code>GET /healthz</code></td><td>health check → <code>{"ok": true}</code></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ================= 4. AUTH ================= -->
+<section class="card" id="auth">
+  <h2><span class="no">4</span>ระบบยืนยันตัวตนและ Session (Auth &amp; Session)</h2>
+  <ul class="plain">
+    <li><b>บัญชีผู้ใช้เดียว</b> — <code>POST /login</code> เทียบกับ env <code>APP_USER</code>/<code>APP_PASS</code> (default ในโค้ด: <code>admin</code>/<code>1234</code>) ไม่มีตารางผู้ใช้ ไม่มีการ hash รหัสผ่าน (main.py:41–48)</li>
+    <li>สำเร็จ → เก็บ <code>{"name": username}</code> ใน session cookie (ลงลายเซ็นด้วย <code>SESSION_SECRET</code>, อายุ 2 ชม.) → redirect ไป <code>next</code> (default <code>/dashboard</code>)</li>
+    <li><code>GET /logout</code> → <code>session.clear()</code> → กลับหน้า login</li>
+  </ul>
+  <h3>ขอบเขตการคุ้มครองที่แท้จริง</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>ส่วน</th><th>เช็ค login?</th></tr></thead>
+    <tbody>
+      <tr><td><code>/</code>, <code>/dashboard</code>, <code>/dashboard.html</code></td><td><span class="pill ok">✔ เช็ค</span> redirect ไป /login ถ้าไม่มี session</td></tr>
+      <tr><td>หน้า HTML อื่นทุกหน้า (<code>/form</code>, <code>/bill_note.html</code>, <code>/customers</code>, ...)</td><td><span class="pill no">✘ ไม่เช็ค</span></td></tr>
+      <tr><td><code>/api/...</code> ทุกเส้น (CRUD ทั้งหมด)</td><td><span class="pill no">✘ ไม่เช็ค</span></td></tr>
+      <tr><td>endpoint สร้าง PDF ทุกเส้น</td><td><span class="pill no">✘ ไม่เช็ค</span></td></tr>
+    </tbody>
+  </table></div>
+  <div class="warn"><b>⚠️ สรุป:</b> มีเพียง dashboard ที่อยู่หลัง login — API และหน้าอื่นทั้งหมดเข้าถึงตรงได้โดยไม่ล็อกอิน (รายละเอียดในหัวข้อ 11)</div>
+</section>
+
+<!-- ================= 5. DATABASE ================= -->
+<section class="card" id="database">
+  <h2><span class="no">5</span>ฐานข้อมูล (Database)</h2>
+  <h3>การเชื่อมต่อ (database.py)</h3>
+  <ul class="plain">
+    <li>อ่าน connection string จาก env <code>DATABASE_URL</code></li>
+    <li><code>_normalize_db_url()</code>: แปลง <code>postgres://</code> → <code>postgresql://</code> และ<b>เติม <code>sslmode=require</code> อัตโนมัติ</b> ยกเว้น host <code>*.railway.internal</code></li>
+    <li>engine เปิด <code>pool_pre_ping=True</code>; <code>SessionLocal</code> แบบ <code>autoflush=False, autocommit=False</code></li>
+  </ul>
+
+  <h3>ผังตาราง — 5 schemas / 12 ตาราง</h3>
+  <div class="diagram">
+  <svg viewBox="0 0 960 620" role="img" aria-label="ER diagram 5 schemas 12 ตาราง">
+    <defs>
+      <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0 L10 5 L0 10 z" fill="#2563eb"/>
+      </marker>
+      <marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0 L10 5 L0 10 z" fill="#94a3b8"/>
+      </marker>
+    </defs>
+
+    <!-- schema ss_invoices -->
+    <rect x="16" y="16" width="300" height="286" rx="14" fill="#eff6ff" stroke="#93c5fd"/>
+    <text x="30" y="40" font-size="12.5" font-weight="700" fill="#1d4ed8">schema: ss_invoices</text>
+    <rect x="32" y="52" width="268" height="112" rx="10" fill="#fff" stroke="#2563eb" stroke-width="1.4"/>
+    <text x="46" y="74" font-size="13" font-weight="700" fill="#1e40af">invoices — หัวใบกำกับ</text>
+    <text x="46" y="94" font-size="11.5" fill="#475569">PK idx (int) · invoice_number (varchar)</text>
+    <text x="46" y="112" font-size="11.5" fill="#475569">grn/dn/po_number · due_date · เครดิตวัน</text>
+    <text x="46" y="130" font-size="11.5" fill="#475569">snapshot ลูกค้า 9 ช่อง · car_numberplate</text>
+    <text x="46" y="148" font-size="11.5" fill="#2563eb">FK driver_id → products.drivers</text>
+    <rect x="32" y="186" width="268" height="100" rx="10" fill="#fff" stroke="#2563eb" stroke-width="1.4"/>
+    <text x="46" y="208" font-size="13" font-weight="700" fill="#1e40af">invoice_items — รายการสินค้า</text>
+    <text x="46" y="228" font-size="11.5" fill="#475569">PK idx · invoice_number (varchar, FK)</text>
+    <text x="46" y="246" font-size="11.5" fill="#475569">cf_itemid/itemname · qty · price · amount</text>
+    <text x="46" y="268" font-size="11.5" font-weight="700" fill="#b91c1c">⚠ ค่าจริงที่เก็บ = idx (ตัวเลข) ไม่ใช่เลขที่ใบ</text>
+    <line x1="166" y1="164" x2="166" y2="184" stroke="#2563eb" stroke-width="1.6" marker-end="url(#ar3)"/>
+    <text x="176" y="180" font-size="10.5" fill="#64748b">1:N</text>
+
+    <!-- schema ss_bills -->
+    <rect x="336" y="16" width="290" height="286" rx="14" fill="#f8fafc" stroke="#cbd5e1"/>
+    <text x="350" y="40" font-size="12.5" font-weight="700" fill="#475569">schema: ss_bills</text>
+    <rect x="352" y="52" width="258" height="100" rx="10" fill="#fff" stroke="#64748b" stroke-width="1.3"/>
+    <text x="366" y="74" font-size="13" font-weight="700" fill="#334155">bill_note — หัวใบวางบิล</text>
+    <text x="366" y="94" font-size="11.5" fill="#475569">PK idx · billnote_number (unique)</text>
+    <text x="366" y="112" font-size="11.5" fill="#475569">bill_date · payment_duedate</text>
+    <text x="366" y="130" font-size="11.5" fill="#475569">snapshot ลูกค้า 8 ช่อง</text>
+    <rect x="352" y="186" width="258" height="100" rx="10" fill="#fff" stroke="#64748b" stroke-width="1.3"/>
+    <text x="366" y="208" font-size="13" font-weight="700" fill="#334155">bill_note_item</text>
+    <text x="366" y="228" font-size="11.5" fill="#475569">1 แถว = ใบกำกับ 1 ใบ (snapshot:</text>
+    <text x="366" y="246" font-size="11.5" fill="#475569">invoice_number · invoice_date ·</text>
+    <text x="366" y="264" font-size="11.5" fill="#475569">due_date · amount)</text>
+    <line x1="481" y1="152" x2="481" y2="184" stroke="#64748b" stroke-width="1.6" marker-end="url(#ar4)"/>
+    <text x="491" y="174" font-size="10.5" fill="#64748b">1:N cascade delete-orphan</text>
+    <path d="M352 236 C 320 236, 320 260, 302 260" fill="none" stroke="#94a3b8" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#ar4)"/>
+    <text x="327" y="284" font-size="10.5" fill="#94a3b8" text-anchor="middle">อ้างอิงด้วยเลขที่ใบ (snapshot)</text>
+
+    <!-- schema credits -->
+    <rect x="646" y="16" width="298" height="286" rx="14" fill="#f8fafc" stroke="#cbd5e1"/>
+    <text x="660" y="40" font-size="12.5" font-weight="700" fill="#475569">schema: credits <tspan fill="#92400e">(model อยู่ใน credit_note.py)</tspan></text>
+    <rect x="662" y="52" width="266" height="88" rx="10" fill="#fff" stroke="#64748b" stroke-width="1.3"/>
+    <text x="676" y="74" font-size="13" font-weight="700" fill="#334155">credit_note — หัวใบลดหนี้</text>
+    <text x="676" y="94" font-size="11.5" fill="#475569">PK idx · creditnote_number (unique)</text>
+    <text x="676" y="112" font-size="11.5" fill="#475569">created_at · updated_at</text>
+    <rect x="662" y="174" width="266" height="112" rx="10" fill="#fff" stroke="#64748b" stroke-width="1.3"/>
+    <text x="676" y="196" font-size="13" font-weight="700" fill="#334155">credit_note_item</text>
+    <text x="676" y="216" font-size="11.5" fill="#475569">FK creditnote_number · grn_number ·</text>
+    <text x="676" y="234" font-size="11.5" fill="#475569">invoice_number · fine (ค่าปรับ) ·</text>
+    <text x="676" y="252" font-size="11.5" fill="#475569">price_after_fine · ยอดเดิม/ใหม่ +vat+total</text>
+    <text x="676" y="270" font-size="11.5" fill="#475569">· ข้อมูลคนขับ/ทะเบียนรถ</text>
+    <line x1="795" y1="140" x2="795" y2="172" stroke="#64748b" stroke-width="1.6" marker-end="url(#ar4)"/>
+    <text x="805" y="162" font-size="10.5" fill="#64748b">1:N (FK)</text>
+    <path d="M662 240 C 638 240, 640 262, 626 262" fill="none" stroke="#94a3b8" stroke-width="1.4" stroke-dasharray="5 4"/>
+    <path d="M626 262 C 500 330, 380 320, 300 292" fill="none" stroke="#94a3b8" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#ar4)"/>
+    <text x="470" y="338" font-size="10.5" fill="#94a3b8" text-anchor="middle">raw SQL: inv.idx::text = item.invoice_number (อ้าง GRN/ใบกำกับ)</text>
+
+    <!-- schema products -->
+    <rect x="16" y="360" width="610" height="236" rx="14" fill="#f0fdf4" stroke="#bbf7d0"/>
+    <text x="30" y="384" font-size="12.5" font-weight="700" fill="#15803d">schema: products (Master Data)</text>
+    <g>
+      <rect x="32" y="398" width="280" height="86" rx="10" fill="#fff" stroke="#86efac"/>
+      <text x="46" y="420" font-size="13" font-weight="700" fill="#166534">customer_list — ลูกค้า</text>
+      <text x="46" y="440" font-size="11.5" fill="#475569">personid (PC...) · ชื่อ/ที่อยู่/จังหวัด</text>
+      <text x="46" y="458" font-size="11.5" fill="#475569">cf_taxid(13) · cf_hq/cf_branch (สนญ./สาขา)</text>
+      <text x="46" y="476" font-size="11.5" fill="#475569">fmlpaymentcreditday (เครดิตวัน)</text>
+      <rect x="330" y="398" width="280" height="86" rx="10" fill="#fff" stroke="#86efac"/>
+      <text x="344" y="420" font-size="13" font-weight="700" fill="#166534">product_list — สินค้า</text>
+      <text x="344" y="440" font-size="11.5" fill="#475569">cf_itemid(6) · cf_itemname · หน่วย</text>
+      <text x="344" y="458" font-size="11.5" fill="#475569">cf_itempricelevel_price (ราคา/หน่วย)</text>
+      <text x="344" y="476" font-size="11.5" fill="#475569">cf_items_ordinary (ลำดับ)</text>
+      <rect x="32" y="496" width="280" height="86" rx="10" fill="#fff" stroke="#86efac"/>
+      <text x="46" y="518" font-size="13" font-weight="700" fill="#166534">ss_car — ทะเบียนรถ</text>
+      <text x="46" y="538" font-size="11.5" fill="#475569">number_plate (unique) · ยี่ห้อ · จังหวัด</text>
+      <rect x="330" y="496" width="280" height="86" rx="10" fill="#fff" stroke="#86efac"/>
+      <text x="344" y="518" font-size="13" font-weight="700" fill="#166534">drivers — พนักงานขับรถ</text>
+      <text x="344" y="538" font-size="11.5" fill="#475569">PK driver_id (D0001...) · citizen_id(13)</text>
+      <text x="344" y="556" font-size="11.5" fill="#475569">คำนำหน้า/ชื่อ/นามสกุล</text>
+    </g>
+    <!-- FK invoices -> drivers -->
+    <path d="M120 302 C 120 340, 300 380, 380 496" fill="none" stroke="#2563eb" stroke-width="1.5" marker-end="url(#ar3)"/>
+    <text x="150" y="352" font-size="10.5" fill="#2563eb">FK driver_id</text>
+    <!-- snapshot dashed customer -->
+    <path d="M60 302 C 60 344, 90 370, 110 396" fill="none" stroke="#94a3b8" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#ar4)"/>
+    <text x="36" y="352" font-size="10.5" fill="#94a3b8">snapshot (personid)</text>
+
+    <!-- schema public -->
+    <rect x="646" y="360" width="298" height="236" rx="14" fill="#f8fafc" stroke="#cbd5e1"/>
+    <text x="660" y="384" font-size="12.5" font-weight="700" fill="#475569">schema: public (Lookup)</text>
+    <rect x="662" y="398" width="266" height="60" rx="10" fill="#fff" stroke="#cbd5e1"/>
+    <text x="676" y="420" font-size="13" font-weight="700" fill="#334155">car_brand</text>
+    <text x="676" y="440" font-size="11.5" fill="#475569">PK brand_name — ยี่ห้อรถ (autocomplete)</text>
+    <rect x="662" y="470" width="266" height="60" rx="10" fill="#fff" stroke="#cbd5e1"/>
+    <text x="676" y="492" font-size="13" font-weight="700" fill="#334155">province_nostra</text>
+    <text x="676" y="512" font-size="11.5" fill="#475569">PK prov_nam_t — ชื่อจังหวัด (autocomplete)</text>
+  </svg>
+  </div>
+  <div class="caption">เส้นทึบน้ำเงิน = FK จริง · เส้นเทา = ความสัมพันธ์เชิงตรรกะ/snapshot (ไม่มี FK) · แดง = จุด quirk</div>
+
+  <h3>รายละเอียดตาราง</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>ตาราง (schema.table)</th><th>Model / ที่ประกาศ</th><th>คีย์และคอลัมน์สำคัญ</th><th>บทบาท</th></tr></thead>
+    <tbody>
+      <tr><td><code>ss_invoices.invoices</code></td><td>Invoice (models.py:8)</td><td>PK idx · invoice_number (index) · วันที่/ครบกำหนด/เครดิตวัน · grn/dn/po_number · snapshot ลูกค้า 9 ช่อง · car_numberplate · FK driver_id</td><td>หัวใบกำกับภาษี</td></tr>
+      <tr><td><code>ss_invoices.invoice_items</code></td><td>InvoiceItem (models.py:46)</td><td>PK idx · invoice_number (varchar, FK ⚠ ดู quirk) · รหัส/ชื่อ/หน่วยสินค้า · quantity · ราคา/หน่วย · amount · ลำดับบรรทัด</td><td>รายการสินค้าในใบกำกับ</td></tr>
+      <tr><td><code>ss_bills.bill_note</code></td><td>BillNote (models.py:76)</td><td>PK idx · billnote_number (unique) · bill_date · payment_duedate · snapshot ลูกค้า</td><td>หัวใบวางบิล</td></tr>
+      <tr><td><code>ss_bills.bill_note_item</code></td><td>BillNoteItem (models.py:103)</td><td>PK idx · billnote_number · snapshot ใบกำกับ (เลขที่/วันที่/ครบกำหนด/ยอด)</td><td>ใบกำกับที่ถูกวางบิล (1 แถว = 1 ใบ)</td></tr>
+      <tr><td><code>credits.credit_note</code></td><td><b>CreditNote (credit_note.py:21)</b></td><td>PK idx · creditnote_number (unique) · created_at/updated_at</td><td>หัวใบลดหนี้</td></tr>
+      <tr><td><code>credits.credit_note_item</code></td><td><b>CreditNoteItem (credit_note.py)</b></td><td>PK idx · FK creditnote_number · grn/invoice_number · จำนวน · ราคา · fine · price_after_fine · ยอดเดิม/ใหม่ + vat + total · คนขับ/ทะเบียน</td><td>รายการลดหนี้</td></tr>
+      <tr><td><code>products.customer_list</code></td><td>CustomerList (models.py:118)</td><td>PK idx · personid (PC...) · ชื่อ/ที่อยู่ · cf_taxid(13) · cf_hq (1=สนญ.) · cf_branch · เครดิตวัน</td><td>ข้อมูลหลักลูกค้า</td></tr>
+      <tr><td><code>products.product_list</code></td><td>ProductList (models.py:145)</td><td>PK idx · cf_itemid(6) · ชื่อ/หน่วย/ราคา/ลำดับ</td><td>ข้อมูลหลักสินค้า</td></tr>
+      <tr><td><code>products.ss_car</code></td><td>Car (models.py:158)</td><td>PK idx · number_plate (unique) · ยี่ห้อ · จังหวัด</td><td>ทะเบียนรถ</td></tr>
+      <tr><td><code>products.drivers</code></td><td>Driver (models.py:169)</td><td>PK driver_id (D...) · citizen_id(13) · ชื่อ-นามสกุล</td><td>พนักงานขับรถ</td></tr>
+      <tr><td><code>public.car_brand</code></td><td>CarBrand</td><td>PK brand_name</td><td>lookup ยี่ห้อรถ</td></tr>
+      <tr><td><code>public.province_nostra</code></td><td>ProvinceNostra</td><td>PK prov_nam_t</td><td>lookup จังหวัด</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="warn">
+    <b>⚠️ Quirk สำคัญที่สุดของระบบ: <code>invoice_items.invoice_number</code> เก็บค่า idx</b><br>
+    ตอนบันทึกใบกำกับ (form.py:232 และ PUT ที่ form.py:379) โค้ดใส่ <code>InvoiceItem.invoice_number = inv.idx</code> — เลข PK จำนวนเต็มถูกเก็บลงคอลัมน์ varchar ที่ควรเก็บ "เลขที่ใบกำกับ" ผลที่ตามมา:
+    <ul class="plain">
+      <li>relationship <code>Invoice.items</code> (join ด้วยเลขที่ใบ, viewonly) <b>มองไม่เห็นแถวลูกจริง</b> — แทบไม่ถูกใช้</li>
+      <li>ทุก query ต้อง join เผื่อสองแบบ: <code>OR(items.invoice_number = invoices.invoice_number, items.invoice_number = CAST(invoices.idx AS VARCHAR))</code> — พบใน summary_invoices, bill_note, saletax_report, drivers_form</li>
+      <li>credit_note ใช้ raw SQL <code>inv.idx::text = it.invoice_number</code></li>
+      <li>ข้อยกเว้น: <code>/api/driver-summary</code> join ด้วยเลขที่ใบอย่างเดียว — ไม่สอดคล้องกับจุดอื่น</li>
+    </ul>
+  </div>
+
+  <h3>รูปแบบเลขเอกสาร (Running Numbers) — ทุกตัวใช้ LIKE + max ไม่ใช่ DB sequence, ปีเป็น พ.ศ.</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>เอกสาร</th><th>รูปแบบ</th><th>ตัวอย่าง</th><th>ที่สร้าง</th></tr></thead>
+    <tbody>
+      <tr><td>ใบกำกับภาษี</td><td>ผู้ใช้กรอกเอง (มี check-number กันซ้ำ)</td><td>—</td><td>form.py</td></tr>
+      <tr><td>ใบวางบิล</td><td><code>BNTS&lt;ปีพ.ศ.2หลัก&gt;&lt;MM&gt;&lt;run 6 หลัก&gt;</code></td><td>BNTS6907000001</td><td>bill_note.py:31</td></tr>
+      <tr><td>ใบลดหนี้</td><td><code>SSCR&lt;run&gt;-&lt;DD&gt;&lt;MM&gt;/&lt;ปีพ.ศ.&gt;</code> (run นับต่อปี)</td><td>SSCR12-0507/2569</td><td>credit_note.py:79</td></tr>
+      <tr><td>รหัสลูกค้า</td><td><code>PC&lt;ปีพ.ศ.2หลัก&gt;&lt;run 4 หลัก&gt;</code></td><td>PC690001</td><td>customers.py:194</td></tr>
+      <tr><td>รหัสคนขับ</td><td><code>D&lt;run 4 หลัก&gt;</code></td><td>D0001</td><td>drivers_form.py:52</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>แนวคิด Snapshot</h3>
+  <p>หัวใบกำกับ/ใบวางบิล<b>คัดลอกข้อมูลลูกค้ามาเก็บในตัวเอง</b> (ชื่อ ที่อยู่ taxid ฯลฯ) แทนที่จะ FK ไป <code>customer_list</code> เช่นเดียวกับ <code>bill_note_item</code> ที่เก็บยอดของใบกำกับไว้ในตัว — เจตนาคือเอกสารที่ออกแล้ว<b>ไม่เปลี่ยนตาม master ที่แก้ทีหลัง</b> (จุดเชื่อมกลับคือ <code>personid</code>)</p>
+</section>
+
+<!-- ================= 6. MODULES ================= -->
+<section class="card" id="modules">
+  <h2><span class="no">6</span>Backend Modules ทั้ง 9 ตัว</h2>
+  <p>ทุก router: import <code>models</code> + <code>SessionLocal</code> จากส่วนกลาง, สร้าง <code>get_db()</code> และ <code>Jinja2Templates</code> ของตนเอง, ถูก include โดยไม่มี prefix</p>
+
+  <h3>6.1 form.py — สร้าง/แก้ไขใบกำกับภาษี + Export PDF (506 บรรทัด)</h3>
+  <p>ตัวช่วยสำคัญ: Jinja filter <code>thaidate</code> (วันที่ไทย พ.ศ.) และ <code>thbaht</code> (ตัวเลข→ข้อความบาทไทย); <code>_parse_ymd</code> รองรับ ISO / dd/mm/yyyy / "5 กรกฎาคม 2569"</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Method + Path</th><th>หน้าที่</th><th>ตารางที่แตะ</th></tr></thead>
+    <tbody>
+      <tr><td><code>GET /form</code>, <code>/form.html</code></td><td>หน้าฟอร์มใบกำกับ (template form.html)</td><td>—</td></tr>
+      <tr><td><code>GET /api/invoices/check-number</code></td><td>เช็คเลขที่ใบกำกับซ้ำ</td><td>invoices (R)</td></tr>
+      <tr><td><code>POST /submit</code></td><td>บันทึกหัวบิล+รายการ · 409 ถ้าเลขซ้ำ · <code>due_date = วันที่ + เครดิตวัน</code> · ⚠ เก็บ item ด้วย invoice_number = idx</td><td>invoices, invoice_items (W)</td></tr>
+      <tr><td><code>GET /api/invoices/{id}/items</code> · <code>/detail</code></td><td>รายการ/หัวบิลสำหรับโหมดแก้ไข</td><td>invoices, invoice_items (R)</td></tr>
+      <tr><td><code>PUT /api/invoices/{id}</code></td><td>แก้หัวบิล + ลบ/ใส่รายการใหม่ทั้งชุด</td><td>invoices, invoice_items (W)</td></tr>
+      <tr><td><code>POST /preview</code></td><td>render invoice.html จาก JSON (ยังไม่บันทึก)</td><td>—</td></tr>
+      <tr><td><code>POST /export-merged-pdf</code></td><td><b>PDF หลัก</b>: invoice.html × 4 ชุด → WeasyPrint → pypdf merge</td><td>—</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>6.2 summary_invoices.py — รายงาน/ค้นหา/แก้ไขใบกำกับ (402 บรรทัด, JSON ล้วน)</h3>
+  <p><code>VAT_RATE = 0.07</code> · ยอดต่อใบ = <code>SUM(COALESCE(amount, quantity×price))</code></p>
+  <ul class="plain">
+    <li><code>GET /api/invoices/summary</code> — สรุปยอด+VAT กลุ่มตามวัน/เดือน/ปี</li>
+    <li><code>GET /api/invoices</code> — รายการใบกำกับตามช่วงวันที่ + ค้นหา (เลขที่/ชื่อลูกค้า/PO) + join ชื่อคนขับ</li>
+    <li><code>/{id}/items</code>, <code>/{id}/detail</code>, <code>PUT /{id}</code> — ⚠ ถูก form.py บังทั้ง 3 เส้น (หัวข้อ 3)</li>
+  </ul>
+
+  <h3>6.3 bill_note.py — ใบวางบิล (439 บรรทัด)</h3>
+  <p>หัวใจ: <b>ใบกำกับหนึ่งใบถูกวางบิลได้ครั้งเดียว</b> — <code>_used_invoice_numbers()</code> รวบรวมเลขใบกำกับที่ใช้แล้วจาก bill_note_item ทั้งหมด ใช้กรองตอนค้นหาและ validate (409) ตอนบันทึก/แก้ไข</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Method + Path</th><th>หน้าที่</th></tr></thead>
+    <tbody>
+      <tr><td><code>GET /api/billing-note-invoices</code></td><td>ใบกำกับของลูกค้าในช่วงวันที่ <b>ที่ยังไม่ถูกวางบิล</b> + ยอดรวม VAT ต่อใบ</td></tr>
+      <tr><td><code>POST /api/billing-notes</code></td><td>สร้าง: gen เลข BNTS... · snapshot ลูกค้า+ยอด · payment_duedate = วันที่ใบกำกับล่าสุดในชุด</td></tr>
+      <tr><td><code>GET /api/billing-notes/{no}</code></td><td>รายละเอียด (คำนวณยอดใหม่จาก items + VAT · ข้อความ สนญ./สาขา จาก cf_hq/cf_branch)</td></tr>
+      <tr><td><code>GET /api/search-billing-notes</code> · <code>/api/suggest/bill-notes</code></td><td>ค้นหา / autocomplete</td></tr>
+      <tr><td><code>PUT /api/billing-notes/{no}</code></td><td>แก้ไข (กันซ้ำโดยยกเว้นใบตัวเอง + แทนที่รายการ)</td></tr>
+      <tr><td><code>DELETE /api/billing-notes/{no}</code></td><td>ลบ — items ถูกลบตาม cascade delete-orphan (cascade เดียวในระบบ)</td></tr>
+      <tr><td><code>GET /api/customers/all</code></td><td>⚠ ถูก customers.py บัง</td></tr>
+    </tbody>
+  </table></div>
+  <p>การพิมพ์ใบวางบิลทำ<b>ฝั่ง browser</b> (กรอบ A4 + <code>window.print</code>) ไม่ผ่าน WeasyPrint</p>
+
+  <h3>6.4 credit_note.py — ใบลดหนี้ (882 บรรทัด, ใหญ่และซับซ้อนที่สุด)</h3>
+  <ul class="plain">
+    <li><b>ประกาศ ORM model เอง</b> (CreditNote, CreditNoteItem — schema credits) ไม่อยู่ใน models.py</li>
+    <li>ใช้ <b>raw SQL (text())</b> จำนวนมาก query ตรงไปที่ ss_invoices (join <code>idx::text = invoice_number</code>)</li>
+    <li>ข้อมูล<b>ผู้ขาย hardcode ในโค้ด</b> ("บริษัท เอส แอนด์ เอส อินคอม จำกัด", เลขผู้เสียภาษี 0715544000020)</li>
+    <li>ตรรกะลดหนี้/บรรทัด: ราคาเดิม = <code>price_after_fine + fine</code>, ราคาใหม่ = <code>price_after_fine</code> → มูลค่าลด = <code>Σ max(0, (เดิม−ใหม่)×จำนวน)</code> + VAT 7% · เอกสาร 10 บรรทัด/หน้า</li>
+  </ul>
+  <div class="table-wrap"><table>
+    <thead><tr><th>กลุ่ม</th><th>Routes</th></tr></thead>
+    <tbody>
+      <tr><td>หน้า / พรีวิว</td><td><code>GET /credit_note_form.html</code> · <code>GET /credit_note.html?no=</code> (render จาก DB) · <code>POST /api/credit-notes/preview</code> (render จาก payload)</td></tr>
+      <tr><td>CRUD</td><td><code>POST /api/credit-notes</code> · <code>GET /api/credit-notes/{no}</code> · <code>/detail</code> · <code>PUT /update</code> · <code>DELETE /{no}</code> · <code>GET /api/search-credit-notes</code> · <code>GET /api/credit-notes/generate-number/</code></td></tr>
+      <tr><td>อ้างอิงจากใบกำกับ</td><td><code>GET /api/grn/suggest</code> · <code>GET /api/grn/summary</code> (raw SQL CTE) · <code>GET /api/products/price</code> (ราคาขายล่าสุด)</td></tr>
+      <tr><td>autocomplete ลูกค้า</td><td><code>suggest-personid</code> · <code>suggest-name</code> · <code>by-personid</code> · <code>by-name</code></td></tr>
+      <tr><td>PDF</td><td><code>POST /export-creditnote-pdf</code> — credit_note.html × 2 (ต้นฉบับ+สำเนา) → WeasyPrint ไฟล์เดียว</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>6.5 customers.py — ข้อมูลลูกค้า (323 บรรทัด)</h3>
+  <p>CRUD <code>products.customer_list</code>: <code>GET /api/customers</code> (แบ่งหน้า+ค้นหา) · <code>/all</code> · <code>/suggest</code> · <code>/detail</code> · <code>/next-id</code> (gen PC...) · <code>POST</code> · <code>PUT/DELETE /{idx}</code><br>
+  หมายเหตุ: <code>POST /api/customers/check-duplicate</code> เป็น <b>stub — ตอบ duplicate:false เสมอ</b> · ตัวแปลงแถวส่ง taxid ซ้ำ 3 คีย์ (<code>cf_taxid/tax_id/taxid</code>) เพื่อ FE รุ่นเก่า</p>
+
+  <h3>6.6 products.py — ข้อมูลสินค้า (170 บรรทัด)</h3>
+  <p>CRUD <code>products.product_list</code>: <code>/api/products/all</code> · <code>POST /api/products</code> (+check-duplicate) · <b><code>POST /api/products/{idx}</code> สำหรับแก้ไข (เป็น POST ไม่ใช่ PUT — ต่างจากโมดูลอื่น)</b> · <code>DELETE /{idx}</code><br>
+  พิเศษ: <code>GET /api/products/suggest</code> แนะนำสินค้าจาก<b>ประวัติใบกำกับ</b> (invoice_items + ราคาเฉลี่ย + จำนวนครั้ง) ไม่ใช่จาก master</p>
+
+  <h3>6.7 cars.py — ทะเบียนรถ (165 บรรทัด)</h3>
+  <p>CRUD <code>products.ss_car</code> + autocomplete: <code>GET/POST /api/cars</code> · <code>PUT/DELETE /api/cars/{idx}</code> · <code>GET /api/suggest/number_plate</code> · <code>/api/suggest/car_brand</code> (จาก public.car_brand) · <code>/api/suggest/province</code> (จาก public.province_nostra) · validate ทะเบียนด้วย Pydantic</p>
+
+  <h3>6.8 drivers_form.py — พนักงานขับรถ + รายงานต่อคนขับ (351 บรรทัด)</h3>
+  <ul class="plain">
+    <li>CRUD <code>products.drivers</code> (กัน citizen_id ซ้ำ · gen D&lt;NNNN&gt;) · <code>GET /api/drivers</code> พ่วง<b>ทะเบียนรถที่เคยขับ</b> (<code>array_agg(DISTINCT car_numberplate)</code> จาก invoices)</li>
+    <li>รายงาน: <code>GET /api/driver-summary</code> (ยอดต่อคนขับ กลุ่มวัน/เดือน/ปี + VAT 7%) · <code>GET /api/driver-invoices</code> (ใบกำกับรายคนขับ)</li>
+  </ul>
+
+  <h3>6.9 saletax_report.py — รายงานภาษีขาย (253 บรรทัด, JSON ล้วน)</h3>
+  <ul class="plain">
+    <li><code>GET /api/saletax/list</code> — มูลค่า/VAT รายใบสำหรับช่วงเวลา · join ลูกค้า (แสดง "สำนักงานใหญ่/สาขา" จาก cf_hq/cf_branch) + ชื่อคนขับ · <b>แปลงหน่วยเป็นตัน: quantity ≥ 1000 → ÷1000</b> (saletax_report.py:43–45)</li>
+    <li><code>GET /api/saletax/summary</code> — ยอดรวมช่วงเวลา เลือกแยกตามบริษัท (split_by_company) ได้</li>
+  </ul>
+</section>
+
+<!-- ================= 7. FRONTEND ================= -->
+<section class="card" id="frontend">
+  <h2><span class="no">7</span>Frontend (Templates + JavaScript)</h2>
+  <h3>สองประเภทของ template</h3>
+  <ol class="plain">
+    <li><b>หน้า interactive</b> — HTML + JS ประจำหน้า <code>fetch</code> ข้อมูลจาก API แล้ววาด DOM · Tailwind CSS + Font Awesome จาก <b>CDN</b> (ต้องออนไลน์) · สไตล์กลาง <code>style.css</code> + <code>form.css</code></li>
+    <li><b>เอกสาร Jinja (สำหรับ PDF/พิมพ์)</b> — <code>invoice.html</code> (Jinja tag 47 จุด) และ <code>credit_note.html</code> (29 จุด) render ฝั่ง server เท่านั้น ไม่มี Tailwind ใช้ CSS เฉพาะที่กำหนด <code>@page { size: A4 }</code></li>
+  </ol>
+
+  <h3>ตารางความเชื่อมโยง หน้า ↔ JS ↔ API</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>หน้า (เสิร์ฟจาก)</th><th>JS</th><th>API ที่เรียก</th><th>หน้าที่</th></tr></thead>
+    <tbody>
+      <tr><td>dashboard.html (main.py <code>/</code>)</td><td>dashboard.js</td><td><code>GET /api/invoices</code> (7 วันล่าสุด)</td><td>ศูนย์รวมเมนู + การ์ดสถิติ</td></tr>
+      <tr><td>login.html (<code>/login</code>)</td><td>login.js</td><td><code>POST /login</code></td><td>เข้าสู่ระบบ</td></tr>
+      <tr><td>form.html (form.py <code>/form</code>)</td><td>form.js (+datepicker)</td><td>check-number · customers all/suggest/detail · products/all · drivers · suggest/number_plate · <code>POST /preview</code> · <code>POST /submit</code> · <code>PUT /api/invoices/{id}</code> · <code>POST /export-merged-pdf</code></td><td>สร้าง/แก้ใบกำกับ (โหมดแก้ <code>?edit={idx}</code>)</td></tr>
+      <tr><td>invoice.html (render โดย /preview, /export-merged-pdf)</td><td>invoice.js (จัด layout ตอน print — ไม่ fetch)</td><td>—</td><td>ตัวเอกสารใบกำกับ/ใบเสร็จ A4</td></tr>
+      <tr><td>summary_invoices.html (main.py)</td><td>summary_invoices.js (+SheetJS)</td><td>invoices/summary · invoices · items · detail · <code>PUT /api/invoices/{id}</code></td><td>รายงานใบกำกับ: แท็บ, ค้นหา, <b>Excel ฝั่ง browser</b>, แก้ไข → <code>form.html?edit=</code></td></tr>
+      <tr><td>bill_note.html (main.py)</td><td>bill_note.js</td><td>customers/all · billing-note-invoices · <code>POST/PUT/DELETE billing-notes</code> · search-billing-notes</td><td>สร้าง/ค้นหา/แก้ใบวางบิล + พรีวิว A4 + <b>window.print</b></td></tr>
+      <tr><td>credit_note_form.html (credit_note.py)</td><td>credit_note.js</td><td>generate-number · <code>POST/PUT/DELETE credit-notes</code> · preview · <code>POST /export-creditnote-pdf</code> · search · grn/suggest · grn/summary · products/price · customers/suggest-*</td><td>ฟอร์มใบลดหนี้ (ซ้ายฟอร์ม–ขวาพรีวิว)</td></tr>
+      <tr><td>credit_note.html (render โดย credit_note.py)</td><td>—</td><td>—</td><td>ตัวเอกสารใบลดหนี้ A4</td></tr>
+      <tr><td>customer_form.html (main.py <code>/customers</code>)</td><td>customer_form.js</td><td>next-id · all · suggest/province · check-duplicate · <code>POST/PUT/DELETE customers</code></td><td>จัดการลูกค้า</td></tr>
+      <tr><td>product_form.html (main.py <code>/products</code>)</td><td>product_form.js</td><td>products/all · check-duplicate · <code>POST</code> (สร้าง/แก้) · <code>DELETE</code></td><td>จัดการสินค้า</td></tr>
+      <tr><td>car_numberplate.html (main.py)</td><td>car_numberplate.js</td><td>cars CRUD + suggest (plate/brand/province)</td><td>จัดการทะเบียนรถ</td></tr>
+      <tr><td>drivers_form.html (main.py <code>/drivers.html</code>)</td><td>drivers_form.js</td><td>drivers CRUD · driver-summary · driver-invoices</td><td>จัดการคนขับ + แท็บรายงาน</td></tr>
+      <tr><td>saletax_report.html (main.py)</td><td>saletax_report.js (+flatpickr, SheetJS)</td><td><code>GET /api/saletax/list</code></td><td>รายงานภาษีขาย: KPI + ตาราง + Excel + พิมพ์แนวนอน</td></tr>
+    </tbody>
+  </table></div>
+  <p>ข้อสังเกตการตั้งชื่อ route: บางหน้าใช้ <code>.html</code> ต่อท้าย (<code>/bill_note.html</code>) บางหน้า path เปล่า (<code>/form</code>, <code>/customers</code>) และลิงก์แก้ไขมีทั้ง <code>/form?edit=</code> (dashboard.js) กับ <code>/form.html?edit=</code> (summary_invoices.js) — ใช้ได้ทั้งคู่เพราะ form.py รับทั้งสอง path</p>
+  <h3>Design System</h3>
+  <p>ตาม note/1_refactor_uxuiV1.md: แนวทาง <b>Modern Clean &amp; Professional</b> โทนฟ้า-ขาว-เทา (brand palette <code>#eff6ff</code> → <code>#1d4ed8</code>) การ์ดมุมโค้ง เงานุ่ม · ฟอนต์เอกสารพิมพ์ <code>TH Sarabun New</code></p>
+</section>
+
+<!-- ================= 8. PDF ================= -->
+<section class="card" id="pdf">
+  <h2><span class="no">8</span>ระบบสร้าง PDF (PDF Pipeline)</h2>
+  <p>ทุกเส้นทางใช้ <b>WeasyPrint</b> (HTML + CSS → PDF) — pdfkit + wkhtmltopdf ติดตั้งใน Docker แต่ไม่ถูกเรียกใช้ในโค้ดเลย</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>เส้นทาง</th><th>Template</th><th>ขั้นตอน</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><code>POST /export-merged-pdf</code> (form.py) — <b>เส้นหลักของใบกำกับ</b></td><td>invoice.html + invoice.css</td><td>render 4 variant (ใบกำกับ/ใบเสร็จ × ต้นฉบับ/สำเนา) → แปลงลิงก์ /static/ เป็น file:// → WeasyPrint ทีละชุด → <b>pypdf</b> รวมเป็นไฟล์เดียว (มี shim รองรับ pypdf ≤3 และ ≥4)</td></tr>
+      <tr><td>2</td><td><code>POST /export-creditnote-pdf</code> (credit_note.py)</td><td>credit_note.html + credit_note.css</td><td>render 2 รอบ (ต้นฉบับ+สำเนา) ต่อเป็น HTML เดียว → WeasyPrint ครั้งเดียว</td></tr>
+      <tr><td>3</td><td><code>GET /export-pdf/{invoice_id}</code> (main.py + pdf_generator.py) — <b>เส้นเก่า/legacy</b></td><td>invoice.html (ไม่ผูก CSS)</td><td>โหลดผ่าน ORM relationship (⚠ มองไม่เห็น items เพราะ quirk idx) → เขียนไฟล์ตายตัว <code>/tmp/invoice.pdf</code> (ใช้บน Windows ไม่ได้)</td></tr>
+    </tbody>
+  </table></div>
+  <p><b>ใบวางบิล</b>ไม่ใช้ WeasyPrint — พิมพ์จาก browser (<code>window.print</code>) · <b>รายงานภาษีขาย</b>พิมพ์จาก browser แนวนอน (<code>@page landscape</code>)</p>
+  <div class="warn"><b>เรื่องฟอนต์ไทย (สำคัญตอน deploy):</b> ไม่มี <code>@font-face</code> ในโปรเจกต์เลย — CSS ระบุแค่ <code>font-family: "TH Sarabun New", "Noto Sans Thai", ...</code> WeasyPrint จึงหาฟอนต์จาก<b>ระบบปฏิบัติการ</b> (Dockerfile ติดตั้ง <code>fonts-thai-tlwg</code> + <code>fonts-noto-*</code> ให้) ส่วนไฟล์ <code>static/fonts/THSarabunNew*.ttf</code> ในโปรเจกต์<b>ไม่ถูกใช้จริง</b> ⇒ PDF ภาษาไทยถูกต้องเมื่อรันใน Docker image นี้ (หรือเครื่องที่ลงฟอนต์แล้ว) เท่านั้น</div>
+</section>
+
+<!-- ================= 9. FLOWS ================= -->
+<section class="card" id="flows">
+  <h2><span class="no">9</span>Flow ความเชื่อมโยงแบบ End-to-End</h2>
+
+  <div class="diagram">
+  <svg viewBox="0 0 940 430" role="img" aria-label="Flow การสร้างใบกำกับจนถึง PDF และเอกสารต่อเนื่อง">
+    <defs>
+      <marker id="ar5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0 L10 5 L0 10 z" fill="#2563eb"/>
+      </marker>
+      <marker id="ar6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0 L10 5 L0 10 z" fill="#64748b"/>
+      </marker>
+    </defs>
+    <!-- lane: form -->
+    <rect x="16" y="20" width="200" height="96" rx="12" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5"/>
+    <text x="116" y="50" text-anchor="middle" font-size="13.5" font-weight="700" fill="#1d4ed8">/form + form.js</text>
+    <text x="116" y="72" text-anchor="middle" font-size="11.5" fill="#475569">autofill: ลูกค้า/สินค้า/</text>
+    <text x="116" y="90" text-anchor="middle" font-size="11.5" fill="#475569">คนขับ/ทะเบียนรถ</text>
+
+    <rect x="286" y="20" width="200" height="96" rx="12" fill="#fff" stroke="#2563eb" stroke-width="1.4"/>
+    <text x="386" y="50" text-anchor="middle" font-size="13.5" font-weight="700" fill="#1d4ed8">POST /submit</text>
+    <text x="386" y="72" text-anchor="middle" font-size="11.5" fill="#475569">INSERT invoices +</text>
+    <text x="386" y="90" text-anchor="middle" font-size="11.5" fill="#475569">invoice_items (⚠ idx)</text>
+    <line x1="216" y1="68" x2="284" y2="68" stroke="#2563eb" stroke-width="1.8" marker-end="url(#ar5)"/>
+
+    <rect x="556" y="20" width="180" height="96" rx="12" fill="#fff" stroke="#2563eb" stroke-width="1.4"/>
+    <text x="646" y="44" text-anchor="middle" font-size="13" font-weight="700" fill="#1d4ed8">POST /export-merged-pdf</text>
+    <text x="646" y="66" text-anchor="middle" font-size="11.5" fill="#475569">invoice.html × 4</text>
+    <text x="646" y="84" text-anchor="middle" font-size="11.5" fill="#475569">WeasyPrint → pypdf</text>
+    <line x1="486" y1="68" x2="554" y2="68" stroke="#2563eb" stroke-width="1.8" marker-end="url(#ar5)"/>
+
+    <rect x="786" y="20" width="140" height="96" rx="12" fill="#f0fdf4" stroke="#86efac"/>
+    <text x="856" y="58" text-anchor="middle" font-size="13" font-weight="700" fill="#166534">PDF ชุดเดียว</text>
+    <text x="856" y="80" text-anchor="middle" font-size="11" fill="#475569">ต้นฉบับ+สำเนา</text>
+    <line x1="736" y1="68" x2="784" y2="68" stroke="#2563eb" stroke-width="1.8" marker-end="url(#ar5)"/>
+
+    <!-- DB core -->
+    <rect x="286" y="170" width="200" height="70" rx="12" fill="#f8fafc" stroke="#475569" stroke-width="1.5"/>
+    <text x="386" y="198" text-anchor="middle" font-size="13.5" font-weight="700" fill="#334155">ss_invoices</text>
+    <text x="386" y="220" text-anchor="middle" font-size="11.5" fill="#64748b">invoices + invoice_items</text>
+    <line x1="386" y1="116" x2="386" y2="168" stroke="#64748b" stroke-width="1.6" marker-end="url(#ar6)"/>
+
+    <!-- bill note branch -->
+    <rect x="16" y="300" width="270" height="110" rx="12" fill="#fff" stroke="#64748b" stroke-width="1.3"/>
+    <text x="151" y="326" text-anchor="middle" font-size="13" font-weight="700" fill="#334155">ใบวางบิล /bill_note.html</text>
+    <text x="151" y="348" text-anchor="middle" font-size="11.5" fill="#475569">เลือกเฉพาะใบที่ยังไม่ถูกวางบิล</text>
+    <text x="151" y="366" text-anchor="middle" font-size="11.5" fill="#475569">gen BNTS... → INSERT ss_bills</text>
+    <text x="151" y="388" text-anchor="middle" font-size="11.5" fill="#92400e">พิมพ์ด้วย window.print</text>
+    <path d="M330 240 C 300 262, 230 280, 190 298" fill="none" stroke="#64748b" stroke-width="1.6" marker-end="url(#ar6)"/>
+
+    <!-- credit note branch -->
+    <rect x="336" y="300" width="270" height="110" rx="12" fill="#fff" stroke="#64748b" stroke-width="1.3"/>
+    <text x="471" y="326" text-anchor="middle" font-size="13" font-weight="700" fill="#334155">ใบลดหนี้ /credit_note_form.html</text>
+    <text x="471" y="348" text-anchor="middle" font-size="11.5" fill="#475569">GRN summary (raw SQL) → ราคาใหม่/ค่าปรับ</text>
+    <text x="471" y="366" text-anchor="middle" font-size="11.5" fill="#475569">gen SSCR... → INSERT credits</text>
+    <text x="471" y="388" text-anchor="middle" font-size="11.5" fill="#92400e">PDF: /export-creditnote-pdf (×2 ชุด)</text>
+    <line x1="426" y1="240" x2="452" y2="298" stroke="#64748b" stroke-width="1.6" marker-end="url(#ar6)"/>
+
+    <!-- reports branch -->
+    <rect x="656" y="300" width="270" height="110" rx="12" fill="#fff" stroke="#94a3b8" stroke-dasharray="5 4"/>
+    <text x="791" y="326" text-anchor="middle" font-size="13" font-weight="700" fill="#475569">รายงาน (อ่านอย่างเดียว)</text>
+    <text x="791" y="348" text-anchor="middle" font-size="11.5" fill="#475569">/api/invoices/summary · /api/saletax/*</text>
+    <text x="791" y="366" text-anchor="middle" font-size="11.5" fill="#475569">/api/driver-summary</text>
+    <text x="791" y="388" text-anchor="middle" font-size="11.5" fill="#64748b">สูตรกลาง: Σ COALESCE(amount, qty×price) + VAT 7%</text>
+    <path d="M486 218 C 620 230, 700 260, 770 298" fill="none" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#ar6)"/>
+  </svg>
+  </div>
+  <div class="caption">เส้นทางหลัก: ฟอร์ม → บันทึกลง ss_invoices → PDF · แตกแขนงไปใบวางบิล / ใบลดหนี้ / รายงาน</div>
+
+  <h3>(a) เข้าสู่ระบบ</h3>
+  <pre><code>Browser: GET /login → กรอกฟอร์ม → login.js POST /login
+main.py: เทียบ APP_USER/APP_PASS → ตั้ง session cookie → 303 ไป /dashboard
+dashboard: เช็ค session (หน้าเดียวที่เช็ค) → แสดงเมนูไปทุกโมดูล</code></pre>
+
+  <h3>(b) สร้างใบกำกับภาษี → Export PDF 4 ชุด</h3>
+  <pre><code>/form (form.html + form.js)
+  1. เปิดหน้า: fetch ลูกค้า /api/customers/all|suggest, สินค้า /api/products/all,
+     คนขับ /api/drivers, ทะเบียนรถ /api/suggest/number_plate
+  2. เลือกลูกค้า → autofill ที่อยู่/taxid/เครดิตวัน (จาก /api/customers/detail)
+  3. กรอกเลขที่ใบกำกับ → /api/invoices/check-number กันซ้ำ
+  4. [พรีวิว]  POST /preview → ได้ HTML invoice.html เปิดดูก่อนบันทึก
+  5. [บันทึก]  POST /submit
+        → INSERT ss_invoices.invoices (พร้อม snapshot ลูกค้า + car/driver)
+        → INSERT ss_invoices.invoice_items (⚠ invoice_number = idx)
+        → due_date = invoice_date + เครดิตวัน
+  6. [PDF]    POST /export-merged-pdf
+        → invoice.html × {ใบกำกับ,ใบเสร็จ} × {ต้นฉบับ,สำเนา} → WeasyPrint → pypdf merge
+  (โหมดแก้ไข: /form?edit={idx} → GET /api/invoices/{idx}/detail → PUT /api/invoices/{idx})</code></pre>
+
+  <h3>(c) สร้างใบวางบิล</h3>
+  <pre><code>/bill_note.html (bill_note.js)
+  1. เลือกลูกค้า (/api/customers/all) + ช่วงวันที่
+  2. GET /api/billing-note-invoices
+        → ใบกำกับของลูกค้าที่ "ยังไม่เคยถูกวางบิล"
+          (กรองด้วยเลขใบกำกับทั้งหมดที่มีใน ss_bills.bill_note_item)
+        → ยอดต่อใบ = SUM(items) + VAT 7%
+  3. ติ๊กเลือกใบกำกับ → POST /api/billing-notes
+        → gen เลข BNTS&lt;ปี&gt;&lt;เดือน&gt;&lt;run6&gt;
+        → INSERT bill_note (snapshot ลูกค้า) + bill_note_item (snapshot ยอดต่อใบ)
+        → payment_duedate = วันที่ใบกำกับล่าสุดที่เลือก
+        → 409 ถ้าใบกำกับใดถูกวางบิลแล้ว (duplicate guard)
+  4. พิมพ์: พรีวิวกรอบ A4 ในหน้า → window.print (ไม่ผ่าน server)</code></pre>
+
+  <h3>(d) สร้างใบลดหนี้ (อ้างอิง GRN)</h3>
+  <pre><code>/credit_note_form.html (credit_note.js)
+  1. ค้นลูกค้า (/api/customers/suggest-*) หรือกรอก GRN → /api/grn/suggest
+  2. GET /api/grn/summary → รวมรายการสินค้าที่เคยออกใบกำกับใน GRN นั้น
+     (raw SQL join ss_invoices: idx::text = invoice_number)
+     + /api/products/price → ราคาขายล่าสุดของสินค้า
+  3. กรอกค่าปรับ/ราคาใหม่ → มูลค่าลด = Σ(ราคาเดิม−ราคาใหม่)×จำนวน + VAT 7%
+  4. GET /api/credit-notes/generate-number/ → เลข SSCR&lt;run&gt;-&lt;วันเดือน&gt;/&lt;ปีพ.ศ.&gt;
+  5. POST /api/credit-notes → INSERT credits.credit_note + credit_note_item
+  6. พรีวิว: POST /api/credit-notes/preview · PDF: POST /export-creditnote-pdf</code></pre>
+
+  <h3>(e) รายงาน (อ่านอย่างเดียว — ทุกตัวคำนวณจาก invoices + invoice_items)</h3>
+  <pre><code>summary_invoices.html → /api/invoices/summary + /api/invoices    (สรุป/รายการ + Excel ฝั่ง browser)
+saletax_report.html   → /api/saletax/list                         (ภาษีขายรายใบ + แปลงตัน + Excel/พิมพ์)
+drivers_form.html     → /api/driver-summary + /api/driver-invoices (ยอดต่อคนขับ)
+dashboard.html        → /api/invoices (7 วันล่าสุด)
+สูตรกลางทุกตัว: มูลค่า = SUM(COALESCE(amount, quantity×price)), VAT = 7%</code></pre>
+</section>
+
+<!-- ================= 10. DEPLOY ================= -->
+<section class="card" id="deploy">
+  <h2><span class="no">10</span>การ Deploy</h2>
+  <h3>Docker (เส้นทางหลัก — Railway)</h3>
+<pre><code>Dockerfile (python:3.11-bookworm)
+ ├─ apt: libcairo2, libpango*, libgdk-pixbuf, libffi, libglib   ← ที่ WeasyPrint ต้องใช้
+ ├─ apt: fonts-thai-tlwg, fonts-noto-core/cjk/emoji, ฯลฯ        ← ฟอนต์ไทยสำหรับ PDF
+ ├─ apt: wkhtmltopdf                                            ← สำหรับ pdfkit (ไม่ถูกใช้จริง)
+ ├─ pip install -r requirements.txt
+ ├─ COPY ./app /app/app
+ └─ CMD /app/entrypoint.sh  →  exec uvicorn app.main:app --port ${PORT:-8000}</code></pre>
+  <p><code>Procfile</code> เป็นอีกทางเลือก (buildpack/Heroku-style) ชี้เป้าเดียวกัน: <code>uvicorn app.main:app</code></p>
+
+  <h3>Environment Variables ทั้งหมด</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>ตัวแปร</th><th>ใช้ที่</th><th>ค่า default ในโค้ด</th><th>หมายเหตุ</th></tr></thead>
+    <tbody>
+      <tr><td><code>DATABASE_URL</code></td><td>database.py</td><td><code>""</code> (ว่าง — ถ้าไม่ตั้ง ต่อ DB ไม่ได้)</td><td>เติม <code>sslmode=require</code> อัตโนมัติ ยกเว้น host <code>*.railway.internal</code></td></tr>
+      <tr><td><code>SESSION_SECRET</code></td><td>main.py</td><td>hardcode fallback ในโค้ด</td><td>ควรตั้งเสมอใน production</td></tr>
+      <tr><td><code>APP_USER</code> / <code>APP_PASS</code></td><td>main.py</td><td><code>admin</code> / <code>1234</code></td><td>บัญชี login เดียวของระบบ</td></tr>
+      <tr><td><code>PORT</code></td><td>entrypoint.sh / Procfile</td><td>8000</td><td>Railway/Heroku กำหนดให้</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ================= 11. CAVEATS ================= -->
+<section class="card" id="caveats">
+  <h2><span class="no">11</span>ข้อสังเกตสำคัญและจุดที่ควรระวัง (เรียงตามผลกระทบ)</h2>
+  <ol class="plain">
+    <li><b>API ทั้งหมดไม่มีการยืนยันตัวตน</b> — session ถูกเช็คเฉพาะ /dashboard; ทุก /api/... (รวมสร้าง/ลบเอกสาร) และ endpoint PDF เรียกตรงได้โดยไม่ login; ค่า default <code>admin/1234</code> และ <code>SESSION_SECRET</code> fallback ก็ hardcode ในโค้ด</li>
+    <li><b>Quirk invoice_items.invoice_number เก็บ idx</b> (หัวข้อ 5) — หนี้ทางเทคนิคที่แพร่ทุกโมดูล; ถ้าจะแก้ต้อง migrate ข้อมูลเก่า + รื้อ OR-join ทั้งหมด; ระวัง /api/driver-summary ที่ join ไม่ครอบสองแบบ</li>
+    <li><b>Route ชนกัน 5 จุด</b> (หัวข้อ 3) — โค้ดฝั่ง "ผู้แพ้" ตายทั้งที่ยังอยู่ในไฟล์ ชวนแก้ผิดที่ เช่นแก้ <code>PUT /api/invoices/{id}</code> ต้องแก้ที่ form.py ไม่ใช่ summary_invoices.py</li>
+    <li><b>โค้ดซ้ำข้ามโมดูล</b> — get_db() ×9, ตัว parse วันที่ ~6 ไฟล์, VAT 7% ประกาศ 3 ไฟล์ + literal อีก 2, แปลงปี พ.ศ. 4 ไฟล์, Jinja2Templates แยกทุก router — แก้สูตรภาษี/วันที่ต้องไล่ทุกไฟล์</li>
+    <li><b>ฟอนต์ PDF ผูกกับ Docker image</b> — ไม่มี @font-face; รันนอก image (เช่น dev บน Windows) ฟอนต์อาจเพี้ยน; TTF ใน static/fonts ไม่ถูกใช้</li>
+    <li><b>Dead / legacy code</b> — crud.py ไม่ถูก import และอ้างคอลัมน์ที่ไม่มีจริง; /export-pdf/{id} เขียนไฟล์ /tmp (ใช้บน Windows ไม่ได้) และพึ่ง relationship ที่มองไม่เห็น items; test_script.py เป็นไฟล์ทดลอง; pdfkit/wkhtmltopdf ติดตั้งฟรี</li>
+    <li><b>check-duplicate ของลูกค้าเป็น stub</b> — ตอบว่าไม่ซ้ำเสมอ การกันลูกค้าซ้ำยังไม่ทำงานจริง</li>
+    <li><b>ผู้ขายในใบลดหนี้ hardcode</b> ใน credit_note.py — เปลี่ยนชื่อ/ที่อยู่/เลขภาษีบริษัทต้องแก้โค้ด</li>
+    <li><b>ไม่มี migration tool</b> — โครงสร้างตารางจัดการนอกแอปทั้งหมด (เพิ่มคอลัมน์ต้องแก้ model กับ DB พร้อมกันเอง)</li>
+    <li><b>เลขเอกสารแบบ LIKE+max</b> — ถ้าใช้พร้อมกันหลายคนอาจได้เลขซ้ำ (race condition); ปัจจุบันผู้ใช้คนเดียวจึงยังไม่เป็นปัญหา</li>
+  </ol>
+</section>
+
+<footer class="foot">
+  เอกสารนี้สรุปจากการอ่านโค้ดทั้งโปรเจกต์ ณ commit <code>074c7d1</code> (edit bill note 20260705) · จัดทำ 5 กรกฎาคม 2569<br>
+  ไฟล์คู่กัน (ฉบับ Markdown): <code>app/.docs/arcitecture_ssincom_bill.md</code>
+</footer>
+
+</main>
+</div>
+</body>
+</html>

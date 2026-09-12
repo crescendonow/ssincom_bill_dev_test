@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/static/css/credit_note.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
@@ -50,7 +51,7 @@
             <div>
               <label class="block text-sm text-gray-700">วันที่เอกสาร</label>
               <input
-                type="date"
+                type="text"
                 id="cn_date"
                 class="mt-1 w-full border rounded p-2"
               />
@@ -373,7 +374,7 @@
                 >วันที่เริ่มต้น</label
               >
               <input
-                type="date"
+                type="text"
                 id="searchStartDate"
                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2"
               />
@@ -385,7 +386,7 @@
                 >วันที่สิ้นสุด</label
               >
               <input
-                type="date"
+                type="text"
                 id="searchEndDate"
                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2"
               />
@@ -433,6 +434,10 @@
       <div id="preview" class="my-6 flex justify-center hidden"></div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/th.js"></script>
+    <script src="/static/js/thai_custom_date.js"></script>
+    <script src="/static/js/thai_print_fonts.js"></script>
     <script src="/static/js/credit_note.js"></script>
   </body>
 </html>

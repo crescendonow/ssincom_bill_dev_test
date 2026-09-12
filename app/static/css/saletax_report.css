@@ -1,4 +1,34 @@
-/* ===== FONT ไทย ===== */
+/* ===== FONT ไทย =====
+   ฝัง TH Sarabun New จาก /static/fonts กันกรณีเครื่องที่สั่งพิมพ์ไม่ได้ติดตั้งฟอนต์ไว้
+   path เป็น relative จากตัวไฟล์ CSS */
+@font-face {
+  font-family: "TH Sarabun New";
+  src: url("../fonts/THSarabunNew.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "TH Sarabun New";
+  src: url("../fonts/THSarabunNew%20Bold.ttf") format("truetype");
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "TH Sarabun New";
+  src: url("../fonts/THSarabunNew%20Italic.ttf") format("truetype");
+  font-weight: normal;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "TH Sarabun New";
+  src: url("../fonts/THSarabunNew%20BoldItalic.ttf") format("truetype");
+  font-weight: bold;
+  font-style: italic;
+}
+
 body {
   font-family: "Noto Sans Thai", sans-serif !important;
   font-optical-sizing: auto;
