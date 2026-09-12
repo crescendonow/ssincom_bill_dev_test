@@ -19,6 +19,10 @@ The harness serves real templates, scripts, CSS and fonts on localhost and
 replaces API responses with fixtures. It fixes the browser timezone and date
 for the Bangkok midnight regression. Printing is intercepted to inspect actual
 FontFace load states at the point the app would invoke the native dialog.
+Save-button checks reproduce the Tailwind hidden utility locally because the CDN
+is stubbed; they verify visible actions, POST/PUT routing, quantities, retry,
+duplicate-submit protection, and document identity during pending saves, loads
+and number generation.
 No production server or database is contacted. Native printer dialog behavior
 and physical output still require a manual check.
 

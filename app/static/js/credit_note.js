@@ -34,10 +34,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const cnNoEl = document.getElementById('creditnote_number');
     const btnGenNo = document.getElementById('btnGenNo');
     const btnSave = document.getElementById('btnSave');
-    const btnUpdate = document.getElementById('btnUpdate');
+    const btnSaveLabel = document.getElementById('btnSaveLabel');
     const btnPDF = document.getElementById('btnPDF');
     const btnPreview = document.getElementById('btnPreview');
     const btnNew = document.getElementById('btnNew');
+    let creditNoteIdentityOperationInProgress = false;
 
     const tabCreate = document.getElementById('tab-create');
     const tabSearch = document.getElementById('tab-search');
@@ -68,21 +69,59 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    tabCreate?.addEventListener('click', () => switchTab('create'));
-    tabSearch?.addEventListener('click', () => switchTab('search'));
+    tabCreate?.addEventListener('click', () => {
+        if (!creditNoteIdentityOperationInProgress) switchTab('create');
+    });
+    tabSearch?.addEventListener('click', () => {
+        if (!creditNoteIdentityOperationInProgress) switchTab('search');
+    });
+
+    function renderCreditNoteActionState() {
+        const isPersisted = Boolean(currentEditingCreditNoteNumber);
+        const isBusy = creditNoteIdentityOperationInProgress;
+        if (btnSaveLabel) btnSaveLabel.textContent = isPersisted ? 'บันทึกการแก้ไข' : 'บันทึก';
+        if (btnSave) btnSave.disabled = isBusy;
+        if (btnNew) {
+            btnNew.classList.toggle('hidden', !isPersisted);
+            btnNew.disabled = isBusy;
+        }
+        if (btnGenNo) btnGenNo.disabled = isPersisted || isBusy;
+
+        [tabCreate, tabSearch, searchBtn].forEach(control => {
+            if (control) control.disabled = isBusy;
+        });
+        searchResultsBody?.querySelectorAll('.btn-view-edit, .btn-delete').forEach(button => {
+            button.disabled = isBusy;
+        });
+    }
+
+    function beginCreditNoteIdentityOperation() {
+        if (creditNoteIdentityOperationInProgress) return false;
+        creditNoteIdentityOperationInProgress = true;
+        renderCreditNoteActionState();
+        return true;
+    }
+
+    function endCreditNoteIdentityOperation() {
+        creditNoteIdentityOperationInProgress = false;
+        renderCreditNoteActionState();
+    }
 
     // ===== GENERATE NUMBER =====
     btnGenNo?.addEventListener("click", async () => {
+        if (currentEditingCreditNoteNumber || creditNoteIdentityOperationInProgress) return;
+
         const d = creditDateValue(cnDatePicker, cnDateEl);
         if (!d) { alert("กรุณาเลือกวันที่เอกสารก่อนสร้างเลขเอกสาร"); return; }
+        if (!beginCreditNoteIdentityOperation()) return;
 
         try {
-            const url = `/api/credit-notes/generate-number/?date=${encodeURIComponent(d)}`;
+            const url = '/api/credit-notes/generate-number/?date=' + encodeURIComponent(d);
             const res = await fetch(url);
             if (!res.ok) {
                 const text = await res.text();
                 console.error("generate-number error", res.status, text);
-                alert("ไม่สามารถสร้างเลขเอกสารได้\nรหัสผิดพลาด: " + res.status);
+                alert("ไม่สามารถสร้างเลขเอกสารได้" + String.fromCharCode(10) + "รหัสผิดพลาด: " + res.status);
                 return;
             }
             const data = await res.json();
@@ -90,39 +129,61 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) {
             console.error("fetch /generate-number failed:", err);
             alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+        } finally {
+            endCreditNoteIdentityOperation();
         }
     });
 
     // ===== SAVE =====
     btnSave?.addEventListener('click', async () => {
+        if (creditNoteIdentityOperationInProgress) return;
+
         const payload = buildPayload();
         if (!payload.creditnote_number) { alert('กรุณาสร้างเลขที่ใบลดหนี้ก่อนบันทึก'); return; }
         if (!payload.items.length) { alert('กรุณาเพิ่มรายการอย่างน้อย 1 รายการ'); return; }
-        const res = await fetch('/api/credit-notes', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) { alert(data.detail || 'บันทึกไม่สำเร็จ'); return; }
-        alert(`บันทึกสำเร็จ เลขที่เอกสาร: ${data.creditnote_number}`);
-        btnSave.classList.add('hidden');
-    });
 
-    // ===== UPDATE =====
-    btnUpdate?.addEventListener('click', async () => {
-        if (!currentEditingCreditNoteNumber) return;
-        const payload = buildPayload();
-        payload.creditnote_number = currentEditingCreditNoteNumber;
+        const persistedNumber = currentEditingCreditNoteNumber;
+        const isUpdating = Boolean(persistedNumber);
+        const requestPayload = isUpdating ? {
+            ...payload,
+            creditnote_number: persistedNumber,
+            items: payload.items.map(item => ({
+                ...item,
+                sum_quantity: item.quantity,
+            })),
+        } : payload;
 
-        const res = await fetch(`/api/credit-notes/update?no=${encodeURIComponent(currentEditingCreditNoteNumber)}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) { alert(data.detail || 'อัปเดตไม่สำเร็จ'); return; }
-        alert('อัปเดตใบลดหนี้สำเร็จ!');
+        if (!beginCreditNoteIdentityOperation()) return;
+
+        try {
+            const res = await fetch(
+                isUpdating
+                    ? `/api/credit-notes/update?no=${encodeURIComponent(persistedNumber)}`
+                    : '/api/credit-notes',
+                {
+                    method: isUpdating ? 'PUT' : 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestPayload)
+                }
+            );
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                alert(data.detail || (isUpdating ? 'อัปเดตไม่สำเร็จ' : 'บันทึกไม่สำเร็จ'));
+                return;
+            }
+
+            if (isUpdating) {
+                alert('บันทึกการแก้ไขใบลดหนี้สำเร็จ!');
+            } else {
+                currentEditingCreditNoteNumber = data.creditnote_number || payload.creditnote_number;
+                alert(`บันทึกสำเร็จ เลขที่เอกสาร: ${currentEditingCreditNoteNumber}`);
+            }
+        } catch (err) {
+            console.error('save credit note failed:', err);
+            alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+        } finally {
+            endCreditNoteIdentityOperation();
+        }
     });
 
     // ===== PREVIEW =====
@@ -209,6 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
                 searchResultsBody.appendChild(tr);
             });
+            renderCreditNoteActionState();
         } catch (err) {
             console.error(err);
             alert('เกิดข้อผิดพลาดในการค้นหา');
@@ -217,6 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ===== SEARCH RESULTS CLICK HANDLER =====
     searchResultsBody?.addEventListener('click', async (e) => {
+        if (creditNoteIdentityOperationInProgress) return;
         const viewBtn = e.target.closest('.btn-view-edit');
         const delBtn = e.target.closest('.btn-delete');
 
@@ -249,6 +312,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ===== LOAD FOR EDITING =====
     async function loadCreditNoteForEditing(cnNumber) {
+        if (!beginCreditNoteIdentityOperation()) return;
+
         try {
             const res = await fetch(`/api/credit-notes/${encodeURIComponent(cnNumber)}`);
             if (!res.ok) { alert('ไม่สามารถโหลดข้อมูลใบลดหนี้ได้'); return; }
@@ -302,10 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('cf_provincename').value = data.buyer.prov || '';
             }
 
-            // Show update button, hide save
-            btnSave.classList.add('hidden');
-            btnUpdate.classList.remove('hidden');
-            btnNew.classList.remove('hidden');
+            renderCreditNoteActionState();
 
             updateTotal();
             switchTab('create');
@@ -314,11 +376,15 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) {
             console.error(err);
             alert('เกิดข้อผิดพลาด: ' + err.message);
+        } finally {
+            endCreditNoteIdentityOperation();
         }
     }
 
     // ===== RESET FORM =====
     function resetForm() {
+        if (creditNoteIdentityOperationInProgress) return;
+
         currentEditingCreditNoteNumber = null;
         cnNoEl.value = '';
         cnDatePicker.setDate(todayISO, false);
@@ -361,14 +427,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('cf_personzipcode').value = '';
         document.getElementById('cf_provincename').value = '';
 
-        // Show save, hide update
-        btnSave.classList.remove('hidden');
-        btnUpdate.classList.add('hidden');
-        btnNew.classList.add('hidden');
+        renderCreditNoteActionState();
 
         updateTotal();
         wireAutocompleteForAllRows();
     }
+
+    renderCreditNoteActionState();
 
     // Wire autocomplete on load
     wireAutocompleteForAllRows();

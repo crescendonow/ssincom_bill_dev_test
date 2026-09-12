@@ -61,6 +61,7 @@ async function openForm(name, { delayFonts = 0, failFonts = false, mobile = fals
             else if (url.pathname === '/api/billing-notes' && route.request().method() === 'POST') data = { billnote_number: 'BNTEST' };
             else if (url.pathname === '/api/search-billing-notes') data = [{ billnote_number: 'BNTEST', bill_date: bill.bill_date, fname: customer.fname }];
             else if (url.pathname.startsWith('/api/billing-notes/')) data = bill;
+            else if (url.pathname === '/api/credit-notes' && route.request().method() === 'POST') data = { ok: true, creditnote_number: route.request().postDataJSON().creditnote_number };
             else if (url.pathname === '/api/search-credit-notes') data = [{ creditnote_number: 'CNTEST', created_at: '2026-08-15', customer_name: customer.fname }];
             else if (url.pathname.startsWith('/api/credit-notes/')) data = { head: { creditnote_number: 'CNTEST', created_at: '2026-08-15' }, items: [], buyer: { personid: customer.personid, prename: customer.prename, name: customer.prename + ' ' + customer.fname } };
             return route.fulfill({ json: data });
@@ -77,6 +78,8 @@ async function openForm(name, { delayFonts = 0, failFonts = false, mobile = fals
                 [...document.fonts].some(face => face.family.replace(/["']/g, '') === 'TH Sarabun New' && face.style === style.split(' ')[0] && (face.weight === style.split(' ')[1] || (face.weight === 'normal' && style.endsWith('400')) || (face.weight === 'bold' && style.endsWith('700'))) && face.status === 'loaded')));
     });
     await page.goto(origin + '/' + name, { waitUntil: 'domcontentloaded' });
+    // Tailwind CDN is stubbed; retain its actual hidden utility for visibility checks.
+    await page.addStyleTag({ content: '.hidden { display: none; }' });
     return { page, dialogs, recoverFonts: () => { failFonts = false; }, close: () => context.close() };
 }
 
@@ -220,7 +223,7 @@ test('loading and resetting credit note synchronize the displayed and submitted 
         await page.locator('#tab-search').click();
         await page.locator('#searchBtn').click();
         await page.locator('#searchResultsBody .btn-view-edit').click();
-        await page.waitForFunction(() => !document.querySelector('#btnUpdate').classList.contains('hidden'));
+        await page.waitForFunction(() => document.querySelector('#creditnote_number').value === 'CNTEST' && !document.querySelector('#panel-create').classList.contains('hidden'));
         assert.equal(await page.locator('#cn_date').inputValue(), '2026-08-15');
         assert.match(await page.locator('#cn_date').evaluate(el => el._flatpickr.altInput.value), /15.*2569/);
         assert.equal(await page.evaluate(() => buildPayload().creditnote_date), '2026-08-15');
@@ -298,4 +301,182 @@ test('credit preview recovers when font downloads work again', async () => {
         await page.evaluate(() => window.print());
         assert.deepEqual(await page.evaluate(() => window.printSnapshots[0]), [true, true, true, true]);
     } finally { await close(); }
+});
+async function fillCreditForSave(page, number = 'CN-SAVE-TEST') {
+    await page.evaluate(number => {
+        document.querySelector('#creditnote_number').value = number;
+        if (!document.querySelector('#items .item-row')) addItem();
+        const row = document.querySelector('#items .item-row');
+        row.querySelector('.description').value = 'Test credit item';
+        row.querySelector('.quantity').value = '3';
+        row.querySelector('.unit_price').value = '10';
+        row.querySelector('.base_price').value = '10';
+        row.querySelector('.fine').value = '1';
+        updateTotal();
+    }, number);
+}
+
+async function saveCreditAndWait(page) {
+    const dialog = page.waitForEvent('dialog');
+    await page.locator('#btnSave').click();
+    await dialog;
+    await page.waitForFunction(() => !document.querySelector('#btnSave').disabled);
+}
+
+test('credit Save remains visible after saving and subsequent saves update the same document', async () => {
+    const { page, close } = await openForm('credit_note_form.html');
+    try {
+        assert.equal(await page.locator('#btnSave').isVisible(), true);
+        const writes = [];
+        page.on('request', request => {
+            if (new URL(request.url()).pathname.startsWith('/api/credit-notes') && ['POST', 'PUT'].includes(request.method())) writes.push(request);
+        });
+        await fillCreditForSave(page);
+        await saveCreditAndWait(page);
+        assert.equal(await page.locator('#btnSave').isVisible(), true, 'Save disappeared after the first successful save');
+        assert.equal(await page.locator('#btnNew').isVisible(), true, 'A saved form must allow creating the next document');
+        await saveCreditAndWait(page);
+        assert.deepEqual(writes.map(request => request.method()), ['POST', 'PUT']);
+        assert.equal(new URL(writes[1].url()).searchParams.get('no'), 'CN-SAVE-TEST');
+        assert.equal(writes[1].postDataJSON().items[0].sum_quantity, 3, 'Update must preserve quantity using the existing API contract');
+        await page.locator('#btnNew').click();
+        assert.equal(await page.locator('#btnSave').isVisible(), true);
+        assert.equal(await page.locator('#creditnote_number').inputValue(), '');
+        await fillCreditForSave(page, 'CN-NEXT-TEST');
+        await saveCreditAndWait(page);
+        assert.deepEqual(writes.map(request => request.method()), ['POST', 'PUT', 'POST']);
+    } finally { await close(); }
+});
+
+test('credit Save is available when reopening a saved document', async () => {
+    const { page, close } = await openForm('credit_note_form.html');
+    try {
+        await page.locator('#tab-search').click();
+        await page.locator('#searchBtn').click();
+        await page.locator('#searchResultsBody .btn-view-edit').click();
+        await page.waitForFunction(() => document.querySelector('#creditnote_number').value === 'CNTEST' && !document.querySelector('#panel-create').classList.contains('hidden'));
+        assert.equal(await page.locator('#btnSave').isVisible(), true, 'Save disappeared when opening a saved document');
+        await fillCreditForSave(page, 'CNTEST');
+        const sent = page.waitForRequest(request => request.method() === 'PUT');
+        await saveCreditAndWait(page);
+        assert.equal(new URL((await sent).url()).searchParams.get('no'), 'CNTEST');
+    } finally { await close(); }
+});
+test('credit Save stays usable after HTTP or network errors without losing the form', async () => {
+    for (const editing of [false, true]) {
+        for (const failure of ['http', 'network']) {
+            const { page, close } = await openForm('credit_note_form.html');
+            try {
+                await fillCreditForSave(page);
+                if (editing) await saveCreditAndWait(page);
+                let shouldFail = true;
+                const attempts = [];
+                await page.route('**/api/credit-notes**', async route => {
+                    const request = route.request();
+                    if (!['POST', 'PUT'].includes(request.method())) return route.fallback();
+                    attempts.push(request.method());
+                    if (!shouldFail) return route.fulfill({ json: { ok: true, creditnote_number: 'CN-SAVE-TEST' } });
+                    if (failure === 'network') return route.abort('failed');
+                    return route.fulfill({ status: 500, json: { detail: 'Test save failure' } });
+                });
+                await saveCreditAndWait(page);
+                assert.equal(await page.locator('#btnSave').isVisible(), true);
+                assert.equal(await page.locator('#btnSave').isEnabled(), true);
+                assert.equal(await page.locator('#creditnote_number').inputValue(), 'CN-SAVE-TEST');
+                assert.equal(await page.locator('#items .description').first().inputValue(), 'Test credit item');
+                shouldFail = false;
+                await saveCreditAndWait(page);
+                assert.deepEqual(attempts, editing ? ['PUT', 'PUT'] : ['POST', 'POST']);
+            } finally { await close(); }
+        }
+    }
+});
+
+test('credit Save submits once while pending and prevents switching document identity', async () => {
+    const { page, close } = await openForm('credit_note_form.html');
+    let release;
+    const held = new Promise(resolve => { release = resolve; });
+    try {
+        await fillCreditForSave(page);
+        let calls = 0;
+        await page.route('**/api/credit-notes', async route => {
+            if (route.request().method() !== 'POST') return route.fallback();
+            calls++;
+            await held;
+            await route.fulfill({ json: { ok: true, creditnote_number: 'CN-SAVE-TEST' } });
+        });
+        const request = page.waitForRequest(request => request.method() === 'POST' && new URL(request.url()).pathname === '/api/credit-notes');
+        await page.locator('#btnSave').evaluate(button => { button.click(); button.click(); });
+        await request;
+        assert.equal(await page.locator('#btnSave').isEnabled(), false);
+        assert.equal(await page.locator('#btnGenNo').isEnabled(), false);
+        assert.equal(await page.locator('#btnNew').isEnabled(), false);
+        assert.equal(await page.locator('#tab-search').isEnabled(), false, 'Opening another document during Save can redirect later updates');
+        await page.locator('#tab-search').evaluate(button => button.click());
+        assert.equal(await page.locator('#panel-create').isVisible(), true);
+        const saved = page.waitForEvent('dialog');
+        release();
+        await saved;
+        await page.waitForFunction(() => !document.querySelector('#btnSave').disabled);
+        assert.equal(calls, 1);
+        assert.equal(await page.locator('#btnGenNo').isEnabled(), false);
+        assert.equal(await page.locator('#btnNew').isEnabled(), true);
+        await page.locator('#btnNew').click();
+        assert.equal(await page.locator('#btnGenNo').isEnabled(), true);
+    } finally { release(); await close(); }
+});
+test('credit loading and number generation keep Save locked until document identity is settled', async () => {
+    for (const operation of ['generate', 'load']) {
+        for (const outcome of ['success', 'http', 'network']) {
+            const { page, close } = await openForm('credit_note_form.html');
+            let release;
+            const held = new Promise(resolve => { release = resolve; });
+            try {
+                await fillCreditForSave(page);
+                if (operation === 'load') {
+                    await page.locator('#tab-search').click();
+                    await page.locator('#searchBtn').click();
+                    await page.locator('#searchResultsBody .btn-view-edit').waitFor();
+                }
+                const routePattern = operation === 'generate' ? '**/api/credit-notes/generate-number/**' : '**/api/credit-notes/CNTEST';
+                await page.route(routePattern, async route => {
+                    await held;
+                    if (outcome === 'network') return route.abort('failed');
+                    if (outcome === 'http') return route.fulfill({ status: 500, json: { detail: 'Test operation failure' } });
+                    return route.fulfill({ json: operation === 'generate'
+                        ? { number: 'CN-GENERATED' }
+                        : { head: { creditnote_number: 'CNTEST', created_at: '2026-08-15' }, items: [] } });
+                });
+                const writes = [];
+                page.on('request', request => {
+                    if (['POST', 'PUT'].includes(request.method())) writes.push(request);
+                });
+                const started = page.waitForRequest(request => operation === 'generate'
+                    ? new URL(request.url()).pathname.includes('/generate-number/')
+                    : new URL(request.url()).pathname === '/api/credit-notes/CNTEST');
+                await page.locator(operation === 'generate' ? '#btnGenNo' : '#searchResultsBody .btn-view-edit').click();
+                await started;
+                if (operation === 'load' && await page.locator('#tab-create').isEnabled()) await page.locator('#tab-create').click();
+                assert.equal(await page.locator('#btnSave').isEnabled(), false, `${operation}/${outcome} must prevent saving a changing document`);
+                assert.equal(await page.locator('#btnNew').isEnabled(), false);
+                assert.equal(await page.locator('#btnGenNo').isEnabled(), false);
+                await page.locator('#btnSave').evaluate(button => button.click());
+                const failed = outcome === 'success' ? null : page.waitForEvent('dialog');
+                release();
+                if (failed) await failed;
+                await page.waitForFunction(() => !document.querySelector('#btnSave').disabled);
+                assert.equal(writes.length, 0, 'No save request should start before the document identity is settled');
+                const expectedNumber = outcome === 'success' ? (operation === 'load' ? 'CNTEST' : 'CN-GENERATED') : 'CN-SAVE-TEST';
+                assert.equal(await page.locator('#creditnote_number').inputValue(), expectedNumber);
+                await page.locator('#tab-create').click();
+                await fillCreditForSave(page, expectedNumber);
+                await saveCreditAndWait(page);
+                const updating = operation === 'load' && outcome === 'success';
+                assert.equal(writes.length, 1);
+                assert.equal(writes[0].method(), updating ? 'PUT' : 'POST');
+                assert.equal(writes[0].postDataJSON().creditnote_number, expectedNumber);
+                if (updating) assert.equal(new URL(writes[0].url()).searchParams.get('no'), expectedNumber);
+            } finally { release(); await close(); }
+        }
+    }
 });
