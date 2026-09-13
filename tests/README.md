@@ -37,3 +37,21 @@ WeasyPrint is mocked at its native rendering boundary: it verifies that the
 customer name reaches the original/copy HTML and that the same FontConfiguration
 reaches CSS and the renderer. It does not validate the resulting PDF binary;
 that needs the application's WeasyPrint native libraries.
+
+## Native invoice PDF layout
+
+Run `python tests/invoice_pdf_layout.py` separately from the mocked backend suite.
+It requires the app dependencies and WeasyPrint's native Pango/font libraries
+(the application Docker image includes these). No database connection is used.
+
+The test calls the real `/export-merged-pdf` handler with fixture data, renders
+and merges all four invoice/receipt variants, and verifies four PDF pages. It
+inspects WeasyPrint's actual line boxes to check that the company heading is
+one complete line, stays inside the printable page, and overlaps no other text.
+Run separately because `test_document_customers.py` substitutes WeasyPrint in
+`sys.modules`; native layout checks must use the real renderer.
+
+Regression baseline: WeasyPrint 62.3 with pydyf 0.11.0 split the heading into
+multiple lines; the fixed template/CSS pass on 62.3, 63.1, 64.1 and 65.1. Keep 62.3 in the
+layout regression matrix when testing renderer upgrades: newer engines can
+hide the original flex sizing bug even without the template fix.

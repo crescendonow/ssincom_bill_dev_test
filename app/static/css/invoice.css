@@ -129,6 +129,11 @@
         font-size: 16pt;
     }
 
+    /* Keep the legal name together, including in older WeasyPrint flex layouts. */
+    .company-name {
+        white-space: nowrap;
+    }
+
     .sub {
         font-size: 11pt;
         color: #1c5ca5;
